@@ -1,0 +1,170 @@
+"use client";
+
+import { Physics, RapierRigidBody } from "@react-three/rapier";
+import { Environment, Html } from "@react-three/drei";
+import Controls from "@/shared/ControlsProvider";
+import { ShadowLight } from "@/shared/ShadowLight";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { GameCanvas } from "@/shared/GameCanvas";
+import { EditorModes, SceneNode, Viewer } from "./editor/scene/viewer/SceneViewer";
+import drive from "./map";
+import { GameEngine } from "./editor/scene/editor/EditorContext";
+import { CharacterController } from "@/shared/shouldercam/CharacterController";
+import dynamic from 'next/dynamic'
+import { Group, Mesh } from "three";
+import { useContext } from 'react'
+import { MPContext } from './MP'
+import tunnel from "tunnel-rat";
+import ModelAttachment from "@/shared/ModelAttachment";
+import * as THREE from "three";
+import NetworkThing from "./NetworkThing";
+import { AudioProvider, useAudio } from "./AudioProvider";
+import type { PeerState } from "./MP";
+import Ped from "@/shared/ped/ped";
+const MPProvider = dynamic(() => import('./MP'), { ssr: false })
+
+const ui = tunnel()
+
+const GameWrappers = () => {
+    return (
+        <AudioProvider>
+            <div className="items-center justify-items-center min-h-screen">
+                <div className="w-full" style={{ height: "100vh" }}>
+                    <Controls>
+                        <GameEngine mode={EditorModes.Play} sceneGraph={drive as unknown as SceneNode[]}>
+                            <GameCanvas>
+                                <Physics paused={false}>
+                                    <Game />
+                                </Physics>
+                            </GameCanvas>
+                        </GameEngine>
+                    </Controls>
+                </div>
+                <ui.Out />
+            </div>
+        </AudioProvider>
+    );
+}
+
+const Game = () => {
+    const rbref = useRef<RapierRigidBody | null>(null);
+    const meshref = useRef<Group | null>(null);
+    const { unlockAudio, playSound, isUnlocked } = useAudio();
+
+    // Broadcast character position every second
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (rbref.current) {
+                const pos = rbref.current.translation();
+                window.dispatchEvent(new CustomEvent('mp-pos', { detail: [pos.x, pos.y, pos.z] }))
+            }
+        }, 1000);
+        return () => clearInterval(interval);
+    }, []);
+
+    return <>
+        <Viewer />
+        <CharacterController
+            mode="side-scroll"
+            forwardRef={({ rbref: rb, meshref: mesh }) => {
+                rbref.current = rb.current;
+                meshref.current = mesh.current;
+            }}
+        >
+            {<ModelAttachment
+                model="/models/environment/Katana.glb"
+                attachpoint="mixamorigRightHand"
+                offset={new THREE.Vector3(0, 0, 0)}
+                scale={new THREE.Vector3(100, 100, 100)}
+                rotation={new THREE.Vector3(0, 0, 0)}
+            />}
+        </CharacterController>
+
+        <NetworkThing
+            scale={new THREE.Vector3(0.03, 0.03, 0.03)}
+            position={new THREE.Vector3(1.2, 0.64, -0.2)}
+            modelUrl="/models/environment/Bell.glb"
+            id="bell"
+            onActivate={() => {
+                console.log('Bell activated');
+                playSound("/sound/click.mp3"); // Play remotely if soundUrl provided
+
+            }}
+        />
+
+        <MPProvider roomId="my-room-id" ui={ui}>
+            <MPStuff />
+        </MPProvider>
+
+        <ambientLight intensity={1.4} />
+        <ShadowLight />
+
+        <SceneEventHandler />
+        <color attach="background" args={["#000000"]} />
+        <Environment files="/textures/skybox3.jpg" background={false} />
+    </>
+}
+
+const SceneEventHandler = () => {
+    useEffect(() => {
+        const handler = (e: Event) => {
+            const customEvent = e as CustomEvent;
+            const { name } = customEvent.detail;
+            console.log(`Scene event triggered: ${name}`);
+
+            // if (name === 'easel.glb') {
+            //   // navigate to draw.pockit.world in a new tab
+            //   window.open('https://draw.pockit.world', '_blank');
+            // }
+            // Handle scene events here
+        };
+        window.addEventListener('scene-pointer-event', handler);
+        return () => {
+            window.removeEventListener('scene-pointer-event', handler);
+        };
+    }, []);
+    // Handle scene events here
+    return null;
+};
+
+function PeerPed({ peerId, state }: { peerId: string, state: PeerState }) {
+    // Show latest chat message if less than 5 seconds old
+    const now = Date.now();
+    const showMsg = state.latestMessage && (now - state.latestMessage.timestamp < 5000);
+
+    return (
+        <Ped
+            key={peerId}
+            basePath={"/models/human/onimilio/"}
+            modelUrl={"rigged.glb"}
+            position={state.position} height={1.5}
+        >
+            {state.appearance?.hand && <ModelAttachment
+                model="/models/environment/Katana.glb"
+                attachpoint="mixamorigRightHand"
+                offset={new THREE.Vector3(0, 0, 0)}
+                scale={new THREE.Vector3(100, 100, 100)}
+                rotation={new THREE.Vector3(0, 0, 0)}
+            />}
+            {showMsg && (
+                <Html position={[0, 1.4, 0]} zIndexRange={[5, 10]}>
+                    <div className="-translate-x-[50%] min-w-[300px] text-3xl text-yellow-300 text-center p-2 rounded drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]">
+                        {state.latestMessage?.message}
+                    </div>
+                </Html>
+            )}
+        </Ped>
+    );
+}
+
+const MPStuff = () => {
+    const { peerStates } = useContext(MPContext)
+    return <>
+        {/* Peer peds */}
+        {Object.entries(peerStates).map(([peerId, state]) => (
+            <PeerPed key={peerId} peerId={peerId} state={state} />
+        ))}
+    </>
+}
+
+export default GameWrappers;
