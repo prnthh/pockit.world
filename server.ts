@@ -120,7 +120,4 @@ function npcConsciousnessLoop() {
   }
 }
 
-// Tick every 5 seconds
 setInterval(npcConsciousnessLoop, 5000)
-
-// Removed setNpcBusy and busy logic since 'wander' and 'busy' are no longer used

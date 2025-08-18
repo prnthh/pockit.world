@@ -94,9 +94,9 @@ const Game = () => {
             {<ModelAttachment
                 model="/models/environment/Katana.glb"
                 attachpoint="mixamorigRightHand"
-                offset={new THREE.Vector3(0, 0, 0)}
+                offset={new THREE.Vector3(2, 7, 8)}
                 scale={new THREE.Vector3(100, 100, 100)}
-                rotation={new THREE.Vector3(0, 0, 0)}
+                rotation={new THREE.Vector3(-Math.PI / 6, Math.PI / 3, -Math.PI / 3)}
             />}
         </CharacterController>
 
