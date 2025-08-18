@@ -24,6 +24,7 @@ import Ped from "@/shared/ped/ped";
 
 import drive from "./map";
 import drive2 from "./about/map";
+import DialogCollider from "@/shared/ped/DialogCollider";
 const MPProvider = dynamic(() => import('./MP'), { ssr: false })
 
 const ui = tunnel()
@@ -67,7 +68,8 @@ const GameWrappers = () => {
 const Game = () => {
     const rbref = useRef<RapierRigidBody | null>(null);
     const meshref = useRef<Group | null>(null);
-    const { unlockAudio, playSound, isUnlocked } = useAudio();
+    const { playSound } = useAudio();
+    const pathname = usePathname();
 
     // Broadcast character position every second
     useEffect(() => {
@@ -98,17 +100,51 @@ const Game = () => {
             />}
         </CharacterController>
 
-        <NetworkThing
-            scale={new THREE.Vector3(0.03, 0.03, 0.03)}
-            position={new THREE.Vector3(1.2, 0.64, -0.2)}
-            modelUrl="/models/environment/Bell.glb"
-            id="bell"
-            onActivate={() => {
-                console.log('Bell activated');
-                playSound("/sound/click.mp3"); // Play remotely if soundUrl provided
+        {pathname == '/' && <>
+            <Ped
+                key={'np21'}
+                basePath={"/models/human/onimilio/"}
+                modelUrl={"rigged.glb"}
+                position={[2.4, 0, 1]} height={1.5}
+            >
+                <DialogCollider>
+                    {(
+                        <div className="min-w-[400px] text-3xl text-yellow-300 text-center p-2 rounded drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]">
+                            The office is under construction! <br />
+                            Please come back later.
+                        </div>
+                    )}
+                </DialogCollider>
+            </Ped>
+            <NetworkThing
+                scale={new THREE.Vector3(0.03, 0.03, 0.03)}
+                position={new THREE.Vector3(1.6, 0.64, 0.4)}
+                modelUrl="/models/environment/Bell.glb"
+                id="bell"
+                onActivate={() => {
+                    console.log('Bell activated');
+                    playSound("/sound/click.mp3"); // Play remotely if soundUrl provided
 
-            }}
-        />
+                }}
+            />
+        </>}
+
+        {pathname == '/about' && <Ped
+            key={'npc1'}
+            basePath={"/models/human/onimilio/"}
+            modelUrl={"rigged.glb"}
+            position={[-2, 0, 1]} height={1.5}
+        >
+            <DialogCollider>
+                {(
+                    <div className="min-w-[300px] text-3xl text-yellow-300 text-center p-2 rounded drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]">
+                        As an investor, I am not allowed inside.
+                    </div>
+                )}
+            </DialogCollider>
+        </Ped>}
+
+
 
         <MPProvider roomId="my-room-id" ui={ui}>
             <MPStuff />
