@@ -138,7 +138,7 @@ const Game = () => {
             <DialogCollider>
                 {(
                     <div className="min-w-[300px] text-3xl text-yellow-300 text-center p-2 rounded drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]">
-                        As an investor, I am not allowed inside.
+                        I can't wait till the office is ready!
                     </div>
                 )}
             </DialogCollider>
