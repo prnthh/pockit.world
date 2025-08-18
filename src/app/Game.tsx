@@ -7,12 +7,12 @@ import { ShadowLight } from "@/shared/ShadowLight";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { GameCanvas } from "@/shared/GameCanvas";
 import { EditorModes, SceneNode, Viewer } from "./editor/scene/viewer/SceneViewer";
-import drive from "./map";
 import { GameEngine } from "./editor/scene/editor/EditorContext";
 import { CharacterController } from "@/shared/shouldercam/CharacterController";
 import dynamic from 'next/dynamic'
 import { Group, Mesh } from "three";
 import { useContext } from 'react'
+import { usePathname } from 'next/navigation';
 import { MPContext } from './MP'
 import tunnel from "tunnel-rat";
 import ModelAttachment from "@/shared/ModelAttachment";
@@ -21,17 +21,35 @@ import NetworkThing from "./NetworkThing";
 import { AudioProvider, useAudio } from "./AudioProvider";
 import type { PeerState } from "./MP";
 import Ped from "@/shared/ped/ped";
+
+import drive from "./map";
+import drive2 from "./about/map";
 const MPProvider = dynamic(() => import('./MP'), { ssr: false })
 
 const ui = tunnel()
 
 const GameWrappers = () => {
+    const pathname = usePathname();
+    const [scene, setScene] = useState<SceneNode[]>(drive as unknown as SceneNode[]);
+
+
+    useEffect(() => {
+        // Load the scene based on the pathname
+        console.log('Loading scene for pathname:', pathname);
+        if (pathname === '/about') {
+            setScene(drive2 as unknown as SceneNode[]);
+        } else {
+            // Handle other paths or set a default scene
+            setScene(drive as unknown as SceneNode[]);
+        }
+    }, [pathname]);
+
     return (
         <AudioProvider>
             <div className="items-center justify-items-center min-h-screen">
                 <div className="w-full" style={{ height: "100vh" }}>
                     <Controls>
-                        <GameEngine mode={EditorModes.Play} sceneGraph={drive as unknown as SceneNode[]}>
+                        <GameEngine mode={EditorModes.Play} sceneGraph={scene}>
                             <GameCanvas>
                                 <Physics paused={false}>
                                     <Game />
