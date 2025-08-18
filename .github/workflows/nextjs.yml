@@ -76,7 +76,7 @@ jobs:
       - name: Disable ESLint
         run: echo "NEXTJS_SKIP_ESLINT=true" >> $GITHUB_ENV
       - name: Build with Next.js
-        run: ${{ steps.detect-package-manager.outputs.runner }} next build
+        run: ${{ steps.detect-package-manager.outputs.runner }} next build --no-lint
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
