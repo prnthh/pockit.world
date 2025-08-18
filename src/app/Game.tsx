@@ -24,6 +24,7 @@ import Ped from "@/shared/ped/ped";
 
 import drive from "./map";
 import drive2 from "./about/map";
+import drive3 from "./milady/map";
 import DialogCollider from "@/shared/ped/DialogCollider";
 const MPProvider = dynamic(() => import('./MP'), { ssr: false })
 
@@ -39,6 +40,8 @@ const GameWrappers = () => {
         console.log('Loading scene for pathname:', pathname);
         if (pathname === '/about') {
             setScene(drive2 as unknown as SceneNode[]);
+        } else if (pathname === '/milady') {
+            setScene(drive3 as unknown as SceneNode[]);
         } else {
             // Handle other paths or set a default scene
             setScene(drive as unknown as SceneNode[]);
