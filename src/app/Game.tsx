@@ -26,6 +26,7 @@ import drive from "./map";
 import drive2 from "./about/map";
 import drive3 from "./milady/map";
 import DialogCollider from "@/shared/ped/DialogCollider";
+import { ScenePortalContext } from "./ ScenePortalProvider";
 const MPProvider = dynamic(() => import('./MP'), { ssr: false })
 
 const ui = tunnel()
@@ -73,6 +74,7 @@ const Game = () => {
     const meshref = useRef<Group | null>(null);
     const { playSound } = useAudio();
     const pathname = usePathname();
+    const { scenePortal } = useContext(ScenePortalContext);
 
     // Broadcast character position every second
     useEffect(() => {
@@ -102,6 +104,8 @@ const Game = () => {
                 rotation={new THREE.Vector3(-Math.PI / 6, Math.PI / 3, -Math.PI / 3)}
             />}
         </CharacterController>
+
+        <scenePortal.Out />
 
         {pathname == '/' && <>
             <Ped
