@@ -1,6 +1,7 @@
 
 import Link from "next/link";
 import DropDownPage from "./ui/DropDownPage";
+import RoomSpecificGame from "./RoomGame";
 
 export default function Home() {
   return (
@@ -35,6 +36,7 @@ export default function Home() {
           </div>
         </Link>
       </div>
+      <RoomSpecificGame />
     </DropDownPage>
   );
 }

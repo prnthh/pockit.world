@@ -3,7 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import dynamic from "next/dynamic";
 import tunnel from "tunnel-rat";
-import { ScenePortalWrapper } from "./ ScenePortalProvider";
+import { ScenePortalWrapper } from "./ScenePortalProvider";
+import { AudioProvider } from "./AudioProvider";
 const Game = dynamic(() => import("./Game"), { ssr: true });
 
 const geistSans = Geist({
@@ -47,10 +48,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ScenePortalWrapper>
-          {children}
-          <Game />
-        </ScenePortalWrapper>
+        <AudioProvider>
+          <ScenePortalWrapper>
+            {children}
+            <Game />
+          </ScenePortalWrapper>
+        </AudioProvider>
       </body>
     </html>
   );

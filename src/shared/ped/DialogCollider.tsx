@@ -36,8 +36,8 @@ export default function DialogCollider({
             onIntersectionEnter={handleIntersectionEnter}
             onIntersectionExit={() => { setDialogVisible(false); onExit?.() }}
         />
-        {dialogVisible && <Html position={[0, height * 1.1, 0]}>
-            <div className="-translate-x-[50%] min-w-[300px] text-3xl text-yellow-300 text-center p-2 rounded drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]">
+        {dialogVisible && <Html sprite transform position={[0, height * 1.1, 0]} scale={0.05}>
+            <div className="min-w-[250px] text-3xl text-yellow-300 text-center bg-red-800 rounded">
                 {children || "Default Dialog Text"}
             </div>
         </Html>}

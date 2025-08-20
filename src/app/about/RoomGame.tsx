@@ -10,18 +10,17 @@ const RoomSpecificGame = () => {
     return <>
         <scenePortal.In>
             <Ped
-                key={'np21'}
+                key={'npc1'}
                 basePath={"/models/human/onimilio/"}
                 modelUrl={"rigged.glb"}
-                position={[2.4, 0, 1]} height={1.5}
+                position={[-2, 0, 1]} height={1.5}
             >
                 <DialogCollider>
                     {(
                         <div className="rounded chatbox ">
                             <div className="bg-[#b9de77]">
-                                Whats good
+                                I can't wait till the office is ready!
                             </div>
-
                         </div>
                     )}
                 </DialogCollider>

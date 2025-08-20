@@ -1,3 +1,5 @@
+"use client";
+
 import React, { createContext, useContext, useRef, useState, useEffect, ReactNode } from "react";
 
 interface AudioProviderProps {

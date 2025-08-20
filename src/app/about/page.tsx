@@ -3,6 +3,7 @@ import Link from "next/link";
 import DropDownPage from "../ui/DropDownPage";
 
 import type { Metadata } from "next";
+import RoomSpecificGame from "./RoomGame";
 
 export const metadata: Metadata = {
     title: "About | Pockit Game Corp",
@@ -40,6 +41,8 @@ export default function Home() {
 
                 Follow us on <a href="https://x.com/pockitmilady" target="_blank">X</a> for updates and announcements. <br /><br />
             </div>
+
+            <RoomSpecificGame />
         </DropDownPage>
     );
 }

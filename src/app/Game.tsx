@@ -17,7 +17,6 @@ import { MPContext } from './MP'
 import tunnel from "tunnel-rat";
 import ModelAttachment from "@/shared/ModelAttachment";
 import * as THREE from "three";
-import NetworkThing from "./NetworkThing";
 import { AudioProvider, useAudio } from "./AudioProvider";
 import type { PeerState } from "./MP";
 import Ped from "@/shared/ped/ped";
@@ -25,8 +24,7 @@ import Ped from "@/shared/ped/ped";
 import drive from "./map";
 import drive2 from "./about/map";
 import drive3 from "./milady/map";
-import DialogCollider from "@/shared/ped/DialogCollider";
-import { ScenePortalContext } from "./ ScenePortalProvider";
+import { ScenePortalContext } from "./ScenePortalProvider";
 const MPProvider = dynamic(() => import('./MP'), { ssr: false })
 
 const ui = tunnel()
@@ -50,29 +48,26 @@ const GameWrappers = () => {
     }, [pathname]);
 
     return (
-        <AudioProvider>
-            <div className="items-center justify-items-center min-h-screen">
-                <div className="w-full" style={{ height: "100vh" }}>
-                    <Controls>
-                        <GameEngine mode={EditorModes.Play} sceneGraph={scene}>
-                            <GameCanvas>
-                                <Physics paused={false}>
-                                    <Game />
-                                </Physics>
-                            </GameCanvas>
-                        </GameEngine>
-                    </Controls>
-                </div>
-                <ui.Out />
+        <div className="items-center justify-items-center min-h-screen">
+            <div className="w-full" style={{ height: "100vh" }}>
+                <Controls>
+                    <GameEngine mode={EditorModes.Play} sceneGraph={scene}>
+                        <GameCanvas>
+                            <Physics paused={false}>
+                                <Game />
+                            </Physics>
+                        </GameCanvas>
+                    </GameEngine>
+                </Controls>
             </div>
-        </AudioProvider>
+            <ui.Out />
+        </div>
     );
 }
 
 const Game = () => {
     const rbref = useRef<RapierRigidBody | null>(null);
     const meshref = useRef<Group | null>(null);
-    const { playSound } = useAudio();
     const pathname = usePathname();
     const { scenePortal } = useContext(ScenePortalContext);
 
@@ -106,52 +101,6 @@ const Game = () => {
         </CharacterController>
 
         <scenePortal.Out />
-
-        {pathname == '/' && <>
-            <Ped
-                key={'np21'}
-                basePath={"/models/human/onimilio/"}
-                modelUrl={"rigged.glb"}
-                position={[2.4, 0, 1]} height={1.5}
-            >
-                <DialogCollider>
-                    {(
-                        <div className="min-w-[400px] text-3xl text-yellow-300 text-center p-2 rounded drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]">
-                            The office is under construction! <br />
-                            Please come back later.
-                        </div>
-                    )}
-                </DialogCollider>
-            </Ped>
-            <NetworkThing
-                scale={new THREE.Vector3(0.03, 0.03, 0.03)}
-                position={new THREE.Vector3(1.6, 0.64, 0.4)}
-                modelUrl="/models/environment/Bell.glb"
-                id="bell"
-                onActivate={() => {
-                    console.log('Bell activated');
-                    playSound("/sound/click.mp3"); // Play remotely if soundUrl provided
-
-                }}
-            />
-        </>}
-
-        {pathname == '/about' && <Ped
-            key={'npc1'}
-            basePath={"/models/human/onimilio/"}
-            modelUrl={"rigged.glb"}
-            position={[-2, 0, 1]} height={1.5}
-        >
-            <DialogCollider>
-                {(
-                    <div className="min-w-[300px] text-3xl text-yellow-300 text-center p-2 rounded drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]">
-                        I can't wait till the office is ready!
-                    </div>
-                )}
-            </DialogCollider>
-        </Ped>}
-
-
 
         <MPProvider roomId="my-room-id" ui={ui}>
             <MPStuff />
