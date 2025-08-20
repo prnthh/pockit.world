@@ -6,7 +6,7 @@ import { Html } from "@react-three/drei";
 export default function DialogCollider({
     children,
     height = 1.4,
-    radius = 1,
+    radius = 1.5,
     onEnter,
     onExit
 }: {
@@ -43,3 +43,51 @@ export default function DialogCollider({
         </Html>}
     </>
 }
+
+
+const RevealTextByWord = ({ text, speed = 100, playSound }: { text: string, speed?: number, playSound?: (url: string) => void }) => {
+    const words = text.split(" ");
+    const [wordCount, setWordCount] = useState(0);
+
+    useEffect(() => {
+        setWordCount(0);
+        if (!words.length) return;
+        let cancelled = false;
+        let i = 0;
+        function showNextWord() {
+            if (cancelled || i >= words.length) return;
+            setWordCount(i + 1);
+            playSound?.("/sound/click.mp3");
+
+            let delay = speed;
+            if (/[,.;:!?]$/.test(words[i])) delay = speed * 2;
+            i++;
+            if (i < words.length) {
+                setTimeout(showNextWord, delay);
+            }
+        }
+        showNextWord();
+        return () => { cancelled = true; };
+    }, [text, speed]);
+
+    return (
+        <div>
+            {words.map((word, i) => (
+                <span
+                    key={i}
+                    style={{
+                        display: "inline-block",
+                        transition: "transform 0.4s cubic-bezier(.5,1.5,.5,1)",
+                        transform: i < wordCount ? "translateY(0)" : "translateY(-1em)",
+                        opacity: i < wordCount ? 1 : 0,
+                        marginRight: "0.25em"
+                    }}
+                >
+                    {word}
+                </span>
+            ))}
+        </div>
+    );
+}
+
+export { RevealTextByWord };

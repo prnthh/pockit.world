@@ -1,8 +1,8 @@
 "use client";
 
-import DialogCollider from "@/shared/ped/DialogCollider";
+import DialogCollider, { RevealTextByWord } from "@/shared/ped/DialogCollider";
 import Ped from "@/shared/ped/ped";
-import { useContext } from "react";
+import { useContext, useEffect, useState } from "react";
 import { ScenePortalContext } from "./ScenePortalProvider";
 import NetworkThing from "./NetworkThing";
 import { useAudio } from "./AudioProvider";
@@ -22,8 +22,8 @@ const RoomSpecificGame = () => {
                 <DialogCollider>
                     {(
                         <div className="rounded chatbox ">
-                            <div className="bg-[#b9de77]">                            The office is under construction! <br />
-                                Please come back later.
+                            <div className="bg-[#b9de77]">
+                                <RevealTextByWord text="The office is under construction! Please come back later." speed={200} playSound={playSound} />
                             </div>
                         </div>
                     )}

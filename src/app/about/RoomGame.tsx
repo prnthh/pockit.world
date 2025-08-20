@@ -1,12 +1,15 @@
 "use client";
 
-import DialogCollider from "@/shared/ped/DialogCollider";
+import DialogCollider, { RevealTextByWord } from "@/shared/ped/DialogCollider";
 import Ped from "@/shared/ped/ped";
 import { ScenePortalContext } from "../ScenePortalProvider";
 import { useContext } from "react";
+import { useAudio } from "../AudioProvider";
 
 const RoomSpecificGame = () => {
     const { scenePortal } = useContext(ScenePortalContext);
+    const { playSound } = useAudio();
+
     return <>
         <scenePortal.In>
             <Ped
@@ -19,7 +22,7 @@ const RoomSpecificGame = () => {
                     {(
                         <div className="rounded chatbox ">
                             <div className="bg-[#b9de77]">
-                                I can't wait till the office is ready!
+                                <RevealTextByWord text="I can't wait till the office is ready!" speed={200} playSound={playSound} />
                             </div>
                         </div>
                     )}
