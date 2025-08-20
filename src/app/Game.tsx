@@ -2,7 +2,7 @@
 
 import { Physics, RapierRigidBody } from "@react-three/rapier";
 import { Environment, Html } from "@react-three/drei";
-import Controls from "@/shared/ControlsProvider";
+import Controls, { useControlScheme } from "@/shared/ControlsProvider";
 import { ShadowLight } from "@/shared/ShadowLight";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { GameCanvas } from "@/shared/GameCanvas";
@@ -70,6 +70,7 @@ const Game = () => {
     const meshref = useRef<Group | null>(null);
     const pathname = usePathname();
     const { scenePortal } = useContext(ScenePortalContext);
+    const { scheme } = useControlScheme();
 
     // Broadcast character position every second
     useEffect(() => {
@@ -85,7 +86,7 @@ const Game = () => {
     return <>
         <Viewer />
         <CharacterController
-            mode="side-scroll"
+            mode={scheme == "advanced" ? "third-person" : "side-scroll"}
             forwardRef={({ rbref: rb, meshref: mesh }) => {
                 rbref.current = rb.current;
                 meshref.current = mesh.current;

@@ -3,6 +3,7 @@ import Link from "next/link";
 import DropDownPage from "../ui/DropDownPage";
 
 import type { Metadata } from "next";
+import RoomSpecificGame from "./RoomGame";
 
 export const metadata: Metadata = {
     title: "Pockit Milady | 3D Interactive NFTs",
@@ -28,7 +29,7 @@ export default function Home() {
         <DropDownPage>
             <Link href="/" className="group">
                 <h1 className="text-2xl font-bold mt-6 mb-4">
-                    Pockit Game Corp
+                    Pockit Milady
                 </h1>
             </Link>
 
@@ -45,9 +46,14 @@ export default function Home() {
                 <div>
                     <iframe src="https://prnth.com/Pockit/web/5.html" className="w-full h-[300px] rounded-lg mb-4" title="Pockit Milady"></iframe>
                 </div>
-                The asset library is available <a target="_blank" href="https://github.com/prnthh/moviemaker/tree/main/generation">here</a> under Viral Public License.
+                The asset library is available <a target="_blank" href="https://github.com/prnthh/moviemaker/tree/main/generation">here</a> under Viral Public License. <br /><br />
 
+                <a href="https://exo.cam/" target="_blank">
+                    <img src="/ui/exocam-miladypockit.gif" alt="Pockit Milady" className="w-full rounded-lg mb-4" />
+                    Exo Cam lets you view Pockit Milady in AR and make animated sequences!
+                </a>
             </div>
+            <RoomSpecificGame />
         </DropDownPage>
     );
 }

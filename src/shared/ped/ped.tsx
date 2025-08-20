@@ -14,13 +14,14 @@ export type PedPropsType = {
     position: [number, number, number] | undefined,
     lookTarget?: React.RefObject<THREE.Object3D | null>,
     height?: number,
+    scale?: number,
     modelOffset?: [number, number, number],
     roundHeight?: number,
     unstable?: boolean,
     children?: React.ReactNode,
 };
 
-const Ped = memo(({ name = 'alice', debug, basePath, modelUrl, position, lookTarget, height = 0.95, modelOffset, roundHeight = 0.25, unstable, children }: PedPropsType) => {
+const Ped = memo(({ name = 'alice', debug, basePath, modelUrl, position, lookTarget, height = 0.95, scale, modelOffset, roundHeight = 0.25, unstable, children }: PedPropsType) => {
     const [initialPosition, setInitialPosition] = useState<[number, number, number] | undefined>(position);
 
     const rigidBodyRef = useRef<RapierRigidBody>(null);
@@ -59,6 +60,7 @@ const Ped = memo(({ name = 'alice', debug, basePath, modelUrl, position, lookTar
                 <AnimatedModel basePath={basePath} model={modelUrl} animation={animation}
                     name={name}
                     debug={debug}
+                    scale={scale}
                     height={height}
                     modelOffset={modelOffset}
                     lookTarget={lookTarget}

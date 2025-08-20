@@ -2,7 +2,7 @@ import { useGLTF, useAnimations, Box } from "@react-three/drei";
 import { useFrame, useLoader } from "@react-three/fiber";
 import { forwardRef, RefObject, useEffect, useRef, useState, useImperativeHandle } from "react";
 import * as THREE from "three";
-import { SkeletonUtils } from "three-stdlib";
+import { SimplifyModifier, SkeletonUtils } from "three-stdlib";
 import { GLTFLoader } from 'three/examples/jsm/Addons.js';
 import useAnimationState from "./useAnimationStateBasic";
 import useLookAtTarget from "./useLookAtTarget";
@@ -16,7 +16,7 @@ const AnimatedModel = forwardRef<THREE.Object3D, {
     height?: number,
     animationOverrides?: { [key: string]: string },
     position?: [number, number, number],
-    scale?: number,
+    scale?: number
     rotation?: [number, number, number],
     modelOffset?: [number, number, number],
     debug?: boolean, onClick?: (e?: any) => void,
@@ -39,11 +39,42 @@ const AnimatedModel = forwardRef<THREE.Object3D, {
         useEffect(() => {
             if (scene) {
                 const cloned = SkeletonUtils.clone(scene as unknown as THREE.Object3D);
+                const modifier = new SimplifyModifier();
                 cloned.traverse((child) => {
-                    if ('isMesh' in child) {
-                        child.castShadow = true;
-                        child.receiveShadow = true;
-                    }
+                    if (!('isMesh' in child && child.isMesh)) return;
+                    const mesh = child as THREE.Mesh;
+                    mesh.castShadow = mesh.receiveShadow = true;
+
+                    if (mesh.material) mesh.material = (mesh.material as any).clone();
+                    const mat = mesh.material as any;
+                    if (mat && 'flatShading' in mat) { mat.flatShading = true; mat.needsUpdate = true; }
+
+                    const geom = mesh.geometry as THREE.BufferGeometry | undefined;
+                    if (!geom || !geom.attributes || !geom.attributes.position) return;
+
+                    // Skip skinned/morph/indexed geometries and mark for debugging
+                    const hasSkin = !!(geom.attributes['skinIndex'] || geom.attributes['skinWeight']);
+                    const hasMorph = !!(geom.morphAttributes && Object.keys(geom.morphAttributes).length > 0);
+                    if (hasSkin || hasMorph) { mesh.userData = { ...(mesh as any).userData, simplifySkipped: true }; return; }
+                    if (geom.index) { mesh.userData = { ...(mesh as any).userData, simplifySkippedIndexed: true }; return; }
+
+                    const target = Math.max(4, Math.floor(geom.attributes.position.count * 0.875));
+                    const trySimplify = (g: THREE.BufferGeometry) => {
+                        try { return modifier.modify(g, target) as THREE.BufferGeometry; } catch { return null; }
+                    };
+
+                    let simplified = trySimplify(geom) ?? (() => {
+                        try {
+                            const nonIndexed = (geom as any).toNonIndexed ? (geom as any).toNonIndexed() as THREE.BufferGeometry : geom.clone() as THREE.BufferGeometry;
+                            const s = trySimplify(nonIndexed);
+                            try { nonIndexed.dispose(); } catch { }
+                            return s;
+                        } catch { return null; }
+                    })();
+
+                    if (!simplified) { mesh.userData = { ...(mesh as any).userData, simplifyError: true }; return; }
+                    try { geom.dispose(); } catch { }
+                    mesh.geometry = simplified;
                 });
                 setClonedScene(cloned);
             }
@@ -51,59 +82,7 @@ const AnimatedModel = forwardRef<THREE.Object3D, {
 
         useLookAtTarget(clonedScene, lookTarget, 'mixamorigNeck')
 
-        // Handle attachments using useEffect instead of hook calls in loops
-        useEffect(() => {
-            if (!attachments || !clonedScene) return;
 
-            const cleanupFunctions: (() => void)[] = [];
-
-            // Process attachments without using hooks in loops
-            Object.entries(attachments).forEach(([key, attachment]) => {
-                const bone = clonedScene.getObjectByName(attachment.attachpoint);
-                if (bone && attachment.model) {
-                    const loader = new GLTFLoader();
-
-                    loader.load(
-                        attachment.model,
-                        (gltf) => {
-                            // Remove any existing attachment with the same key
-                            const existingAttachment = bone.children.find(
-                                child => child.name === `attachment-${attachment.attachpoint}-${key}`
-                            );
-                            if (existingAttachment) {
-                                bone.remove(existingAttachment);
-                            }
-
-                            const attachedModel = SkeletonUtils.clone(gltf.scene);
-                            attachedModel.name = `attachment-${attachment.attachpoint}-${key}`;
-                            attachedModel.position.copy(attachment.offset);
-                            attachedModel.scale.copy(attachment.scale);
-                            attachedModel.rotation.set(attachment.rotation.x, attachment.rotation.y, attachment.rotation.z);
-                            bone.add(attachedModel);
-                        },
-                        undefined,
-                        (error) => {
-                            console.error('Error loading attachment model:', attachment.model, error);
-                        }
-                    );
-
-                    // Store cleanup function
-                    cleanupFunctions.push(() => {
-                        const attachmentToRemove = bone.children.find(
-                            child => child.name === `attachment-${attachment.attachpoint}-${key}`
-                        );
-                        if (attachmentToRemove) {
-                            bone.remove(attachmentToRemove);
-                        }
-                    });
-                }
-            });
-
-            // Cleanup function
-            return () => {
-                cleanupFunctions.forEach(cleanup => cleanup());
-            };
-        }, [attachments, clonedScene]);
         const { mixer, setThisAnimation, actions } = useAnimationState(clonedScene, basePath, animationOverrides, onActions);
 
         useEffect(() => {

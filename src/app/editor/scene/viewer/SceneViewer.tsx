@@ -177,9 +177,13 @@ export default function RecursiveNode({ node, onSelect, selectedNodeId, setScene
                 window.dispatchEvent(new CustomEvent('scene-pointer-event', { detail: { name: node.name } }));
             }
             console.log(`Pointer event on node: ${node.name}`);
+            e.stopPropagation();
         }
-        e.stopPropagation();
-        onSelect(node.id);
+
+        if (playMode === EditorModes.Edit && node.id) {
+            e.stopPropagation();
+            onSelect(node.id);
+        }
     };
 
     // Regular rendering

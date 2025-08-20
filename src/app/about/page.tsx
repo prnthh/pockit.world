@@ -1,9 +1,9 @@
 
-import Link from "next/link";
 import DropDownPage from "../ui/DropDownPage";
 
 import type { Metadata } from "next";
 import RoomSpecificGame from "./RoomGame";
+import PockitLogo from "../ui/PockitLogo";
 
 export const metadata: Metadata = {
     title: "About | Pockit Game Corp",
@@ -27,19 +27,22 @@ export const metadata: Metadata = {
 export default function Home() {
     return (
         <DropDownPage>
-            <Link href="/" className="group">
-                <h1 className="text-2xl font-bold mt-6 mb-4">
-                    Pockit Game Corp
-                </h1>
-            </Link>
+            <PockitLogo />
 
             <div className="text-left max-w-[320px] px-2 mb-6">
+                <div className="italic text-center w-full">
+                    eternal pursuit of digital <a href="https://goldenlight.mirror.xyz/c4YPJ6Y0KMvhKlJDNmhmjNeMa-9BZc8VwelJeS0_51s" target="_blank">moe</a>
+                </div>
+                <br />
 
-                Pockit Game Corp is an independent game studio. <br /><br />
+                Pockit Game Corp is an independent game studio building interactive experiences for the web. <br /><br />
 
-                Founded in 2023 by veterans from Zynga and Rockstar Games, our team builds innovative games using cutting-edge technology.  <br /><br />
 
-                Follow us on <a href="https://x.com/pockitmilady" target="_blank">X</a> for updates and announcements. <br /><br />
+
+                <a href="https://x.com/pockitmilady" target="_blank">
+                    Follow us on X for updates and announcements
+                </a>.
+                <br />
             </div>
 
             <RoomSpecificGame />

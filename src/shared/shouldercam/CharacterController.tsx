@@ -20,12 +20,13 @@ import { FollowCam } from "../FollowCam";
 export const CharacterController = ({ lookTarget, name = 'bob', mode = 'third-person', children, forwardRef }: {
     lookTarget?: RefObject<THREE.Object3D | null>
     name?: string,
-    mode?: "simple" | "side-scroll" | "third-person" | "first-person",
+    mode?: "simple" | "side-scroll" | "third-person",
     children?: React.ReactNode,
     forwardRef?: (refs: { rbref: MutableRefObject<RapierRigidBody | null>, meshref: MutableRefObject<Group | null> }) => void
 }) => {
     // --- Constants & refs ---
     const lastFacingRef = useRef<number>(0);
+    const savedFacingRef = useRef<number | null>(null);
     const WALK_SPEED = 2, RUN_SPEED = 4, JUMP_FORCE = 0.8;
     const height = 1.2, roundHeight = 0.25;
     const { rapier, world } = useRapier();
@@ -46,6 +47,27 @@ export const CharacterController = ({ lookTarget, name = 'bob', mode = 'third-pe
     const verticalRotation = mode !== "simple" ? pointerLockControls.verticalRotation : undefined;
     const shoulderCamMode = mode !== "simple" ? pointerLockControls.shoulderCamMode : undefined;
     const setShoulderCamMode = mode !== "simple" ? pointerLockControls.setShoulderCamMode : undefined;
+
+    // Initialize third-person rotation when switching modes
+    useEffect(() => {
+        if (mode !== "third-person" || !rotationTarget || !character.current || !container.current) return;
+        // Save current facing so we can restore it when returning to side-scroll
+        savedFacingRef.current = lastFacingRef.current;
+        const composed = container.current.rotation.y + character.current.rotation.y;
+        rotationTarget.current = composed;
+        container.current.rotation.y = composed;
+        character.current.rotation.y = 0;
+        lastFacingRef.current = 0;
+    }, [mode, rotationTarget]);
+
+    // Restore facing when switching back to side-scroll from third-person
+    useEffect(() => {
+        if (mode !== "side-scroll" || !character.current || !container.current) return;
+        const restored = savedFacingRef.current ?? lastFacingRef.current;
+        character.current.rotation.y = restored;
+        container.current.rotation.y = 0;
+        if (rotationTarget && rotationTarget.current !== undefined) rotationTarget.current = container.current.rotation.y;
+    }, [mode, rotationTarget]);
 
     // --- Forward refs ---
     useEffect(() => {
@@ -130,7 +152,7 @@ export const CharacterController = ({ lookTarget, name = 'bob', mode = 'third-pe
         } else if (jumping.current) {
             nextAnimation = "jump";
         } else if ((moveX || moveZ)) {
-            if (mode === "third-person" || mode === "first-person") {
+            if (mode === "third-person") {
                 if (moveX && !moveZ) {
                     nextAnimation = "walkLeft";
                     if (walkLeftActionRef.current) walkLeftActionRef.current.timeScale = moveX;
@@ -235,22 +257,18 @@ export const CharacterController = ({ lookTarget, name = 'bob', mode = 'third-pe
                         height={1 / height}
                         verticalRotation={verticalRotation}
                         cameraOffset={
-                            mode === "first-person"
-                                ? new Vector3(0, 0, 0)
-                                : mode === "side-scroll"
-                                    ? new Vector3(0, 0.5, 2) // Camera in front, lower
-                                    : (shoulderCamMode
-                                        ? new Vector3(-0.5, 0.8, -0.3)
-                                        : new Vector3(0, 0.2, -0.8))
+                            mode === "side-scroll"
+                                ? new Vector3(0, 0.5, 2) // Camera in front, lower
+                                : (shoulderCamMode
+                                    ? new Vector3(-0.5, 0.8, -0.3)
+                                    : new Vector3(0, 0.2, -0.8))
                         }
                         targetOffset={
-                            mode === "first-person"
-                                ? new Vector3(0, 0, 0)
-                                : mode === "side-scroll"
-                                    ? new Vector3(0, 0.5, 0) // Target at character center
-                                    : (shoulderCamMode
-                                        ? new Vector3(0, 0.5, 1.5)
-                                        : new Vector3(0, 0.5, 1.5))
+                            mode === "side-scroll"
+                                ? new Vector3(0, 0.5, 0) // Target at character center
+                                : (shoulderCamMode
+                                    ? new Vector3(0, 0.5, 1.5)
+                                    : new Vector3(0, 0.5, 1.5))
                         }
                     />
                     <group ref={character}>
