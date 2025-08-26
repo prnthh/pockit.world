@@ -8,6 +8,7 @@ import { EditorModes, SceneNode, Viewer } from "./viewer/SceneViewer";
 import presets from "./presets";
 import { GameEngine } from "./editor/EditorContext";
 import drive from "@/app/map";
+import { Perf } from 'r3f-perf';
 
 export default function EditorApp() {
     const [editorMode, setEditorMode] = useState<EditorModes>(EditorModes.Edit);
@@ -28,6 +29,8 @@ export default function EditorApp() {
 
                     <ambientLight intensity={0.5} />
                     <Environment preset="sunset" background={false} />
+
+                    <Perf position="bottom-right" />
                 </Physics>
             </GameCanvas>
         </GameEngine>

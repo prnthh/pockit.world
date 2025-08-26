@@ -21,9 +21,10 @@ import { AudioProvider, useAudio } from "./AudioProvider";
 import type { PeerState } from "./MP";
 import Ped from "@/shared/ped/ped";
 
-import drive from "./map";
-import drive2 from "./about/map";
-import drive3 from "./milady/map";
+import office from "./map";
+import officeOutdoors from "./about/map";
+import killbox from "./milady/map";
+import test from "./test/map";
 import { ScenePortalContext } from "./ScenePortalProvider";
 const MPProvider = dynamic(() => import('./MP'), { ssr: false })
 
@@ -31,19 +32,21 @@ const ui = tunnel()
 
 const GameWrappers = () => {
     const pathname = usePathname();
-    const [scene, setScene] = useState<SceneNode[]>(drive as unknown as SceneNode[]);
+    const [scene, setScene] = useState<SceneNode[]>(office as unknown as SceneNode[]);
 
 
     useEffect(() => {
         // Load the scene based on the pathname
         console.log('Loading scene for pathname:', pathname);
         if (pathname === '/about') {
-            setScene(drive2 as unknown as SceneNode[]);
+            setScene(officeOutdoors as unknown as SceneNode[]);
         } else if (pathname === '/milady') {
-            setScene(drive3 as unknown as SceneNode[]);
+            setScene(killbox as unknown as SceneNode[]);
+        } else if (pathname === '/test') {
+            setScene(test as unknown as SceneNode[]);
         } else {
             // Handle other paths or set a default scene
-            setScene(drive as unknown as SceneNode[]);
+            setScene(office as unknown as SceneNode[]);
         }
     }, [pathname]);
 
