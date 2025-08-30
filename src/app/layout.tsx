@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import dynamic from "next/dynamic";
@@ -37,6 +37,14 @@ export const metadata: Metadata = {
     images: ["https://pockit.world/ui/pockitlogo.png"],
   }
 };
+
+export const viewport: Viewport = {
+  width: "device-width",
+  viewportFit: "cover",
+  initialScale: 1.0,
+  maximumScale: 1.0,
+  userScalable: false,
+}
 
 export default function RootLayout({
   children,
