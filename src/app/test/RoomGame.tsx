@@ -5,6 +5,7 @@ import Ped from "@/shared/ped/ped";
 import { ScenePortalContext } from "../ScenePortalProvider";
 import { useContext, useEffect, useState } from "react";
 import { useAudio } from "@/app/editor/scene/viewer/AudioProvider";
+import CrawlerApp from "@/shared/ik/CrawlerPed";
 
 const RoomSpecificGame = () => {
     const { scenePortal } = useContext(ScenePortalContext);
@@ -16,7 +17,7 @@ const RoomSpecificGame = () => {
                 key={'np21'}
                 basePath={"/models/human/onimilio/"}
                 modelUrl={"rigged.glb"}
-                position={[2.4, 0, 1]} height={1.5}
+                position={[1, 0, -1]} height={1.5}
             >
                 <DialogCollider>
                     {(
@@ -30,6 +31,8 @@ const RoomSpecificGame = () => {
                     )}
                 </DialogCollider>
             </Ped>
+            <CrawlerApp spawn={[0, -1, -8]} />
+
         </scenePortal.In>
     </>;
 }

@@ -4,7 +4,7 @@ import usePhysicsWalk from "./usePhysicsWalk";
 import usePhysicsRecover from "./usePhysicsRecover";
 import * as THREE from "three"
 import { Html } from "@react-three/drei";
-import AnimatedModel from "../HumanoidModel";
+import AnimatedModel from "./HumanoidModel";
 
 export type PedPropsType = {
     name?: string,

@@ -1,6 +1,6 @@
 import { Canvas, extend } from "@react-three/fiber";
 import * as THREE from "three/webgpu";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 
 // generic version
 // extend(THREE as any)
@@ -13,8 +13,11 @@ extend({
 
 export default function GameCanvas({ children, ...props }: { children: React.ReactNode, props?: any }) {
     const [frameloop, setFrameloop] = useState<"never" | "always">("never");
+    const [loading, setLoading] = useState(true);
 
-    return (
+    return <>
+        {loading && <Loading />}
+
         <Canvas
             shadows={{ type: THREE.PCFSoftShadowMap }}
             frameloop={frameloop}
@@ -40,7 +43,26 @@ export default function GameCanvas({ children, ...props }: { children: React.Rea
                 far: 50
             }}
         >
-            {children}
+            <Suspense>
+                {children}
+                <DelayedLoadingScreen onLoad={() => setLoading(false)} />
+            </Suspense>
         </Canvas>
+    </>;
+}
+
+
+const Loading = () => {
+    return (
+        <div className="absolute flex items-center justify-center w-screen h-screen z-5 backdrop-blur-md text-white font-black">
+            Loading...
+        </div>
     );
 }
+
+const DelayedLoadingScreen = ({ onLoad }: { onLoad: () => void }) => {
+    setTimeout(() => {
+        onLoad();
+    }, 100);
+    return null;
+};

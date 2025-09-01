@@ -6,7 +6,7 @@ import { SimplifyModifier, SkeletonUtils } from "three-stdlib";
 import { GLTFLoader } from 'three/examples/jsm/Addons.js';
 import useAnimationState from "./useAnimationStateBasic";
 import useLookAtTarget from "./useLookAtTarget";
-import BoneCollider from "./BoneCollider";
+import BoneCollider from "../BoneCollider";
 
 const AnimatedModel = forwardRef<THREE.Object3D, {
     name?: string,
@@ -63,7 +63,7 @@ const AnimatedModel = forwardRef<THREE.Object3D, {
                         try { return modifier.modify(g, target) as THREE.BufferGeometry; } catch { return null; }
                     };
 
-                    let simplified = trySimplify(geom) ?? (() => {
+                    const simplified = trySimplify(geom) ?? (() => {
                         try {
                             const nonIndexed = (geom as any).toNonIndexed ? (geom as any).toNonIndexed() as THREE.BufferGeometry : geom.clone() as THREE.BufferGeometry;
                             const s = trySimplify(nonIndexed);

@@ -9,12 +9,12 @@ import { useFrame } from "@react-three/fiber";
 import { CapsuleCollider, RapierRigidBody, RigidBody, useRapier } from "@react-three/rapier";
 import { useEffect, useRef, useState, useMemo, useCallback, RefObject } from "react";
 import { MathUtils, Vector3, Group } from "three";
-import AnimatedModel from "@/shared/HumanoidModel";
 import * as THREE from "three";
 import { usePointerLockControls } from "./usePointerLockControls";
 import { FollowCam } from "@/shared/FollowCam";
 import TSLLine from "./TSLLine";
 import { useWeapon } from "./useWeapon";
+import AnimatedModel from "../ped/HumanoidModel";
 
 
 export const CharacterController = ({ lookTarget, name = 'bob', mode = 'third-person', children, forwardRef }: {

@@ -2,8 +2,8 @@
 
 import { Physics, RapierRigidBody } from "@react-three/rapier";
 import { Environment, Html } from "@react-three/drei";
-import Controls, { useControlScheme } from "@/shared/ControlsProvider";
-import { ShadowLight } from "@/shared/ShadowLight";
+import Controls, { useControlScheme } from "@/shared/controls/ControlsProvider";
+import { ShadowLight } from "@/shared/lighting/ShadowLight";
 import { Suspense, useEffect, useRef, useState } from "react";
 import GameCanvas from "@/shared/GameCanvas";
 import { EditorModes, SceneNode, Viewer } from "@/app/editor/scene/viewer/SceneViewer";
@@ -15,7 +15,7 @@ import { useContext } from 'react'
 import { usePathname } from 'next/navigation';
 import { MPContext } from './MP'
 import tunnel from "tunnel-rat";
-import ModelAttachment from "@/shared/ModelAttachment";
+import ModelAttachment from "@/shared/ped/ModelAttachment";
 import * as THREE from "three";
 import type { PeerState } from "./MP";
 import Ped from "@/shared/ped/ped";
@@ -105,16 +105,16 @@ const Game = () => {
 
         <scenePortal.Out />
 
-        {/* <MPProvider roomId="my-room-id" ui={ui}>
+        <MPProvider roomId="my-room-id" ui={ui}>
             <MPStuff />
-        </MPProvider> */}
+        </MPProvider>
 
         <ambientLight intensity={1.4} />
         <ShadowLight />
 
-        {/* <SceneEventHandler /> */}
+        <SceneEventHandler />
         <color attach="background" args={["#000000"]} />
-        {/* <Environment files="/textures/skybox3.jpg" background={false} /> */}
+        <Environment preset="park" background={false} />
     </>
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { Physics } from "@react-three/rapier";
-import Controls from "@/shared/ControlsProvider";
+import Controls from "@/shared/controls/ControlsProvider";
 import { CharacterController } from "./CharacterController";
 import { useRef, useState, useEffect } from "react";
 import { Object3D, Vector3 } from "three";
