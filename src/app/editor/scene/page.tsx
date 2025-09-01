@@ -1,14 +1,12 @@
 "use client";
 
 import { Physics } from "@react-three/rapier";
-import { GameCanvas } from "@/shared/GameCanvas";
 import React, { useState, } from "react";
 import { Environment } from "@react-three/drei";
 import { EditorModes, SceneNode, Viewer } from "./viewer/SceneViewer";
 import presets from "./presets";
 import { GameEngine } from "./editor/EditorContext";
-import drive from "@/app/map";
-import { Perf } from 'r3f-perf';
+import GameCanvas from "@/shared/GameCanvas";
 
 export default function EditorApp() {
     const [editorMode, setEditorMode] = useState<EditorModes>(EditorModes.Edit);
@@ -19,7 +17,7 @@ export default function EditorApp() {
             </button>
         </div>
 
-        <GameEngine mode={editorMode} sceneGraph={drive as unknown as SceneNode[]}>
+        <GameEngine mode={editorMode} sceneGraph={presets.drive as any[]}>
             <GameCanvas>
                 <Physics paused={editorMode !== EditorModes.Play}>
                     {editorMode === EditorModes.Play ? <>
@@ -29,8 +27,6 @@ export default function EditorApp() {
 
                     <ambientLight intensity={0.5} />
                     <Environment preset="sunset" background={false} />
-
-                    <Perf position="bottom-right" />
                 </Physics>
             </GameCanvas>
         </GameEngine>

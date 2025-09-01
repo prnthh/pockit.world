@@ -5,8 +5,8 @@ import Ped from "@/shared/ped/ped";
 import { useContext, useEffect, useState } from "react";
 import { ScenePortalContext } from "./ScenePortalProvider";
 import NetworkThing from "./NetworkThing";
-import { useAudio } from "./AudioProvider";
 import * as THREE from "three";
+import { useAudio } from "@/app/editor/scene/viewer/AudioProvider";
 
 const RoomSpecificGame = () => {
     const { scenePortal } = useContext(ScenePortalContext);

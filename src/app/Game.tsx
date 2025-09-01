@@ -5,9 +5,9 @@ import { Environment, Html } from "@react-three/drei";
 import Controls, { useControlScheme } from "@/shared/ControlsProvider";
 import { ShadowLight } from "@/shared/ShadowLight";
 import { Suspense, useEffect, useRef, useState } from "react";
-import { GameCanvas } from "@/shared/GameCanvas";
-import { EditorModes, SceneNode, Viewer } from "./editor/scene/viewer/SceneViewer";
-import { GameEngine } from "./editor/scene/editor/EditorContext";
+import GameCanvas from "@/shared/GameCanvas";
+import { EditorModes, SceneNode, Viewer } from "@/app/editor/scene/viewer/SceneViewer";
+import { GameEngine } from "@/app/editor/scene/editor/EditorContext";
 import { CharacterController } from "@/shared/shouldercam/CharacterController";
 import dynamic from 'next/dynamic'
 import { Group, Mesh } from "three";
@@ -17,7 +17,6 @@ import { MPContext } from './MP'
 import tunnel from "tunnel-rat";
 import ModelAttachment from "@/shared/ModelAttachment";
 import * as THREE from "three";
-import { AudioProvider, useAudio } from "./AudioProvider";
 import type { PeerState } from "./MP";
 import Ped from "@/shared/ped/ped";
 
@@ -106,16 +105,16 @@ const Game = () => {
 
         <scenePortal.Out />
 
-        <MPProvider roomId="my-room-id" ui={ui}>
+        {/* <MPProvider roomId="my-room-id" ui={ui}>
             <MPStuff />
-        </MPProvider>
+        </MPProvider> */}
 
         <ambientLight intensity={1.4} />
         <ShadowLight />
 
-        <SceneEventHandler />
+        {/* <SceneEventHandler /> */}
         <color attach="background" args={["#000000"]} />
-        <Environment files="/textures/skybox3.jpg" background={false} />
+        {/* <Environment files="/textures/skybox3.jpg" background={false} /> */}
     </>
 }
 

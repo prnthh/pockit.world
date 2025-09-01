@@ -4,7 +4,7 @@ import DialogCollider, { RevealTextByWord } from "@/shared/ped/DialogCollider";
 import Ped from "@/shared/ped/ped";
 import { ScenePortalContext } from "../ScenePortalProvider";
 import { useContext } from "react";
-import { useAudio } from "../AudioProvider";
+import { useAudio } from "@/app/editor/scene/viewer/AudioProvider";
 
 const RoomSpecificGame = () => {
     const { scenePortal } = useContext(ScenePortalContext);

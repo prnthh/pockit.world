@@ -4,7 +4,7 @@ import "./globals.css";
 import dynamic from "next/dynamic";
 import tunnel from "tunnel-rat";
 import { ScenePortalWrapper } from "./ScenePortalProvider";
-import { AudioProvider } from "./AudioProvider";
+import { AudioProvider } from "@/app/editor/scene/viewer/AudioProvider";
 const Game = dynamic(() => import("./Game"), { ssr: true });
 
 const geistSans = Geist({
