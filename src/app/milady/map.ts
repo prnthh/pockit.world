@@ -4,13 +4,13 @@ const drive = [
     "name": "Root",
     "children": [
       {
-        "id": "vzew3aral",
-        "name": "pockitworld3.glb",
+        "id": "646yux2ip",
+        "name": "pockitgallery.glb",
         "children": [],
         "components": [
           {
             "type": "model",
-            "filename": "pockitworld3.glb"
+            "filename": "pockitgallery.glb"
           },
           {
             "type": "physics",
@@ -23,7 +23,7 @@ const drive = [
           "position": [
             0,
             0,
-            -0.1
+            0
           ],
           "rotation": [
             0,
