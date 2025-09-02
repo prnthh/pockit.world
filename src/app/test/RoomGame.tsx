@@ -6,6 +6,7 @@ import { ScenePortalContext } from "../ScenePortalProvider";
 import { useContext, useEffect, useState } from "react";
 import { useAudio } from "@/app/editor/scene/viewer/AudioProvider";
 import CrawlerApp from "@/shared/ik/CrawlerPed";
+import { ShinyFloor } from "@/shared/shaders/ShinyFloor";
 
 const RoomSpecificGame = () => {
     const { scenePortal } = useContext(ScenePortalContext);
@@ -31,6 +32,8 @@ const RoomSpecificGame = () => {
                     )}
                 </DialogCollider>
             </Ped>
+
+            <ShinyFloor />
             <CrawlerApp spawn={[0, -1, -8]} />
 
         </scenePortal.In>

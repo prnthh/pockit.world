@@ -56,7 +56,7 @@ const GameWrappers = () => {
                     <GameEngine mode={EditorModes.Play} sceneGraph={scene}>
                         <GameCanvas>
                             <Physics paused={false}>
-                                <Game />
+                                <Game key={pathname} />
                             </Physics>
                         </GameCanvas>
                     </GameEngine>
@@ -109,12 +109,11 @@ const Game = () => {
             <MPStuff />
         </MPProvider>
 
-        <ambientLight intensity={1.4} />
-        <ShadowLight />
+        <ambientLight intensity={0.5} />
+        <ShadowLight intensity={3} />
 
         <SceneEventHandler />
         <color attach="background" args={["#000000"]} />
-        <Environment preset="park" background={false} />
     </>
 }
 

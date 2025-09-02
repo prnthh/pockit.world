@@ -291,7 +291,7 @@ export const CharacterController = ({ lookTarget, name = 'bob', mode = 'third-pe
                         }
                     />
                     <group ref={character}>
-                        {shoulderCamMode && <TSLLine container={character} />}
+                        {/* {shoulderCamMode && <TSLLine container={character} />} */}
                         <AnimatedModel
                             name={name}
                             basePath={"/models/human/onimilio/"}
