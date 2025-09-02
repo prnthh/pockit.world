@@ -27,7 +27,7 @@ export const CharacterController = ({ lookTarget, name = 'bob', mode = 'third-pe
     // --- Constants & refs ---
     const lastFacingRef = useRef<number>(0);
     const savedFacingRef = useRef<number | null>(null);
-    const WALK_SPEED = 1.1, RUN_SPEED = 3, JUMP_FORCE = 1;
+    const WALK_SPEED = 1.2, RUN_SPEED = 3, JUMP_FORCE = 1;
     const height = 1.2, roundHeight = 0.25;
     const { rapier, world } = useRapier();
     const rb = useRef<RapierRigidBody | null>(null);
@@ -277,14 +277,14 @@ export const CharacterController = ({ lookTarget, name = 'bob', mode = 'third-pe
                         verticalRotation={verticalRotation}
                         cameraOffset={
                             mode === "side-scroll"
-                                ? new Vector3(0, 0.5, 2) // Camera in front, lower
+                                ? new Vector3(0, 1, 2) // Camera in front, lower
                                 : (shoulderCamMode
                                     ? new Vector3(-0.5, 0.5, -0.5)
                                     : new Vector3(0, 0.5, -1.5))
                         }
                         targetOffset={
                             mode === "side-scroll"
-                                ? new Vector3(0, 0.5, 0) // Target at character center
+                                ? new Vector3(0, 1, 0) // Target at character center
                                 : (shoulderCamMode
                                     ? new Vector3(0, 0.5, 1.5)
                                     : new Vector3(0, 0.5, 1.5))
