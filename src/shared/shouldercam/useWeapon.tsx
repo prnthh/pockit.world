@@ -76,7 +76,10 @@ export function useWeapon() {
                     const rigidBody = hit.collider.parent();
                     if (rigidBody && typeof rigidBody.applyImpulseAtPoint === "function") {
                         addSensorBullet({ position: hitPoint });
-                        rigidBody.applyImpulseAtPoint(impulse, hitPoint, true);
+                        setTimeout(() => {
+                            // tiny delay so bullet has time to register hit
+                            rigidBody.applyImpulseAtPoint(impulse, hitPoint, true);
+                        }, 1);
                     }
                 }
             }
