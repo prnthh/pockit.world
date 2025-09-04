@@ -88,7 +88,7 @@ const RoomSpecificGame = () => {
     </>;
 }
 
-const ImageRow = ({
+export const ImageRow = ({
     urls = ["https://i2.seadn.io/ethereum/0x3c9eab7168443e4c962a2bcfa983501b8894547e/8f9a9905cec209ca302d5741737f32/858f9a9905cec209ca302d5741737f32.gif"],
     position = [0, 0, 0],
     rotation = [0, 0, 0],

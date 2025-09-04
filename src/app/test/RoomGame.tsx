@@ -25,9 +25,7 @@ const RoomSpecificGame = () => {
                         <div className="rounded chatbox ">
                             <div className="bg-[#b9de77]">
                                 Whats good
-                                <RevealTextByWord text="The office is under construction! Please come back later." speed={200} playSound={playSound} />
                             </div>
-
                         </div>
                     )}
                 </DialogCollider>

@@ -56,6 +56,7 @@ const GameWrappers = () => {
                     <GameEngine mode={EditorModes.Play} sceneGraph={scene}>
                         <GameCanvas>
                             <Physics paused={false}>
+                                {/* remove the pathname key to persist the world between pages */}
                                 <Game key={pathname} />
                             </Physics>
                         </GameCanvas>
