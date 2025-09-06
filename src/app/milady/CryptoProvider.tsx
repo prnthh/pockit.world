@@ -104,7 +104,7 @@ export const CryptoUser = () => {
     return <>
         {loading && <div className="text-center text-black absolute top-4 left-4 z-[20]">Loading wallet info...</div>}
         <scenePortal.In>
-            {!walletAddress && <>
+            {<>
                 <PortalDoor position={[-1.2, 1.95, -8.6]} rotation={[0, 0, 0]}>
                     Connect your wallet to view your Gallery
                 </PortalDoor>
@@ -180,8 +180,8 @@ const PortalDoor = ({ position, rotation, children, onConfirm }:
 
 const pmPositions: { pos: [number, number, number], rot?: [number, number, number] }[] = [
     { pos: [0, 1.95, -8.3], rot: [0, 0, 0] },
-    { pos: [2, 1.95, -8.3], rot: [0, 0, 0] },
-    { pos: [-2, 1.95, -8.3], rot: [0, 0, 0] },
     { pos: [-1.8, 0, -1], rot: [0, Math.PI / 2, 0] },
-    { pos: [1.8, 0, -1], rot: [0, -Math.PI / 2, 0] }
+    { pos: [1.8, 0, -1], rot: [0, -Math.PI / 2, 0] },
+    { pos: [-1.8, 0, 0.5], rot: [0, Math.PI / 2, 0] },
+    { pos: [1.8, 0, 0.5], rot: [0, -Math.PI / 2, 0] },
 ]

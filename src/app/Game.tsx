@@ -95,13 +95,13 @@ const Game = () => {
                 meshref.current = mesh.current;
             }}
         >
-            {<ModelAttachment
+            {/* {<ModelAttachment
                 model="/models/environment/Katana.glb"
                 attachpoint="mixamorigRightHand"
                 offset={new THREE.Vector3(2, 7, 8)}
                 scale={new THREE.Vector3(100, 100, 100)}
                 rotation={new THREE.Vector3(-Math.PI / 6, Math.PI / 3, -Math.PI / 3)}
-            />}
+            />} */}
         </CharacterController>
 
         <scenePortal.Out />
