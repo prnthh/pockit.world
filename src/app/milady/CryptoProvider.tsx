@@ -5,14 +5,11 @@ import { Suspense, useContext, useEffect, useRef, useState } from 'react';
 import { http, createPublicClient, formatEther } from 'viem'
 import { mainnet } from 'viem/chains'
 import { ScenePortalContext } from '../ScenePortalProvider';
-import { BreakableFrame, ImageRow } from './RoomGame';
-import SimpleModel from '@/shared/SimpleModel';
+import { BreakableFrame } from './RoomGame';
 import VRMModel from '@/shared/VRMModel';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Html } from '@react-three/drei';
-import DialogCollider from '@/shared/ped/DialogCollider';
-import { RapierRigidBody, RigidBody } from '@react-three/rapier';
-import { Quaternion } from 'three';
+import PortalDoor from '@/shared/physics/Door';
+import HTMLView from '@/shared/shaders/HTMLView';
 
 export const publicClient = createPublicClient({
     chain: mainnet,
@@ -104,18 +101,24 @@ export const CryptoUser = () => {
     return <>
         {loading && <div className="text-center text-black absolute top-4 left-4 z-[20]">Loading wallet info...</div>}
         <scenePortal.In>
+
+            <HTMLView />
             {<>
                 <PortalDoor position={[-1.2, 1.95, -8.6]} rotation={[0, 0, 0]}>
                     Connect your wallet to view your Gallery
                 </PortalDoor>
                 <PortalDoor position={[1.2, 1.95, -8.6]} rotation={[0, 0, 0]}
+                    label='Random Gallery'
                     onConfirm={() => {
                         const params = new URLSearchParams(Array.from(searchParams.entries()));
                         params.set('wallet', "0x6d04a14800b98ed83065cbbd9a55adc1c8f67d38");
                         router.push(`${window.location.pathname}?${params.toString()}`);
                     }}
                 >
-                    View a random gallery
+                    <div className='mt-[200px] text-[72px] text-black'>
+                        View a random gallery
+
+                    </div>
                 </PortalDoor>
             </>}
             {walletHoldings?.collections?.[collectionAddresses["pockitmilady"]] && (() => {
@@ -148,38 +151,9 @@ export const CryptoUser = () => {
     </>;
 }
 
-const PortalDoor = ({ position, rotation, children, onConfirm }:
-    {
-        position: [number, number, number],
-        rotation: [number, number, number],
-        children: React.ReactNode,
-        onConfirm?: () => void
-    }) => {
-    const doorRef = useRef<RapierRigidBody | null>(null);
-    return (
-        <group position={position} rotation={rotation}>
-            <DialogCollider radius={0.7} onEnter={() => {
-                doorRef.current?.setRotation(new Quaternion(0, -Math.PI / 2, 0, 1), true);
-                onConfirm?.();
-            }}
-                onExit={() => {
-                    doorRef.current?.setRotation(new Quaternion(0, 0, 0, 1), true);
-                }}
-            >
-                {children}
-            </DialogCollider>
-            <RigidBody ref={doorRef} type='fixed' position={[-0.4, 0.7, 0]}>
-                <mesh position={[0.4, 0, 0]}>
-                    <boxGeometry args={[0.8, 1.4, 0.1]} />
-                    <meshStandardMaterial color="orange" />
-                </mesh>
-            </RigidBody>
-        </group>
-    );
-};
 
 const pmPositions: { pos: [number, number, number], rot?: [number, number, number] }[] = [
-    { pos: [0, 1.95, -8.3], rot: [0, 0, 0] },
+    { pos: [0, 1.95, -8.2], rot: [0, 0, 0] },
     { pos: [-1.8, 0, -1], rot: [0, Math.PI / 2, 0] },
     { pos: [1.8, 0, -1], rot: [0, -Math.PI / 2, 0] },
     { pos: [-1.8, 0, 0.5], rot: [0, Math.PI / 2, 0] },

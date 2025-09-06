@@ -30,8 +30,6 @@ const RoomSpecificGame = () => {
                     )}
                 </DialogCollider>
             </Ped>
-
-            <ShinyFloor />
             <CrawlerApp spawn={[0, -1, -8]} />
 
         </scenePortal.In>
