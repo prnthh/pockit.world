@@ -114,6 +114,8 @@ const Game = () => {
         <ShadowLight intensity={3} />
 
         <SceneEventHandler />
+        <Environment preset="sunset" background={false} />
+
         <color attach="background" args={["#000000"]} />
     </>
 }

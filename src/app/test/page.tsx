@@ -2,9 +2,6 @@
 import Link from "next/link";
 import DropDownPage from "../ui/DropDownPage";
 import RoomSpecificGame from "./RoomGame";
-import dynamic from "next/dynamic";
-
-const DynamicCryptoUser = dynamic(() => import("./CryptoProvider").then((mod) => mod.CryptoUser));
 
 export default function Home() {
     return (
@@ -19,9 +16,6 @@ export default function Home() {
                 This is a test page.
             </div>
             <RoomSpecificGame />
-
-            {/* this internally fetches crypto data and uses it to populate the scene  */}
-            <DynamicCryptoUser walletAddress="0x88289ac519eFb1cba5F522970E63264a969BeD06" />
         </DropDownPage>
     );
 }

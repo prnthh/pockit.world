@@ -9,8 +9,6 @@ import { ShinyFloor } from "@/shared/shaders/ShinyFloor";
 import { RigidBody } from "@react-three/rapier";
 import HitBox from "@/shared/physics/HitBox";
 import ImageFrame from "@/shared/shaders/ImageFrame";
-import { Helper } from "@react-three/drei";
-import { SpotLightHelper } from "three";
 import Balloon from "@/shared/physics/Balloon";
 
 const RoomSpecificGame = () => {
@@ -25,7 +23,7 @@ const RoomSpecificGame = () => {
                 modelUrl={"rigged.glb"}
                 position={[1, 0, -1]} height={1.5}
             >
-                <DialogCollider>
+                {/* <DialogCollider>
                     {(
                         <div className="rounded chatbox ">
                             <div className="bg-[#b9de77]">
@@ -35,7 +33,7 @@ const RoomSpecificGame = () => {
 
                         </div>
                     )}
-                </DialogCollider>
+                </DialogCollider> */}
             </Ped>
             <RigidBody position={[0, 0, 0]}>
                 <ShinyFloor />
@@ -50,7 +48,7 @@ const RoomSpecificGame = () => {
                     <meshStandardMaterial emissive={"white"} emissiveIntensity={10} />
                 </mesh>
             </Balloon>
-
+            {/* 
             <ImageRow
                 key='left'
                 urls={[
@@ -83,7 +81,7 @@ const RoomSpecificGame = () => {
                     "https://i2.seadn.io/ethereum/0x3c9eab7168443e4c962a2bcfa983501b8894547e/78acd8f584956c1a9f92a22c438d26/0278acd8f584956c1a9f92a22c438d26.gif?w=350",
                 ]}
                 position={[-2.4, 3, -8.5]} rotation={[0, 0, 0]}
-            />
+            /> */}
         </scenePortal.In >
     </>;
 }
@@ -108,7 +106,7 @@ export const ImageRow = ({
     );
 };
 
-const BreakableFrame = ({ url, position }: { url: string, position?: [number, number, number] }) => {
+export const BreakableFrame = ({ url, position }: { url: string, position?: [number, number, number] }) => {
     const [broken, setBroken] = useState(false);
     return (
         <Suspense>

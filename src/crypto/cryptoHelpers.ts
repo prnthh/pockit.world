@@ -1,4 +1,4 @@
-import { publicClient } from "@/app/test/CryptoProvider";
+import { publicClient } from "@/app/milady/CryptoProvider";
 
 const getMetadataURIForNFTCollection = async (collectionAddress: `0x${string}`): Promise<string | null> => {
     // Try to read the collection base URI from multiple possible contract sources:
