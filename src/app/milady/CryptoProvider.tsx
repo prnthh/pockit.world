@@ -102,7 +102,7 @@ export const CryptoUser = () => {
         {loading && <div className="text-center text-black absolute top-4 left-4 z-[20]">Loading wallet info...</div>}
         <scenePortal.In>
 
-            <HTMLView />
+            {/* <HTMLView /> */}
             {<>
                 <PortalDoor position={[-1.2, 1.95, -8.6]} rotation={[0, 0, 0]}>
                     Connect your wallet to view your Gallery
