@@ -30,7 +30,7 @@ export default function DialogCollider({
 
     return <>
         <CylinderCollider
-            args={[height / 2, radius]}
+            args={[height / 2, dialogVisible ? radius * 1.2 : radius]}
             position={[0, (height / 2), 0]}
             sensor
             onIntersectionEnter={handleIntersectionEnter}

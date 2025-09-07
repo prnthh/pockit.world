@@ -104,7 +104,9 @@ export const CryptoUser = () => {
 
             {/* <HTMLView /> */}
             {<>
-                <PortalDoor position={[-1.2, 1.95, -8.6]} rotation={[0, 0, 0]}>
+                <PortalDoor
+                    label='My Gallery'
+                    position={[-1.2, 1.95, -8.6]} rotation={[0, 0, 0]}>
                     Connect your wallet to view your Gallery
                 </PortalDoor>
                 <PortalDoor position={[1.2, 1.95, -8.6]} rotation={[0, 0, 0]}
