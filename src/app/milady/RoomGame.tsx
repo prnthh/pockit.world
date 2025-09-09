@@ -23,7 +23,7 @@ const RoomSpecificGame = () => {
                 modelUrl={"rigged.glb"}
                 position={[1, 0, -1]} height={1.5}
             >
-                {/* <DialogCollider>
+                <DialogCollider>
                     {(
                         <div className="rounded chatbox ">
                             <div className="bg-[#b9de77]">
@@ -33,7 +33,7 @@ const RoomSpecificGame = () => {
 
                         </div>
                     )}
-                </DialogCollider> */}
+                </DialogCollider>
             </Ped>
             <RigidBody position={[0, 0, 0]}>
                 <ShinyFloor />

@@ -25,6 +25,8 @@ import officeOutdoors from "./about/map";
 import killbox from "./milady/map";
 import test from "./test/map";
 import { ScenePortalContext } from "./ScenePortalProvider";
+import PostProcessingEffects from "@/shared/shaders/PostProcessingEffects";
+
 const MPProvider = dynamic(() => import('./MP'), { ssr: false })
 
 const ui = tunnel()
@@ -117,6 +119,7 @@ const Game = () => {
         <Environment preset="sunset" background={false} />
 
         <color attach="background" args={["#000000"]} />
+        {/* <PostProcessingEffects /> */}
     </>
 }
 
