@@ -4,7 +4,7 @@ import DialogCollider, { RevealTextByWord } from "@/shared/ped/DialogCollider";
 import Ped from "@/shared/ped/ped";
 import { ScenePortalContext } from "../ScenePortalProvider";
 import { Suspense, useContext, useState } from "react";
-import { useAudio } from "@/app/editor/scene/viewer/AudioProvider";
+import { useAudio } from "@/shared/AudioProvider";
 import { ShinyFloor } from "@/shared/shaders/ShinyFloor";
 import { RigidBody } from "@react-three/rapier";
 import HitBox from "@/shared/physics/HitBox";

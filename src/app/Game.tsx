@@ -13,11 +13,11 @@ import dynamic from 'next/dynamic'
 import { Group, Mesh } from "three";
 import { useContext } from 'react'
 import { usePathname } from 'next/navigation';
-import { MPContext } from './MP'
+import { MPContext } from './PockitConsole/MP'
 import tunnel from "tunnel-rat";
 import ModelAttachment from "@/shared/ped/ModelAttachment";
 import * as THREE from "three";
-import type { PeerState } from "./MP";
+import type { PeerState } from "./PockitConsole/MP";
 import Ped from "@/shared/ped/ped";
 
 import office from "./map";
@@ -27,7 +27,7 @@ import test from "./test/map";
 import { ScenePortalContext } from "./ScenePortalProvider";
 import PostProcessingEffects from "@/shared/shaders/PostProcessingEffects";
 
-const MPProvider = dynamic(() => import('./MP'), { ssr: false })
+const MPProvider = dynamic(() => import('./PockitConsole/MP'), { ssr: false })
 
 const ui = tunnel()
 

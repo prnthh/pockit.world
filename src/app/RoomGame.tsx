@@ -6,7 +6,7 @@ import { useContext, useEffect, useState } from "react";
 import { ScenePortalContext } from "./ScenePortalProvider";
 import NetworkThing from "./NetworkThing";
 import * as THREE from "three";
-import { useAudio } from "@/app/editor/scene/viewer/AudioProvider";
+import { useAudio } from "@/shared/AudioProvider";
 
 const RoomSpecificGame = () => {
     const { scenePortal } = useContext(ScenePortalContext);

@@ -9,7 +9,7 @@ import { RefObject } from "react";
 import { Vector3 } from "three";
 import { useRapier } from "@react-three/rapier";
 import * as THREE from "three";
-import { useAudio } from "@/app/editor/scene/viewer/AudioProvider";
+import { useAudio } from "@/shared/AudioProvider";
 
 export function useWeapon() {
     const { camera, scene } = useThree();

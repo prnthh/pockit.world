@@ -5,7 +5,7 @@ import SceneEditor from "../editor/SceneEditor";
 import { Object3D, Object3DEventMap } from "three";
 import { EditorModes, SceneNode, Viewer } from "../viewer/SceneViewer";
 import { GLTFLoader, FBXLoader } from "three/examples/jsm/Addons.js";
-import { AudioProvider } from "../viewer/AudioProvider";
+import { AudioProvider } from "@/shared/AudioProvider";
 
 interface EditorContextType {
     sceneGraph: SceneNode[];

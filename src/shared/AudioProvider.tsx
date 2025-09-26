@@ -8,7 +8,7 @@ interface AudioProviderProps {
 
 interface AudioContextType {
     unlockAudio: () => Promise<void>;
-    playSound: (url: string) => Promise<void>;
+    playSound: (url?: string) => Promise<void>;
     isUnlocked: boolean;
 }
 
@@ -55,7 +55,10 @@ export const AudioProvider = ({ children }: AudioProviderProps) => {
         return buffer;
     };
 
-    const playSound = async (url: string) => {
+    const playSound = async (url?: string) => {
+        if (!url) {
+            url = "/sound/ding.mp3"; // default sound
+        }
         const ctx = audioCtxRef.current;
         if (!ctx) {
             console.warn("AudioContext not initialized");

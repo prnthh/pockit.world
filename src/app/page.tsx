@@ -1,8 +1,10 @@
+"use client";
 
 import Link from "next/link";
 import DropDownPage from "./ui/DropDownPage";
 import RoomSpecificGame from "./RoomGame";
 import PockitLogo from "./ui/PockitLogo";
+import { useAudio } from "@/shared/AudioProvider";
 
 export default function Home() {
   return (
@@ -34,12 +36,14 @@ export default function Home() {
 }
 
 const NavButton = ({ children, color = "from-blue-300/50 via-blue-400/50 to-blue-500/50 group-hover:shadow-blue-900/50 border-blue-600" }: { children: React.ReactNode; color?: string }) => {
+  const { playSound } = useAudio();
 
 
   return (
     <div
       className={`retro-btn bg-gradient-to-br ${color} text-black font-semibold rounded-2xl shadow-lg px-6 py-4 transition-all duration-300 transform group-hover:scale-105 group-hover:rotate-1 relative overflow-hidden backdrop-blur-md border-2`}
       style={{ width: "300px" }}
+      onPointerEnter={() => playSound()}
     >
       <div className="absolute inset-0 bg-white opacity-20 rounded-2xl pointer-events-none group-hover:animate-pulse" />
       <div className="absolute top-0 left-0 w-full h-1 bg-white/60 rounded-t-2xl blur-sm" />
