@@ -21,20 +21,40 @@ export default function ChatBox({ chatMessages, chatInput, setChatInput, sendCha
             {/* LCD display area */}
             <div
                 ref={chatListRef}
-                className="h-full overflow-y-auto text-[13px] mb-1 font-mono"
-                style={{
-                    padding: '2px 0',
-                }}
+                className="h-full overflow-y-auto text-[13px] mb-1 font-mono noscrollbar px-1 py-1"
             >
                 {chatMessages.map((msg, i) => (
-                    <div key={i} className="mb-0.5">
+                    <div
+                        key={i}
+                        className="mb-0.5 border rounded px-1 py-0.5 bg-white/10 animate-[zoomIn_0.3s_ease]"
+                        style={{
+                            animationName: 'zoomIn',
+                            animationDuration: '0.3s',
+                            animationTimingFunction: 'ease',
+                        }}
+                    >
                         <span className="text-[#1976d2] font-bold">{msg.peer.slice(0, 8)}</span>
                         <span>: {msg.message}</span>
                     </div>
                 ))}
+
+                <style>
+                    {`
+                @keyframes zoomIn {
+                  0% {
+                    transform: scale(0.7);
+                    opacity: 0;
+                  }
+                  100% {
+                    transform: scale(1);
+                    opacity: 1;
+                  }
+                }
+                `}
+                </style>
             </div>
-            <div className="flex flex-row">
-                <span className="text-[#1976d2] font-bold pr-1">me:</span>
+            <div className="flex flex-row border-t bg-black/20 pb-1 px-1">
+                <span className="text-[#205b78] font-bold pr-1">me:</span>
                 <input
                     type="text"
                     value={chatInput}

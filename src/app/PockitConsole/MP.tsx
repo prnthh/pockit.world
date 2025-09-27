@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, createContext } from 'react'
 import PeerList from './PeerList'
 import ProfilePage from './ProfilePage'
 import ChatBox from './ChatBox'
+import { useAudio } from '@/shared/AudioProvider'
 
 export type PeerState = {
   position: [number, number, number],
@@ -36,6 +37,7 @@ export default function MP({ appId = 'pockit.world', roomId, ui, children }: { a
   const [sendChat, getChat] = room.makeAction('chat')
   const [chatInput, setChatInput] = useState('')
   const [chatMessages, setChatMessages] = useState<Array<{ peer: string, message: string }>>([])
+  const { playSound } = useAudio();
 
   // Listen for incoming chat messages
   useEffect(() => {
@@ -157,17 +159,19 @@ export default function MP({ appId = 'pockit.world', roomId, ui, children }: { a
             <div className="flex flex-col items-center justify-end min-w-[80px] text-white pr-2">
               {/* Pager nav buttons, simplified */}
               <div className="flex flex-col gap-2 mt-1">
-                {['chat', 'profile', 'peers'].map((page, index) => (
+                {['chat', 'profile', 'friends'].map((page, index) => (
                   <div
                     key={page}
-                    className="h-5 cursor-pointer rounded-full bg-gradient-to-br from-[#1976d2] to-[#8cf] border shadow flex items-center justify-center font-bold text-[13px]"
+                    className="hover:scale-102 active:scale-95 h-5 px-1 cursor-pointer rounded-full bg-gradient-to-br from-[#1976d2] to-[#8cf] border shadow flex items-center justify-center font-bold text-[13px]"
                     style={{
                       boxShadow: '0 1px 4px 0 #8cf8',
                     }}
+                    onPointerEnter={() => playSound('/sound/click.mp3')}
+                    onPointerDown={() => playSound('/sound/click2.mp3')}
                     onClick={() => {
                       if (page === 'chat') setCurrentUIPage('chat')
                       else if (page === 'profile') setCurrentUIPage('profile')
-                      else if (page === 'peers') setCurrentUIPage('peers')
+                      else if (page === 'friends') setCurrentUIPage('peers')
                     }}
                   >
                     {page}
@@ -175,13 +179,13 @@ export default function MP({ appId = 'pockit.world', roomId, ui, children }: { a
                 ))}
               </div>
               {/* Pager logo, simplified */}
-              <div className="mt-4 text-[10px] text-[white] font-bold mt-2 tracking-widest text-center" style={{ textShadow: '0 1px 4px #fff8' }}>
+              <div className="cursor-pointer select-none mt-4 text-[10px] text-[white] font-bold mt-2 tracking-widest text-center" style={{ textShadow: '0 1px 4px #fff8' }}>
                 <div className="font-black leading-[10px] bg-white/10 rounded p-1 border border-black" style={{ textShadow: '0 1px 8px #8cf8' }}>POCKIT<br /> NAVI</div>
               </div>
             </div>
             {/* Pager screen with glass effect, simplified */}
             <div
-              className="rounded-2xl border h-full flex-1 flex relative px-2 pt-1 pb-1"
+              className="rounded-2xl border h-full flex-1 flex relative overflow-hidden"
               style={{
                 background: '#b2d8b2', // muted green
                 boxShadow: 'inset 0 0 16px 2px #145214',
