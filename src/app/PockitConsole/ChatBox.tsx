@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react"
+import { PeerState } from "./MP"
 
-export default function ChatBox({ chatMessages, chatInput, setChatInput, sendChat, setChatMessages }: {
+export default function ChatBox({ peerStates, chatMessages, chatInput, setChatInput, sendChat, setChatMessages }: {
+    peerStates: Record<string, PeerState>,
     chatMessages: Array<{ peer: string, message: string }>,
     chatInput: string,
     setChatInput: React.Dispatch<React.SetStateAction<string>>,
@@ -33,7 +35,7 @@ export default function ChatBox({ chatMessages, chatInput, setChatInput, sendCha
                             animationTimingFunction: 'ease',
                         }}
                     >
-                        <span className="text-[#1976d2] font-bold">{msg.peer.slice(0, 8)}</span>
+                        <span className="text-[#1976d2] font-bold">{peerStates[msg.peer]?.profile?.name || msg.peer.slice(0, 8)}</span>
                         <span>: {msg.message}</span>
                     </div>
                 ))}

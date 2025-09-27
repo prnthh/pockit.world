@@ -194,6 +194,7 @@ export default function MP({ appId = 'pockit.world', roomId, ui, children }: { a
               }}
             >
               {currentUIPage === 'chat' && <ChatBox
+                peerStates={peerStates}
                 chatMessages={chatMessages}
                 chatInput={chatInput}
                 setChatInput={setChatInput}
