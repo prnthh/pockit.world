@@ -1,6 +1,6 @@
 
 import { joinRoom } from 'trystero'
-import { useEffect, useState, useRef, createContext } from 'react'
+import { useEffect, useState, useRef, createContext, useMemo } from 'react'
 import PeerList from './PeerList'
 import ProfilePage from './ProfilePage'
 import ChatBox from './ChatBox'
@@ -86,6 +86,7 @@ export default function MP({ appId = 'pockit.world', roomId, ui, children }: { a
     const handlePeerJoin = (peer: string) => {
       console.log('Peer joined:', peer, myState)
       sendPlayerState(myState, peer)
+      setChatMessages(msgs => [...msgs, { peer: 'system', message: `Peer joined: ${peer.slice(0, 8)}` }])
     }
     const handlePeerLeave = (peer: string) => {
       setPeerStates(states => {
@@ -93,6 +94,7 @@ export default function MP({ appId = 'pockit.world', roomId, ui, children }: { a
         delete newStates[peer]
         return newStates
       })
+      setChatMessages(msgs => [...msgs, { peer: 'system', message: `Peer left: ${peer.slice(0, 8)}` }])
     }
     const handlePeerState = (state: any, peer: string) => {
       if (
@@ -117,10 +119,11 @@ export default function MP({ appId = 'pockit.world', roomId, ui, children }: { a
     room.onPeerJoin(handlePeerJoin)
     room.onPeerLeave(handlePeerLeave)
     getPeerStates(handlePeerState)
+
     // Cleanup: Trystero does not provide off/on removal, but if it did, add here
     // Return cleanup if needed
     // return () => { ... }
-  }, [room, sendPlayerState, getPeerStates, myState])
+  }, [room, sendPlayerState, getPeerStates])
 
   // Listen for local position updates from parent
   useEffect(() => {
@@ -142,7 +145,7 @@ export default function MP({ appId = 'pockit.world', roomId, ui, children }: { a
     return () => window.removeEventListener('mp-trigger', handler as EventListener)
   }, [])
 
-  const [currentUIPage, setCurrentUIPage] = useState<'chat' | 'profile' | 'peers'>('chat')
+  const [currentUIPage, setCurrentUIPage] = useState<'chat' | 'profile' | 'friends'>('chat')
 
   return (
     <MPContext.Provider value={{ peerStates }}>
@@ -150,20 +153,18 @@ export default function MP({ appId = 'pockit.world', roomId, ui, children }: { a
       <ui.In>
         <div className="absolute bottom-[20vh] md:bottom-4 right-4 z-[10] pointer-events-auto flex flex-col">
           <div
-            className="h-[220px] w-[92vw] md:w-[400px] flex flex-row items-center rounded-[2.2rem] text-black shadow-lg bg-gradient-to-br from-[#2229] to-[#2226] p-4 font-sans border-2 border-[#8cf8]"
+            className="h-[220px] w-[92vw] md:w-[400px] flex flex-row items-center rounded-[2.2rem] text-black bg-gradient-to-br from-[#2229] to-[#2226] p-4 font-sans shadow-[inset_-8px_8px_6px_-8px_#ffffff,inset_8px_-8px_6px_-8px_#000000]"
             style={{
               backdropFilter: 'blur(16px)',
-              borderRadius: '2.2rem',
-              boxShadow: '0 2px 32px 0 #8cf8, 0 0 0 6px #e0f7fa22 inset',
             }}
           >
             <div className="flex flex-col items-center justify-end min-w-[80px] text-white pr-2">
               {/* Pager nav buttons, simplified */}
               <div className="flex flex-col gap-2 mt-1">
-                {['chat', 'profile', 'friends'].map((page, index) => (
+                {['profile', 'chat', 'friends'].map((page, index) => (
                   <div
                     key={page}
-                    className="hover:scale-102 active:scale-95 h-5 px-1 cursor-pointer rounded-full bg-gradient-to-br from-[#1976d2] to-[#8cf] border shadow flex items-center justify-center font-bold text-[13px]"
+                    className={`${page == currentUIPage ? 'bg-[#1976d2]' : 'bg-gradient-to-br from-[#1976d2] to-[#8cf] hover:scale-102 active:scale-95'} transition-all h-5 px-1 cursor-pointer rounded-full border shadow flex items-center justify-center font-bold text-[13px]`}
                     style={{
                       boxShadow: '0 1px 4px 0 #8cf8',
                     }}
@@ -172,7 +173,7 @@ export default function MP({ appId = 'pockit.world', roomId, ui, children }: { a
                     onClick={() => {
                       if (page === 'chat') setCurrentUIPage('chat')
                       else if (page === 'profile') setCurrentUIPage('profile')
-                      else if (page === 'friends') setCurrentUIPage('peers')
+                      else if (page === 'friends') setCurrentUIPage('friends')
                     }}
                   >
                     {page}
@@ -204,7 +205,7 @@ export default function MP({ appId = 'pockit.world', roomId, ui, children }: { a
                 setMyState={setMyState}
                 sendPlayerState={sendPlayerState}
               />}
-              {currentUIPage === 'peers' && <PeerList
+              {currentUIPage === 'friends' && <PeerList
                 peerStates={peerStates}
                 room={room}
                 sendChat={sendChat}
