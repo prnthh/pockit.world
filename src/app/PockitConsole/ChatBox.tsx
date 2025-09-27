@@ -17,7 +17,7 @@ export default function ChatBox({ chatMessages, chatInput, setChatInput, sendCha
     }, [chatMessages])
 
     return (
-        <div className='flex flex-col min-w-48'>
+        <div className='flex flex-col w-full'>
             {/* LCD display area */}
             <div
                 ref={chatListRef}

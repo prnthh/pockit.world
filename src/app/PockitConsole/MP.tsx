@@ -186,7 +186,7 @@ export default function MP({ appId = 'pockit.world', roomId, ui, children }: { a
             </div>
             {/* Pager screen with glass effect, simplified */}
             <div
-              className="rounded-2xl border h-full flex-1 flex overflow-hidden"
+              className="rounded-2xl border h-full flex-1 flex relative overflow-hidden"
               style={{
                 background: '#b2d8b2', // muted green
                 boxShadow: 'inset 0 0 16px 2px #145214',
@@ -204,13 +204,11 @@ export default function MP({ appId = 'pockit.world', roomId, ui, children }: { a
                 setMyState={setMyState}
                 sendPlayerState={sendPlayerState}
               />}
-              {currentUIPage === 'peers' && <div className="mb-2">
-                <PeerList
-                  peerStates={peerStates}
-                  room={room}
-                  sendChat={sendChat}
-                />
-              </div>}
+              {currentUIPage === 'peers' && <PeerList
+                peerStates={peerStates}
+                room={room}
+                sendChat={sendChat}
+              />}
             </div>
 
 
@@ -219,7 +217,7 @@ export default function MP({ appId = 'pockit.world', roomId, ui, children }: { a
           </div>
         </div>
       </ui.In>
-    </MPContext.Provider>
+    </MPContext.Provider >
   )
 }
 

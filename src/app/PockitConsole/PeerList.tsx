@@ -18,9 +18,8 @@ export default function PeerList({ peerStates, room, sendChat }: {
                         {peerId.slice(0, 8)}
                         {/* Example: show position and profile */}
                         {/* <span className="ml-1 text-[#aaa]">({state.position.join(', ')})</span> */}
-                        {state.profile && <span className="ml-1 text-[#8cf]">{JSON.stringify(state.profile)}</span>}
                         <button
-                            className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-[#333] text-[#8cf] border-none cursor-pointer"
+                            className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-[#333]/20 border-none cursor-pointer"
                             onClick={e => {
                                 e.stopPropagation();
                                 setPeerOptions(peerOptions === peerId ? null : peerId);
@@ -29,7 +28,7 @@ export default function PeerList({ peerStates, room, sendChat }: {
                             &#x22EE;
                         </button>
                         {peerOptions === peerId && (
-                            <div className="absolute right-0 top-[18px] bg-[#222] border border-[#444] rounded-lg z-[1002] min-w-[80px]">
+                            <div className="absolute top-[18px] bg-[#222] border border-[#444] rounded-lg z-[1002] min-w-[80px]">
                                 <button
                                     className="block w-full bg-none text-[#8cf] border-none px-1.5 py-1.5 text-left cursor-pointer"
                                     onClick={() => {
@@ -48,11 +47,13 @@ export default function PeerList({ peerStates, room, sendChat }: {
                                     }}
                                 >Kick</button>
                             </div>
-                        )}
+                        )}<br />
+                        {state.profile && <span className="">{JSON.stringify(state.profile)}</span>}
+
                     </li>
                 ))}
                 {showDM && (
-                    <div className="fixed left-0 top-0 w-screen h-screen bg-black/50 z-[2000] flex items-center justify-center" onClick={() => setShowDM(null)}>
+                    <div className="fixed left-0 top-0 w-full h-full bg-black/50 z-[2000] flex items-center justify-center rounded-4xl" onClick={() => setShowDM(null)}>
                         <div className="bg-[#222] p-5 rounded-xl min-w-[300px]" onClick={e => e.stopPropagation()}>
                             <div className="mb-2.5 text-[#8cf]">DM to {showDM.slice(0, 8)}</div>
                             <input

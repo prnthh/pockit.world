@@ -4,32 +4,26 @@ export default function ProfilePage({ myState, setMyState, sendPlayerState }: {
     setMyState: React.Dispatch<React.SetStateAction<{ position: [number, number, number], profile: { [key: string]: any } }>>,
     sendPlayerState: (state: { position: [number, number, number], profile: { [key: string]: any } }) => void
 }) {
-    return (
-        <div className="flex flex-col items-center justify-end w-full text-white">
-            <div>
-                <input
-                    type="text"
-                    value={myState.profile.name || ''}
-                    onChange={e => {
-                        const name = e.target.value;
-                        setMyState(state => {
-                            const newState = {
-                                ...state,
-                                profile: {
-                                    ...state.profile,
-                                    name
-                                }
-                            }
-                            sendPlayerState(newState)
-                            return newState
-                        })
-                    }}
-                    placeholder='nickname'
-                    className="ml-2 p-1 rounded border-none bg-[#333] text-white text-[10px] font-mono"
-                />
-            </div>
 
-            <div className="flex">
+    const updateProfile = (key: string, value: any) => {
+        setMyState(state => {
+            const newState = {
+                ...state,
+                profile: {
+                    ...state.profile,
+                    [key]: value
+                }
+            }
+            sendPlayerState(newState)
+            return newState
+        }
+        )
+    }
+
+    return (
+        <div className="h-full w-full overflow-y-auto noscrollbar p-2">
+            <Profile updateProfile={updateProfile} state={myState} />
+            <div className="flex justify-center gap-x-1">
                 {(['oni', 'milady']).map((avatar) => (
                     <button
                         key={avatar}
@@ -56,7 +50,6 @@ export default function ProfilePage({ myState, setMyState, sendPlayerState }: {
                     </button>
                 ))}
             </div>
-
             <input
                 value={JSON.stringify(myState.profile)}
                 onChange={e => {
@@ -81,4 +74,31 @@ export default function ProfilePage({ myState, setMyState, sendPlayerState }: {
             />
         </div>
     );
+}
+
+const Profile = ({ state, updateProfile }: {
+    state: { position: [number, number, number], profile: { [key: string]: any } },
+    updateProfile: (key: string, value: any) => void
+}) => {
+    return <div className="w-full px-2 text-black gap-y-1 flex flex-col">
+        <div className="flex justify-between items-end w-full">
+
+            <input
+                type="text"
+                value={state.profile.name || ''}
+                onChange={e => {
+                    const name = e.target.value;
+                    updateProfile('name', name);
+                }}
+                placeholder='nickname'
+                className="font-mono text-xl p-1 rounded border-none bg-transparent text-black outline-none w-[70%]"
+            />
+            <div className="border bg-white/30 w-16 h-16"><img /></div>
+        </div>
+        <div className="font-mono text-sm border my-1">This user likes cheese.</div>
+        <div className="font-mono text-sm border my-1 text-center">
+            <span className="flex justify-center w-full border-b">Achievements</span>
+            <div className="py-2">your achievements here</div>
+        </div>
+    </div>
 }
