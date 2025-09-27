@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 
-type PeerState = { position: [number, number, number], appearance: { [key: string]: any } }
+type PeerState = { position: [number, number, number], profile: { [key: string]: any } }
 export default function PeerList({ peerStates, room, sendChat }: {
     peerStates: Record<string, PeerState>,
     room: any,
@@ -16,9 +16,9 @@ export default function PeerList({ peerStates, room, sendChat }: {
                 {Object.entries(peerStates).map(([peerId, state]) => (
                     <li key={peerId} className="text-[12px] mb-0.5 relative">
                         {peerId.slice(0, 8)}
-                        {/* Example: show position and appearance */}
+                        {/* Example: show position and profile */}
                         {/* <span className="ml-1 text-[#aaa]">({state.position.join(', ')})</span> */}
-                        {state.appearance && <span className="ml-1 text-[#8cf]">{JSON.stringify(state.appearance)}</span>}
+                        {state.profile && <span className="ml-1 text-[#8cf]">{JSON.stringify(state.profile)}</span>}
                         <button
                             className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-[#333] text-[#8cf] border-none cursor-pointer"
                             onClick={e => {

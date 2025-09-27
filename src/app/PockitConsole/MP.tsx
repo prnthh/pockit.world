@@ -8,7 +8,7 @@ import { useAudio } from '@/shared/AudioProvider'
 
 export type PeerState = {
   position: [number, number, number],
-  appearance: { [key: string]: any },
+  profile: { [key: string]: any },
   latestMessage?: { message: string, timestamp: number }
 }
 export const MPContext = createContext<{ peerStates: Record<string, PeerState> }>({ peerStates: {} })
@@ -30,7 +30,7 @@ export default function MP({ appId = 'pockit.world', roomId, ui, children }: { a
   }
   const room = joinRoom({ appId, password: undefined }, roomId)
   const [sendPlayerState, getPeerStates] = room.makeAction('peerState')
-  const [myState, setMyState] = useState<{ position: [number, number, number], appearance: { [key: string]: any } }>({ position: [0, 0, 0], appearance: {} })
+  const [myState, setMyState] = useState<{ position: [number, number, number], profile: { [key: string]: any } }>({ position: [0, 0, 0], profile: {} })
   const [peerStates, setPeerStates] = useState<Record<string, PeerState>>({})
 
   // Chat state
@@ -166,7 +166,7 @@ export default function MP({ appId = 'pockit.world', roomId, ui, children }: { a
                     style={{
                       boxShadow: '0 1px 4px 0 #8cf8',
                     }}
-                    onPointerEnter={() => playSound('/sound/click.mp3')}
+                    onMouseEnter={() => playSound('/sound/click.mp3')}
                     onPointerDown={() => playSound('/sound/click2.mp3')}
                     onClick={() => {
                       if (page === 'chat') setCurrentUIPage('chat')
