@@ -1,3 +1,5 @@
+import { useSaveBlob } from "@/shared/SaveBlobProvider";
+import { useEffect, useState } from "react";
 
 export default function ProfilePage({ myState, setMyState, sendPlayerState }: {
     myState: { position: [number, number, number], profile: { [key: string]: any } },
@@ -5,19 +7,49 @@ export default function ProfilePage({ myState, setMyState, sendPlayerState }: {
     sendPlayerState: (state: { position: [number, number, number], profile: { [key: string]: any } }) => void
 }) {
 
+    const { saveBlob, getBlob } = useSaveBlob();
+
+    useEffect(() => {
+        getBlob('profile').then(async (blob) => {
+            if (blob) {
+                try {
+                    const text = await blob.text();
+                    const decodedProfile = JSON.parse(text);
+
+                    setMyState(state => ({
+                        ...state,
+                        profile: {
+                            ...state.profile,
+                            ...decodedProfile
+                        }
+                    }));
+                } catch (error) {
+                    console.error('Error decoding profile blob:', error);
+                }
+            }
+        });
+    }, [getBlob, setMyState]);
+
+
     const updateProfile = (key: string, value: any) => {
+        const newProfile = {
+            ...myState.profile,
+            [key]: value
+        }
+
         setMyState(state => {
             const newState = {
                 ...state,
-                profile: {
-                    ...state.profile,
-                    [key]: value
-                }
+                profile: newProfile
             }
             sendPlayerState(newState)
             return newState
-        }
-        )
+        });
+
+        // Save profile to blob storage
+        const profileData = new Blob([JSON.stringify(newProfile)], { type: 'application/json' });
+        saveBlob('profile', profileData);
+        console.log('Saved profile data:', newProfile);
     }
 
     return (
@@ -78,7 +110,7 @@ export default function ProfilePage({ myState, setMyState, sendPlayerState }: {
 
 const Profile = ({ state, updateProfile }: {
     state: { position: [number, number, number], profile: { [key: string]: any } },
-    updateProfile: (key: string, value: any) => void
+    updateProfile?: (key: string, value: any) => void
 }) => {
     return <div className="w-full px-2 text-black gap-y-1 flex flex-col">
         <div className="flex justify-between items-end w-full">
@@ -86,9 +118,10 @@ const Profile = ({ state, updateProfile }: {
             <input
                 type="text"
                 value={state.profile.name || ''}
+                readOnly={!updateProfile}
                 onChange={e => {
                     const name = e.target.value;
-                    updateProfile('name', name);
+                    updateProfile?.('name', name);
                 }}
                 placeholder='nickname'
                 className="font-mono text-xl p-1 rounded border-none bg-transparent text-black outline-none w-[70%]"
@@ -98,7 +131,7 @@ const Profile = ({ state, updateProfile }: {
         <div className="font-mono text-sm border my-1">This user likes cheese.</div>
         <div className="font-mono text-sm border my-1 text-center">
             <span className="flex justify-center w-full border-b">Achievements</span>
-            <div className="py-2">your achievements here</div>
+            <div className="py-2">no achievements yet. <br />keep clicking!</div>
         </div>
     </div>
 }

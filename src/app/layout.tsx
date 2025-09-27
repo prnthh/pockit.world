@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import tunnel from "tunnel-rat";
 import { ScenePortalWrapper } from "./ScenePortalProvider";
 import { AudioProvider } from "@/shared/AudioProvider";
+import SaveBlobProvider from "@/shared/SaveBlobProvider";
 const Game = dynamic(() => import("./Game"), { ssr: true });
 
 const geistSans = Geist({
@@ -57,10 +58,12 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <AudioProvider>
-          <ScenePortalWrapper>
-            {children}
-            <Game />
-          </ScenePortalWrapper>
+          <SaveBlobProvider>
+            <ScenePortalWrapper>
+              {children}
+              <Game />
+            </ScenePortalWrapper>
+          </SaveBlobProvider>
         </AudioProvider>
       </body>
     </html>
