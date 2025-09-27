@@ -5,6 +5,7 @@ import PeerList from './PeerList'
 import ProfilePage from './ProfilePage'
 import ChatBox from './ChatBox'
 import { useAudio } from '@/shared/AudioProvider'
+import { useSaveBlob } from '@/shared/SaveBlobProvider'
 
 export type PeerState = {
   position: [number, number, number],
@@ -73,14 +74,6 @@ export default function MP({ appId = 'pockit.world', roomId, ui, children }: { a
     })
   }, [])
 
-  // Auto-scroll chat to bottom when messages change
-  useEffect(() => {
-    if (chatListRef.current) {
-      chatListRef.current.scrollTop = chatListRef.current.scrollHeight;
-    }
-  }, [chatMessages])
-
-
   // Setup Trystero event listeners for peer join/leave and state updates
   useEffect(() => {
     const handlePeerJoin = (peer: string) => {
@@ -144,6 +137,29 @@ export default function MP({ appId = 'pockit.world', roomId, ui, children }: { a
     window.addEventListener('mp-trigger', handler as EventListener)
     return () => window.removeEventListener('mp-trigger', handler as EventListener)
   }, [])
+
+  const { getBlob } = useSaveBlob();
+
+  useEffect(() => {
+    getBlob('profile').then(async (blob) => {
+      if (blob) {
+        try {
+          const text = await blob.text();
+          const decodedProfile = JSON.parse(text);
+
+          setMyState(state => ({
+            ...state,
+            profile: {
+              ...state.profile,
+              ...decodedProfile
+            }
+          }));
+        } catch (error) {
+          console.error('Error decoding profile blob:', error);
+        }
+      }
+    });
+  }, [getBlob, setMyState]);
 
   const [currentUIPage, setCurrentUIPage] = useState<'chat' | 'profile' | 'friends'>('chat')
 

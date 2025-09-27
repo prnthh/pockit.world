@@ -7,29 +7,7 @@ export default function ProfilePage({ myState, setMyState, sendPlayerState }: {
     sendPlayerState: (state: { position: [number, number, number], profile: { [key: string]: any } }) => void
 }) {
 
-    const { saveBlob, getBlob } = useSaveBlob();
-
-    useEffect(() => {
-        getBlob('profile').then(async (blob) => {
-            if (blob) {
-                try {
-                    const text = await blob.text();
-                    const decodedProfile = JSON.parse(text);
-
-                    setMyState(state => ({
-                        ...state,
-                        profile: {
-                            ...state.profile,
-                            ...decodedProfile
-                        }
-                    }));
-                } catch (error) {
-                    console.error('Error decoding profile blob:', error);
-                }
-            }
-        });
-    }, [getBlob, setMyState]);
-
+    const { saveBlob } = useSaveBlob();
 
     const updateProfile = (key: string, value: any) => {
         const newProfile = {
