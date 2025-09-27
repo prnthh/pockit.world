@@ -157,7 +157,7 @@ function PeerPed({ peerId, state }: { peerId: string, state: PeerState }) {
             modelUrl={"rigged.glb"}
             position={state.position} height={1.5}
         >
-            {state.appearance?.hand && <ModelAttachment
+            {state.profile?.hand && <ModelAttachment
                 model="/models/environment/Katana.glb"
                 attachpoint="mixamorigRightHand"
                 offset={new THREE.Vector3(0, 0, 0)}
