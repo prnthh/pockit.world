@@ -11,7 +11,7 @@ export default function PeerList({ peerStates, room, sendChat }: {
     const [dmInput, setDmInput] = useState('')
     return (
         <div className="min-w-[100px] mr-3 border-r border-[#444] pr-2">
-            <div className="font-bold mb-1">Peers:</div>
+            <div className="font-bold mb-1">{Object.keys(peerStates).length} Peers</div>
             <ul className="list-none m-0 p-0">
                 {Object.entries(peerStates).map(([peerId, state]) => (
                     <li key={peerId} className="text-[12px] mb-0.5 relative">
