@@ -84,6 +84,7 @@ export default function MP({ appId = 'pockit.world', roomId, ui, children }: { a
   // Setup Trystero event listeners for peer join/leave and state updates
   useEffect(() => {
     const handlePeerJoin = (peer: string) => {
+      console.log('Peer joined:', peer, myState)
       sendPlayerState(myState, peer)
     }
     const handlePeerLeave = (peer: string) => {
@@ -99,7 +100,7 @@ export default function MP({ appId = 'pockit.world', roomId, ui, children }: { a
         Array.isArray(state.position) &&
         state.position.length === 3 &&
         state.position.every((n: any) => typeof n === 'number') &&
-        typeof state.appearance === 'object'
+        typeof state.profile === 'object'
       ) {
         setPeerStates(states => {
           const prev = states[peer] || {};
@@ -185,7 +186,7 @@ export default function MP({ appId = 'pockit.world', roomId, ui, children }: { a
             </div>
             {/* Pager screen with glass effect, simplified */}
             <div
-              className="rounded-2xl border h-full flex-1 flex relative overflow-hidden"
+              className="rounded-2xl border h-full flex-1 flex overflow-hidden"
               style={{
                 background: '#b2d8b2', // muted green
                 boxShadow: 'inset 0 0 16px 2px #145214',

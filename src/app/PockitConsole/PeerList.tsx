@@ -10,7 +10,7 @@ export default function PeerList({ peerStates, room, sendChat }: {
     const [showDM, setShowDM] = useState<string | null>(null)
     const [dmInput, setDmInput] = useState('')
     return (
-        <div className="min-w-[100px] mr-3 border-r border-[#444] pr-2">
+        <div className="w-full p-2">
             <div className="font-bold mb-1">{Object.keys(peerStates).length} Peers</div>
             <ul className="list-none m-0 p-0">
                 {Object.entries(peerStates).map(([peerId, state]) => (
@@ -23,13 +23,13 @@ export default function PeerList({ peerStates, room, sendChat }: {
                             className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-[#333] text-[#8cf] border-none cursor-pointer"
                             onClick={e => {
                                 e.stopPropagation();
-                                setPeerOptions(peerId);
+                                setPeerOptions(peerOptions === peerId ? null : peerId);
                             }}
                         >
                             &#x22EE;
                         </button>
                         {peerOptions === peerId && (
-                            <div className="absolute right-0 bottom-[18px] bg-[#222] border border-[#444] rounded-lg z-[1002] min-w-[80px]">
+                            <div className="absolute right-0 top-[18px] bg-[#222] border border-[#444] rounded-lg z-[1002] min-w-[80px]">
                                 <button
                                     className="block w-full bg-none text-[#8cf] border-none px-1.5 py-1.5 text-left cursor-pointer"
                                     onClick={() => {
