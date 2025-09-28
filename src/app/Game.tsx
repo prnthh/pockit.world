@@ -27,8 +27,6 @@ import test from "./test/map";
 import { ScenePortalContext } from "./ScenePortalProvider";
 import PostProcessingEffects from "@/shared/shaders/PostProcessingEffects";
 
-const MPProvider = dynamic(() => import('./PockitConsole/MP'), { ssr: false })
-
 const ui = tunnel()
 
 const GameWrappers = () => {
@@ -108,9 +106,7 @@ const Game = () => {
 
         <scenePortal.Out />
 
-        <MPProvider roomId="my-room-id" ui={ui}>
-            <MPStuff />
-        </MPProvider>
+        <MPStuff />
 
         <ambientLight intensity={0.5} />
         <ShadowLight intensity={3} />

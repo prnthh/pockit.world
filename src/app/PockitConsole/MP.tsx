@@ -1,3 +1,4 @@
+"use client";
 
 import { joinRoom } from 'trystero'
 import { useEffect, useState, useRef, createContext, useMemo } from 'react'
@@ -14,9 +15,7 @@ export type PeerState = {
 }
 export const MPContext = createContext<{ peerStates: Record<string, PeerState> }>({ peerStates: {} })
 
-export default function MP({ appId = 'pockit.world', roomId, ui, children }: { appId?: string, roomId: string, ui: any, children?: React.ReactNode }) {
-  // Ref for chat message list
-  const chatListRef = useRef<HTMLDivElement>(null)
+export default function MP({ appId = 'pockit.world', roomId, children }: { appId?: string, roomId: string, children?: React.ReactNode }) {
   // Suppress 'User-Initiated Abort' RTC errors in the console
   const origConsoleError = console.error
   console.error = function (...args) {
@@ -166,7 +165,7 @@ export default function MP({ appId = 'pockit.world', roomId, ui, children }: { a
   return (
     <MPContext.Provider value={{ peerStates }}>
       {children}
-      <ui.In>
+      <div className='fixed top-0 left-0 w-screen h-screen overflow-hidden pointer-events-none select-none z-50'>
         <div className="absolute bottom-[20vh] md:bottom-4 right-4 z-[10] pointer-events-auto flex flex-col">
           <div
             className="h-[220px] w-[92vw] md:w-[400px] flex flex-row items-center rounded-[2.2rem] text-black bg-gradient-to-br from-[#2229] to-[#2226] p-4 font-sans shadow-[inset_-8px_8px_6px_-8px_#ffffff,inset_8px_-8px_6px_-8px_#000000]"
@@ -180,7 +179,7 @@ export default function MP({ appId = 'pockit.world', roomId, ui, children }: { a
                 {['profile', 'chat', 'friends'].map((page, index) => (
                   <div
                     key={page}
-                    className={`${page == currentUIPage ? 'bg-[#1976d2]' : 'bg-gradient-to-br from-[#1976d2] to-[#8cf] hover:scale-102 active:scale-95'} transition-all h-5 px-1 cursor-pointer rounded-full border shadow flex items-center justify-center font-bold text-[13px]`}
+                    className={`${page === currentUIPage ? 'bg-[#1976d2]' : 'bg-gradient-to-br from-[#1976d2] to-[#8cf] hover:scale-102 active:scale-95'} transition-all h-5 px-1 cursor-pointer rounded-full border shadow flex items-center justify-center font-bold text-[13px]`}
                     style={{
                       boxShadow: '0 1px 4px 0 #8cf8',
                     }}
@@ -234,7 +233,7 @@ export default function MP({ appId = 'pockit.world', roomId, ui, children }: { a
             <div className="absolute top-0 left-0 w-full h-full pointer-events-none rounded-[2.2rem] bg-gradient-to-tr from-white/40 via-white/0 to-white/20 opacity-70 z-10 mix-blend-screen" />
           </div>
         </div>
-      </ui.In>
+      </div>
     </MPContext.Provider >
   )
 }

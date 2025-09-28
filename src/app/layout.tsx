@@ -6,6 +6,7 @@ import tunnel from "tunnel-rat";
 import { ScenePortalWrapper } from "./ScenePortalProvider";
 import { AudioProvider } from "@/shared/AudioProvider";
 import SaveBlobProvider from "@/shared/SaveBlobProvider";
+import PockitConsoleProvider from "./PockitConsole/PockitConsole";
 const Game = dynamic(() => import("./Game"), { ssr: true });
 
 const geistSans = Geist({
@@ -60,8 +61,10 @@ export default function RootLayout({
         <AudioProvider>
           <SaveBlobProvider>
             <ScenePortalWrapper>
-              {children}
-              <Game />
+              <PockitConsoleProvider>
+                {children}
+                <Game />
+              </PockitConsoleProvider>
             </ScenePortalWrapper>
           </SaveBlobProvider>
         </AudioProvider>

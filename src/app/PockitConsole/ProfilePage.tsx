@@ -1,5 +1,4 @@
 import { useSaveBlob } from "@/shared/SaveBlobProvider";
-import { useEffect, useState } from "react";
 
 export default function ProfilePage({ myState, setMyState, sendPlayerState }: {
     myState: { position: [number, number, number], profile: { [key: string]: any } },

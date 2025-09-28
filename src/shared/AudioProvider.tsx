@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useRef, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useRef, useState, useEffect, type ReactNode } from "react";
 
 interface AudioProviderProps {
     children: ReactNode;
@@ -50,15 +50,16 @@ export const AudioProvider = ({ children }: AudioProviderProps) => {
         if (bufferCache.current[url]) return bufferCache.current[url];
         const response = await fetch(url);
         const arrayBuffer = await response.arrayBuffer();
-        const buffer = await audioCtxRef.current!.decodeAudioData(arrayBuffer);
+        if (!audioCtxRef.current) {
+            throw new Error("AudioContext not initialized");
+        }
+        const buffer = await audioCtxRef.current.decodeAudioData(arrayBuffer);
         bufferCache.current[url] = buffer;
         return buffer;
     };
 
     const playSound = async (url?: string) => {
-        if (!url) {
-            url = "/sound/ding.mp3"; // default sound
-        }
+        const soundUrl = url ?? "/sound/ding.mp3"; // default sound
         const ctx = audioCtxRef.current;
         if (!ctx) {
             console.warn("AudioContext not initialized");
@@ -71,7 +72,7 @@ export const AudioProvider = ({ children }: AudioProviderProps) => {
             console.warn("AudioContext could not be unlocked");
             return;
         }
-        const buffer = await loadBuffer(url);
+        const buffer = await loadBuffer(soundUrl);
         const source = ctx.createBufferSource();
         source.buffer = buffer;
         source.connect(ctx.destination);
