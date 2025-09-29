@@ -1,8 +1,7 @@
 import { joinRoom } from 'trystero'
 import { RTCPeerConnection } from 'node-datachannel/polyfill'
 import ws from 'ws';
-import crypto from 'crypto';
-globalThis.crypto = crypto.webcrypto as unknown as Crypto;
+
 global.WebSocket = ws as unknown as typeof WebSocket;
 // Prevent server crash on WebSocket errors
 process.on('uncaughtException', (err) => {

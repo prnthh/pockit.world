@@ -1,4 +1,5 @@
 import { useSaveBlob } from "@/shared/SaveBlobProvider";
+import ToyWallet from "./ToyWalletProvider";
 
 export default function ProfilePage({ myState, setMyState, sendPlayerState }: {
     myState: { position: [number, number, number], profile: { [key: string]: any } },
@@ -105,6 +106,12 @@ const Profile = ({ state, updateProfile }: {
             />
             <div className="border bg-white/30 w-16 h-16"><img /></div>
         </div>
+
+        {/* Wallet Pill */}
+        <div className="flex justify-center my-2">
+            <ToyWallet />
+        </div>
+
         <div className="font-mono text-sm border my-1">This user likes cheese.</div>
         <div className="font-mono text-sm border my-1 text-center">
             <span className="flex justify-center w-full border-b">Achievements</span>
@@ -112,3 +119,5 @@ const Profile = ({ state, updateProfile }: {
         </div>
     </div>
 }
+
+// favorite nfts section, json list of collection address and token id, check if owned by user
