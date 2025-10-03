@@ -4,7 +4,9 @@ import { hexToBytes } from "viem";
 import ToyWalletDebug from "./ToyWalletDebug";
 import * as secp from '@noble/secp256k1';
 
-const S = { ITER: 1_000_000, KEY: 256, IV: 16, PIN: 4 } as const;
+// Lowered iteration count to avoid long-running allocations on the main thread.
+// If you need stronger hardening, move PBKDF2 work to a WebWorker instead.
+const S = { ITER: 100_000, KEY: 256, IV: 16, PIN: 4 } as const;
 const allowedOrigins = ['https://app.yourdomain.com', 'https://dashboard.anotherdomain.com', 'http://localhost:3000', window.location.origin];
 
 const toBase64 = (b: Uint8Array) => btoa(String.fromCharCode(...b));
@@ -13,11 +15,21 @@ const fromBase64 = (s: string) => new Uint8Array(atob(s).split('').map(c => c.ch
 async function deriveKey(password: string) {
     // Intentionally do NOT use a salt: derive deterministically from the password alone.
     const emptySalt = new Uint8Array(0);
-    const km = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']);
-    return crypto.subtle.deriveKey({ name: 'PBKDF2', salt: emptySalt as unknown as BufferSource, iterations: S.ITER, hash: 'SHA-256' }, km, { name: 'AES-GCM', length: S.KEY }, false, ['encrypt', 'decrypt']);
+    // Encode password to a Uint8Array so we can zero it after use.
+    const pwdBytes = new TextEncoder().encode(password);
+    try {
+        const km = await crypto.subtle.importKey('raw', pwdBytes, 'PBKDF2', false, ['deriveKey']);
+        const derived = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: emptySalt as unknown as BufferSource, iterations: S.ITER, hash: 'SHA-256' }, km, { name: 'AES-GCM', length: S.KEY }, false, ['encrypt', 'decrypt']);
+        return derived;
+    } finally {
+        // zero the temporary password bytes asap
+        zeroBytes(pwdBytes);
+    }
 }
 
-interface EncryptedPrivateKey { iv: string; encrypted: string }
+// We do not store the IV. It is deterministically derived from the user's PIN
+// so encrypt/decrypt can both compute it without storing it.
+interface EncryptedPrivateKey { encrypted: string }
 interface SecureAccount { address: `0x${string}` }
 
 // ephemeral private key storage — never put this into React state or localStorage
@@ -46,55 +58,52 @@ function formatPublicKeyShort(pk?: string) {
 }
 
 async function encryptPrivateKey(pk: `0x${string}`, pwd: string): Promise<EncryptedPrivateKey> {
-    // Deterministically derive IV from the corresponding public key so the
-    // IV is bound to the account. This replaces the previous random-IV
-    // approach for stored wallets. We still store the IV in the payload for
-    // compatibility and ease of future migrations.
+    // Deterministically derive IV from the password so it does not need to be stored.
     // No salt per request; derive key deterministically from password alone
     const key = await deriveKey(pwd);
+    // Derive IV as SHA-256(password) and take the first S.IV bytes.
+    // This makes IV derivable from the PIN alone so it need not be stored.
+    const pwdBytes = new TextEncoder().encode(pwd);
+    try {
+        const pwdHash = new Uint8Array(await crypto.subtle.digest('SHA-256', toArrayBufferView(pwdBytes)));
+        const iv = pwdHash.slice(0, S.IV);
 
-    // Derive public key from the provided private key and hash it to obtain
-    // an IV of the configured length. Use the uncompressed secp256k1 public
-    // key so the IV is stable and unique per account.
-    const privBytes = hexToBytes(pk as `0x${string}`);
-    const pubUncompressed = secp.getPublicKey(privBytes, false); // 65 bytes (0x04 | X | Y)
-    const pubHash = new Uint8Array(await crypto.subtle.digest('SHA-256', toArrayBufferView(new Uint8Array(pubUncompressed))));
-    const iv = pubHash.slice(0, S.IV);
-
-    const enc = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv as unknown as BufferSource }, key, new TextEncoder().encode(pk));
-    return { iv: toBase64(iv), encrypted: toBase64(new Uint8Array(enc)) };
+        const enc = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv as unknown as BufferSource }, key, new TextEncoder().encode(pk));
+        const encArr = new Uint8Array(enc);
+        try {
+            return { encrypted: toBase64(encArr) };
+        } finally {
+            zeroBytes(encArr);
+        }
+    } finally {
+        zeroBytes(pwdBytes);
+    }
 }
 
-async function decryptPrivateKey({ iv, encrypted }: EncryptedPrivateKey, pwd: string): Promise<Uint8Array> {
-    const i = fromBase64(iv), e = fromBase64(encrypted);
-    const key = await deriveKey(pwd);
-    const dec = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: i as unknown as BufferSource }, key, e as unknown as BufferSource);
-    const str = new TextDecoder().decode(dec);
-    if (!str.startsWith('0x') || str.length !== 66) throw new Error('Invalid private key format');
-    // convert to bytes and return
-    const bytes = hexToBytes(str as `0x${string}`);
-    return bytes;
+async function decryptPrivateKey(encryptedPayload: EncryptedPrivateKey, pwd: string): Promise<Uint8Array> {
+    const e = fromBase64(encryptedPayload.encrypted);
+    const pwdBytes = new TextEncoder().encode(pwd);
+    try {
+        const key = await deriveKey(pwd);
+        // Derive the IV deterministically from the password (PIN)
+        const pwdHash = new Uint8Array(await crypto.subtle.digest('SHA-256', toArrayBufferView(pwdBytes)));
+        const i = pwdHash.slice(0, S.IV);
+        const dec = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: i as unknown as BufferSource }, key, e as unknown as BufferSource);
+        const str = new TextDecoder().decode(dec);
+        if (!str.startsWith('0x') || str.length !== 66) throw new Error('Invalid private key format');
+        // convert to bytes and return
+        const bytes = hexToBytes(str as `0x${string}`);
+        return bytes;
+    } finally {
+        zeroBytes(pwdBytes);
+    }
 }
-
-function getPublicAddressFromBytes(pkBytes: Uint8Array) { return privateKeyToAccount(bytesToHex(pkBytes) as `0x${string}`).address }
-
-// No legacy sealing. Use static ECDH for deterministic shared-secret derivation.
 
 function toArrayBufferView(u: Uint8Array) {
-    // Return a real ArrayBuffer (not SharedArrayBuffer) containing a copy of the bytes
-    // to satisfy WebCrypto's BufferSource expectation and avoid SharedArrayBuffer types.
     return (new Uint8Array(u)).buffer as ArrayBuffer;
 }
 
-// Ephemeral sealing is used below. Static ECDH-based sealing was removed in favor
-// of ephemeral sender keys which produce one-time shared secrets per message.
-
-// --- ECIES-style sealing using X25519/secp256k1 ECDH via noble/secp256k1 + HKDF + AES-GCM ---
 async function deriveAesKeyFromSharedSecret(sharedSecret: Uint8Array) {
-    // Use HKDF-SHA256 to derive a 256-bit AES-GCM key from the shared secret.
-    // We intentionally do NOT use an external salt — the shared secret alone
-    // is the input to HKDF. Use an empty salt so both sides derive the same key
-    // deterministically from the ECDH shared secret.
     const sharedBuf = toArrayBufferView(sharedSecret);
     const emptySalt = toArrayBufferView(new Uint8Array(0));
     const baseKey = await crypto.subtle.importKey('raw', sharedBuf, 'HKDF', false, ['deriveKey']);
@@ -107,40 +116,35 @@ function normalizeHexKey(hex: string) {
     return hex;
 }
 
-// Simple helper: generate a viem-compatible private key and corresponding
-// uncompressed secp256k1 public key (0x04 + X + Y). This uses viem's
-// generatePrivateKey for the private key and noble/secp256k1 for the pubkey.
-async function generateKeypair(): Promise<{ privateKey: `0x${string}`, publicKey: string }> {
-    const priv = generatePrivateKey(); // 0x-prefixed hex
-    const privBytes = hexToBytes(priv as `0x${string}`);
-    const pub = secp.getPublicKey(privBytes, false); // uncompressed
-    return { privateKey: priv as `0x${string}`, publicKey: bytesToHex(new Uint8Array(pub)) };
-}
 
-// Static ECDH-based sealing: sender uses their private key and recipient public key to derive a shared secret deterministically.
 async function sealWithPublicKeyECIES(msg: string, recipientPublicKeyHex: string, senderPrivBytes: Uint8Array) {
     const recipientPubHex = normalizeHexKey(recipientPublicKeyHex);
     const recipientPubBytes = hexToBytes(('0x' + recipientPubHex) as `0x${string}`);
 
-    // Compute sender public key (uncompressed) to include in envelope
-    const senderPub = secp.getPublicKey(senderPrivBytes, false); // 65 bytes (0x04 | X | Y)
-
-    // Compute shared secret (static ECDH). Request uncompressed output so we can strip leading 0x04
+    const senderPub = secp.getPublicKey(senderPrivBytes, false);
     const shared = secp.getSharedSecret(senderPrivBytes, recipientPubBytes, false);
     const sharedRaw = shared[0] === 4 ? shared.slice(1) : shared;
+    try {
+        const aesKey = await deriveAesKeyFromSharedSecret(sharedRaw);
+        const ivHash = new Uint8Array(await crypto.subtle.digest('SHA-256', toArrayBufferView(sharedRaw)));
+        const iv = ivHash.slice(0, 12);
 
-    const aesKey = await deriveAesKeyFromSharedSecret(sharedRaw);
-    const ivHash = new Uint8Array(await crypto.subtle.digest('SHA-256', toArrayBufferView(sharedRaw)));
-    const iv = ivHash.slice(0, 12);
-
-    const enc = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv as unknown as BufferSource }, aesKey, new TextEncoder().encode(msg));
-
-    return JSON.stringify({
-        type: 'ecies',
-        // include our uncompressed public key so the recipient can perform the same ECDH
-        senderPublicKey: bytesToHex(new Uint8Array(senderPub)),
-        data: toBase64(new Uint8Array(enc)),
-    } as any);
+        const enc = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv as unknown as BufferSource }, aesKey, new TextEncoder().encode(msg));
+        const encArr = new Uint8Array(enc);
+        try {
+            return JSON.stringify({
+                type: 'ecies',
+                senderPublicKey: bytesToHex(new Uint8Array(senderPub)),
+                data: toBase64(encArr),
+            } as any);
+        } finally {
+            zeroBytes(encArr);
+            zeroBytes(ivHash);
+        }
+    } finally {
+        // Clear the shared secret bytes as soon as possible
+        zeroBytes(sharedRaw);
+    }
 }
 
 async function unsealWithPrivateKeyECIES(sealed: string, pkBytes: Uint8Array) {
@@ -153,13 +157,20 @@ async function unsealWithPrivateKeyECIES(sealed: string, pkBytes: Uint8Array) {
 
     const shared = secp.getSharedSecret(pkBytes, senderPubBytes, false);
     const sharedRaw = shared[0] === 4 ? shared.slice(1) : shared;
+    try {
+        const aesKey = await deriveAesKeyFromSharedSecret(sharedRaw);
+        const ivHash = new Uint8Array(await crypto.subtle.digest('SHA-256', toArrayBufferView(sharedRaw)));
+        const iv = ivHash.slice(0, 12);
 
-    const aesKey = await deriveAesKeyFromSharedSecret(sharedRaw);
-    const ivHash = new Uint8Array(await crypto.subtle.digest('SHA-256', toArrayBufferView(sharedRaw)));
-    const iv = ivHash.slice(0, 12);
-
-    const dec = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv as unknown as BufferSource }, aesKey, fromBase64(d.data) as unknown as BufferSource);
-    return new TextDecoder().decode(dec);
+        const dec = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv as unknown as BufferSource }, aesKey, fromBase64(d.data) as unknown as BufferSource);
+        try {
+            return new TextDecoder().decode(dec);
+        } finally {
+            zeroBytes(ivHash);
+        }
+    } finally {
+        zeroBytes(sharedRaw);
+    }
 }
 
 // Simple user-facing API: encrypt with recipient public key (requires sender private key), decrypt with recipient private key.
@@ -248,7 +259,6 @@ function ToyWallet() {
             data?: {
                 message?: string;
                 sealedMessage?: string;
-                targetAddress?: string; // legacy, not used for secure sealing
                 targetPublicKey?: string; // hex public key for ECIES
             };
         }
@@ -705,8 +715,4 @@ function ToyWallet() {
 
 // Export the component as default
 export default ToyWallet;
-
-// Export a provider version that can be used in React contexts
-export { ToyWallet };
-// Expose simple key utilities: generate a keypair and ephemeral ECIES helpers
-export { generateKeypair, sealWithPublicKeyECIES, unsealWithPrivateKeyECIES, encryptWithPublicKey, decryptWithPrivateKey };
+// Note: only default export is needed in this project. Helper functions remain internal to this module.
