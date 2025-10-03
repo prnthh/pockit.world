@@ -695,7 +695,8 @@ function ToyWallet() {
             </div>
 
             {/* Debug/Development Panel - Palantir-style dense horizontal layout */}
-            {process.env.NODE_ENV === 'development' && uiState.showDebugPanel && (
+            {/* {process.env.NODE_ENV === 'development' && } */}
+            {uiState.showDebugPanel && (
                 <ToyWalletDebug
                     walletState={walletState}
                     uiState={uiState}
