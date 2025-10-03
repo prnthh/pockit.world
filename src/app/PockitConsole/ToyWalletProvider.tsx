@@ -683,7 +683,8 @@ function ToyWallet() {
                 )}
 
                 {/* Settings Icon for Debug Panel */}
-                {process.env.NODE_ENV === 'development' && (
+                {/* {process.env.NODE_ENV === 'development' &&} */}
+                {(
                     <button
                         onClick={() => setUiState(prev => ({ ...prev, showDebugPanel: !prev.showDebugPanel }))}
                         className="text-white hover:text-blue-300 transition-colors cursor-pointer ml-2"
