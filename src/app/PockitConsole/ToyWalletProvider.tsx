@@ -1,720 +1,437 @@
-import React, { useEffect, useState } from "react";
-import { generatePrivateKey, privateKeyToAccount, signMessage } from "viem/accounts";
+import React, { useState } from "react";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { hexToBytes } from "viem";
 import ToyWalletDebug from "./ToyWalletDebug";
 import * as secp from '@noble/secp256k1';
 
-// Lowered iteration count to avoid long-running allocations on the main thread.
-// If you need stronger hardening, move PBKDF2 work to a WebWorker instead.
-const S = { ITER: 100_000, KEY: 256, IV: 16, PIN: 4 } as const;
-const allowedOrigins = ['https://app.yourdomain.com', 'https://dashboard.anotherdomain.com', 'http://localhost:3000', window.location.origin];
-
+// ==================== SIMPLE UTILITIES ====================
 const toBase64 = (b: Uint8Array) => btoa(String.fromCharCode(...b));
 const fromBase64 = (s: string) => new Uint8Array(atob(s).split('').map(c => c.charCodeAt(0)));
 
-async function deriveKey(password: string) {
-    // Intentionally do NOT use a salt: derive deterministically from the password alone.
-    const emptySalt = new Uint8Array(0);
-    // Encode password to a Uint8Array so we can zero it after use.
-    const pwdBytes = new TextEncoder().encode(password);
-    try {
-        const km = await crypto.subtle.importKey('raw', pwdBytes, 'PBKDF2', false, ['deriveKey']);
-        const derived = await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: emptySalt as unknown as BufferSource, iterations: S.ITER, hash: 'SHA-256' }, km, { name: 'AES-GCM', length: S.KEY }, false, ['encrypt', 'decrypt']);
-        return derived;
-    } finally {
-        // zero the temporary password bytes asap
-        zeroBytes(pwdBytes);
-    }
-}
-
-// We do not store the IV. It is deterministically derived from the user's PIN
-// so encrypt/decrypt can both compute it without storing it.
-interface EncryptedPrivateKey { encrypted: string }
-interface SecureAccount { address: `0x${string}` }
-
-// ephemeral private key storage — never put this into React state or localStorage
-// only keep bytes here and zero them on lock/unmount/reset
-function zeroBytes(b: Uint8Array | null) {
-    if (!b) return;
-    for (let i = 0; i < b.length; i++) b[i] = 0;
-}
-
-function bytesToHex(bytes: Uint8Array) {
-    return '0x' + Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('');
+function bytesToHex(bytes: Uint8Array): `0x${string}` {
+    return ('0x' + Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('')) as `0x${string}`;
 }
 
 function formatAddressShort(addr?: string) {
-    if (!addr) return '';
-    // common short format: first 6 (0x + 4 chars) and last 4
-    if (addr.length <= 12) return addr;
+    if (!addr || addr.length <= 12) return addr || '';
     return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 }
 
 function formatPublicKeyShort(pk?: string) {
-    if (!pk) return '';
-    // common short display for long pubkeys: keep first 10 and last 6
-    if (pk.length <= 24) return pk;
+    if (!pk || pk.length <= 24) return pk || '';
     return `${pk.slice(0, 10)}…${pk.slice(-6)}`;
 }
 
-async function encryptPrivateKey(pk: `0x${string}`, pwd: string): Promise<EncryptedPrivateKey> {
-    // Deterministically derive IV from the password so it does not need to be stored.
-    // No salt per request; derive key deterministically from password alone
-    const key = await deriveKey(pwd);
-    // Derive IV as SHA-256(password) and take the first S.IV bytes.
-    // This makes IV derivable from the PIN alone so it need not be stored.
-    const pwdBytes = new TextEncoder().encode(pwd);
-    try {
-        const pwdHash = new Uint8Array(await crypto.subtle.digest('SHA-256', toArrayBufferView(pwdBytes)));
-        const iv = pwdHash.slice(0, S.IV);
+// ==================== SIMPLE SEAL/UNSEAL ====================
+async function sealMessage(
+    message: string,
+    recipientPublicKeyHex: string,
+    senderPrivateKeyHex: `0x${string}`,
+    usePrivacyMode: boolean
+): Promise<string> {
+    const recipientPubKey = hexToBytes(recipientPublicKeyHex.startsWith('0x') ? recipientPublicKeyHex as `0x${string}` : `0x${recipientPublicKeyHex}` as `0x${string}`);
 
-        const enc = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv as unknown as BufferSource }, key, new TextEncoder().encode(pk));
-        const encArr = new Uint8Array(enc);
-        try {
-            return { encrypted: toBase64(encArr) };
-        } finally {
-            zeroBytes(encArr);
-        }
-    } finally {
-        zeroBytes(pwdBytes);
+    let senderPrivKey: Uint8Array;
+    let senderPubKeyForEnvelope: Uint8Array;
+
+    if (usePrivacyMode) {
+        // Privacy mode: use ephemeral key
+        senderPrivKey = hexToBytes(generatePrivateKey());
+        senderPubKeyForEnvelope = new Uint8Array(secp.getPublicKey(senderPrivKey, false));
+    } else {
+        // Identity mode: use your actual key
+        senderPrivKey = hexToBytes(senderPrivateKeyHex);
+        senderPubKeyForEnvelope = new Uint8Array(secp.getPublicKey(senderPrivKey, false));
     }
+
+    // Get shared secret
+    const sharedSecret = secp.getSharedSecret(senderPrivKey, recipientPubKey, false);
+    const sharedKey = sharedSecret[0] === 4 ? sharedSecret.slice(1, 33) : sharedSecret.slice(0, 32);
+
+    // Derive AES key from shared secret
+    const aesKey = await crypto.subtle.importKey(
+        'raw',
+        sharedKey,
+        { name: 'AES-GCM' },
+        false,
+        ['encrypt']
+    );
+
+    // Create IV from hash of shared key
+    const ivHash = await crypto.subtle.digest('SHA-256', sharedKey);
+    const iv = new Uint8Array(ivHash).slice(0, 12);
+
+    // Encrypt message
+    const encrypted = await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv },
+        aesKey,
+        new TextEncoder().encode(message)
+    );
+
+    // Return envelope with sender's public key and encrypted data
+    return JSON.stringify({
+        mode: usePrivacyMode ? 'privacy' : 'identity',
+        senderPubKey: bytesToHex(senderPubKeyForEnvelope),
+        data: toBase64(new Uint8Array(encrypted))
+    });
 }
 
-async function decryptPrivateKey(encryptedPayload: EncryptedPrivateKey, pwd: string): Promise<Uint8Array> {
-    const e = fromBase64(encryptedPayload.encrypted);
-    const pwdBytes = new TextEncoder().encode(pwd);
-    try {
-        const key = await deriveKey(pwd);
-        // Derive the IV deterministically from the password (PIN)
-        const pwdHash = new Uint8Array(await crypto.subtle.digest('SHA-256', toArrayBufferView(pwdBytes)));
-        const i = pwdHash.slice(0, S.IV);
-        const dec = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: i as unknown as BufferSource }, key, e as unknown as BufferSource);
-        const str = new TextDecoder().decode(dec);
-        if (!str.startsWith('0x') || str.length !== 66) throw new Error('Invalid private key format');
-        // convert to bytes and return
-        const bytes = hexToBytes(str as `0x${string}`);
-        return bytes;
-    } finally {
-        zeroBytes(pwdBytes);
-    }
+async function unsealMessage(
+    sealedMessage: string,
+    myPrivateKeyHex: `0x${string}`
+): Promise<string> {
+    const envelope = JSON.parse(sealedMessage);
+    const senderPubKey = hexToBytes(envelope.senderPubKey as `0x${string}`);
+    const myPrivKey = hexToBytes(myPrivateKeyHex);
+
+    // Get shared secret (same as sender calculated)
+    const sharedSecret = secp.getSharedSecret(myPrivKey, senderPubKey, false);
+    const sharedKey = sharedSecret[0] === 4 ? sharedSecret.slice(1, 33) : sharedSecret.slice(0, 32);
+
+    // Derive same AES key
+    const aesKey = await crypto.subtle.importKey(
+        'raw',
+        sharedKey,
+        { name: 'AES-GCM' },
+        false,
+        ['decrypt']
+    );
+
+    // Derive same IV
+    const ivHash = await crypto.subtle.digest('SHA-256', sharedKey);
+    const iv = new Uint8Array(ivHash).slice(0, 12);
+
+    // Decrypt
+    const decrypted = await crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv },
+        aesKey,
+        fromBase64(envelope.data)
+    );
+
+    return new TextDecoder().decode(decrypted);
 }
 
-function toArrayBufferView(u: Uint8Array) {
-    return (new Uint8Array(u)).buffer as ArrayBuffer;
+// ==================== SIMPLE STORAGE ====================
+function saveKey(privateKeyHex: `0x${string}`, pin: string) {
+    localStorage.setItem('wallet', JSON.stringify({
+        key: privateKeyHex,
+        pin: pin
+    }));
 }
 
-async function deriveAesKeyFromSharedSecret(sharedSecret: Uint8Array) {
-    const sharedBuf = toArrayBufferView(sharedSecret);
-    const emptySalt = toArrayBufferView(new Uint8Array(0));
-    const baseKey = await crypto.subtle.importKey('raw', sharedBuf, 'HKDF', false, ['deriveKey']);
-    const derived = await crypto.subtle.deriveKey({ name: 'HKDF', hash: 'SHA-256', salt: emptySalt, info: new Uint8Array(0) }, baseKey, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
-    return derived as CryptoKey;
+function loadKey(pin: string): `0x${string}` | null {
+    const stored = localStorage.getItem('wallet');
+    if (!stored) return null;
+    const data = JSON.parse(stored);
+    if (data.pin !== pin) return null;
+    return data.key;
 }
 
-function normalizeHexKey(hex: string) {
-    if (hex.startsWith('0x')) return hex.slice(2);
-    return hex;
+function keyExists(): boolean {
+    return !!localStorage.getItem('wallet');
 }
 
-
-async function sealWithPublicKeyECIES(msg: string, recipientPublicKeyHex: string, senderPrivBytes: Uint8Array) {
-    const recipientPubHex = normalizeHexKey(recipientPublicKeyHex);
-    const recipientPubBytes = hexToBytes(('0x' + recipientPubHex) as `0x${string}`);
-
-    const senderPub = secp.getPublicKey(senderPrivBytes, false);
-    const shared = secp.getSharedSecret(senderPrivBytes, recipientPubBytes, false);
-    const sharedRaw = shared[0] === 4 ? shared.slice(1) : shared;
-    try {
-        const aesKey = await deriveAesKeyFromSharedSecret(sharedRaw);
-        const ivHash = new Uint8Array(await crypto.subtle.digest('SHA-256', toArrayBufferView(sharedRaw)));
-        const iv = ivHash.slice(0, 12);
-
-        const enc = await crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv as unknown as BufferSource }, aesKey, new TextEncoder().encode(msg));
-        const encArr = new Uint8Array(enc);
-        try {
-            return JSON.stringify({
-                type: 'ecies',
-                senderPublicKey: bytesToHex(new Uint8Array(senderPub)),
-                data: toBase64(encArr),
-            } as any);
-        } finally {
-            zeroBytes(encArr);
-            zeroBytes(ivHash);
-        }
-    } finally {
-        // Clear the shared secret bytes as soon as possible
-        zeroBytes(sharedRaw);
-    }
+function removeKey() {
+    localStorage.removeItem('wallet');
 }
 
-async function unsealWithPrivateKeyECIES(sealed: string, pkBytes: Uint8Array) {
-    const d = JSON.parse(sealed) as { type?: string; senderPublicKey?: string; data?: string };
-    if (d.type !== 'ecies') throw new Error('Not an ECIES envelope');
-    if (!d.senderPublicKey || !d.data) throw new Error('Malformed envelope');
-
-    const senderPubHex = normalizeHexKey(d.senderPublicKey);
-    const senderPubBytes = hexToBytes(('0x' + senderPubHex) as `0x${string}`);
-
-    const shared = secp.getSharedSecret(pkBytes, senderPubBytes, false);
-    const sharedRaw = shared[0] === 4 ? shared.slice(1) : shared;
-    try {
-        const aesKey = await deriveAesKeyFromSharedSecret(sharedRaw);
-        const ivHash = new Uint8Array(await crypto.subtle.digest('SHA-256', toArrayBufferView(sharedRaw)));
-        const iv = ivHash.slice(0, 12);
-
-        const dec = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv as unknown as BufferSource }, aesKey, fromBase64(d.data) as unknown as BufferSource);
-        try {
-            return new TextDecoder().decode(dec);
-        } finally {
-            zeroBytes(ivHash);
-        }
-    } finally {
-        zeroBytes(sharedRaw);
-    }
-}
-
-// Simple user-facing API: encrypt with recipient public key (requires sender private key), decrypt with recipient private key.
-async function encryptWithPublicKey(message: string, recipientPublicKeyHex: string, senderPrivHex: `0x${string}`) {
-    if (!senderPrivHex) throw new Error('senderPrivHex required for static ECDH');
-    const senderPrivBytes = hexToBytes(senderPrivHex as `0x${string}`);
-    return await sealWithPublicKeyECIES(message, recipientPublicKeyHex, senderPrivBytes);
-}
-
-// Decrypt: only support static ECIES envelopes (type 'ecies').
-async function decryptWithPrivateKey(sealed: string, recipientPrivHex: `0x${string}`) {
-    const parsed = JSON.parse(sealed) as { type?: string };
-    if (parsed.type !== 'ecies') throw new Error('Unsupported envelope type');
-    const recipBytes = hexToBytes(recipientPrivHex as `0x${string}`);
-    return await unsealWithPrivateKeyECIES(sealed, recipBytes);
-}
-
+// ==================== MAIN COMPONENT ====================
 function ToyWallet() {
-    // Consolidated wallet state to prevent inconsistencies
-    const [walletState, setWalletState] = useState({
-        pin: '',
-        unlocked: false,
-        account: null as SecureAccount | null,
-        showPinInput: false,
-        walletExists: false,
-    });
+    const [pin, setPin] = useState('');
+    const [unlocked, setUnlocked] = useState(false);
+    const [privateKey, setPrivateKey] = useState<`0x${string}` | null>(null);
+    const [address, setAddress] = useState('');
+    const [publicKey, setPublicKey] = useState('');
+    const [showPinInput, setShowPinInput] = useState(false);
+    const [privacyMode, setPrivacyMode] = useState(false);
+    const [error, setError] = useState('');
 
-    // UI state (non-sensitive, can be separate)
-    const [uiState, setUiState] = useState({
-        message: '',
-        signature: '',
-        error: '',
-        sealedMessage: '',
-        unsealedMessage: '',
-        targetPublicKey: '',
-        ourPublicKey: '',
-        copyFeedback: false,
-        showDebugPanel: false,
-    });
+    // UI state
+    const [message, setMessage] = useState('');
+    const [targetPublicKey, setTargetPublicKey] = useState('');
+    const [sealedMessage, setSealedMessage] = useState('');
+    const [unsealedMessage, setUnsealedMessage] = useState('');
+    const [showDebugPanel, setShowDebugPanel] = useState(false);
+    const [copyFeedback, setCopyFeedback] = useState(false);
 
-    // Memoized wallet existence check
-    // ephemeral private key bytes ref — never serialize this
-    const privateKeyRef = React.useRef<Uint8Array | null>(null);
-
-    const checkWalletExists = React.useCallback(() => {
-        const stored = localStorage.getItem('encryptedWallet');
-        return !!stored;
-    }, []);
-
-    // Check if wallet exists and clear sensitive data on unmount
-    useEffect(() => {
-        const exists = checkWalletExists();
-        setWalletState(prev => ({ ...prev, walletExists: exists }));
-
-        // ephemeral storage for private key bytes — not in state (use outer ref)
-
-        return () => {
-            // Clear all sensitive data on unmount
-            setWalletState({
-                pin: '',
-                unlocked: false,
-                account: null,
-                showPinInput: false,
-                walletExists: exists, // Keep this for UI consistency
-            });
-            setUiState(prev => ({
-                ...prev,
-                message: '',
-                signature: '',
-                error: '',
-                sealedMessage: '',
-                unsealedMessage: '',
-                targetPublicKey: prev.targetPublicKey || '',
-                ourPublicKey: '',
-            }));
-            // zero any private key bytes left in memory
-            zeroBytes(privateKeyRef.current);
-            privateKeyRef.current = null;
-        };
-    }, [checkWalletExists]);
-
-    // Handle incoming postMessage
-    useEffect(() => {
-        interface PostMessageData {
-            action: 'getAddress' | 'signMessage' | 'unsealMessage' | 'sealMessage';
-            data?: {
-                message?: string;
-                sealedMessage?: string;
-                targetPublicKey?: string; // hex public key for ECIES
-            };
-        }
-
-        interface PostMessageResponse {
-            type: 'response';
-            result?: {
-                address?: string;
-                signature?: string;
-                unsealedMessage?: string;
-                sealedMessage?: string;
-            };
-            error?: string;
-        }
-
-        const handleMessage = async (event: MessageEvent<PostMessageData>) => {
-            if (!allowedOrigins.includes(event.origin)) return;
-            const { action, data } = event.data;
-            if (!walletState.unlocked || !walletState.account) return (event.source as WindowProxy)?.postMessage({ type: 'response', error: 'Wallet not unlocked' } as PostMessageResponse, event.origin);
-            try {
-                if (action === 'getAddress') return (event.source as WindowProxy)?.postMessage({ type: 'response', result: { address: walletState.account.address } } as PostMessageResponse, event.origin);
-                if (action === 'signMessage') { if (!data?.message) throw new Error('Message required'); if (!privateKeyRef.current) throw new Error('Private key not available'); const signature = await signMessage({ privateKey: bytesToHex(privateKeyRef.current) as `0x${string}`, message: data.message }); return (event.source as WindowProxy)?.postMessage({ type: 'response', result: { signature } } as PostMessageResponse, event.origin); }
-                if (action === 'sealMessage') {
-                    if (!data?.message) throw new Error('Message required');
-                    // Secure sealing requires a target public key (ECIES).
-                    const targetPub = data.targetPublicKey;
-                    if (!targetPub) throw new Error('targetPublicKey required for secure sealing');
-                    // Use static ECDH with our wallet private key as sender
-                    if (!privateKeyRef.current) throw new Error('Private key not available for sealing');
-                    const senderPrivHex = bytesToHex(privateKeyRef.current) as `0x${string}`;
-                    const sealed = await encryptWithPublicKey(data.message, targetPub, senderPrivHex);
-                    return (event.source as WindowProxy)?.postMessage({ type: 'response', result: { sealedMessage: sealed } } as PostMessageResponse, event.origin);
-                }
-                if (action === 'unsealMessage') { if (!data?.sealedMessage) throw new Error('Sealed message required'); if (!privateKeyRef.current) throw new Error('Private key not available'); const privHex = bytesToHex(privateKeyRef.current) as `0x${string}`; const unsealed = await decryptWithPrivateKey(data.sealedMessage, privHex); return (event.source as WindowProxy)?.postMessage({ type: 'response', result: { unsealedMessage: unsealed } } as PostMessageResponse, event.origin); }
-            } catch (err: any) { (event.source as WindowProxy)?.postMessage({ type: 'response', error: err.message } as PostMessageResponse, event.origin); }
-        };
-
-        window.addEventListener('message', handleMessage);
-        return () => window.removeEventListener('message', handleMessage);
-    }, [walletState.unlocked, walletState.account]);
-
-    // Simplified wallet unlock/creation
-    const handleUnlock = async (pinToUse?: string) => {
-        const currentPin = pinToUse || walletState.pin;
-
-        if (!currentPin || currentPin.length !== 4) {
-            setUiState(prev => ({ ...prev, error: 'Need 4-digit PIN' }));
+    const unlock = () => {
+        if (pin.length !== 4) {
+            setError('Need 4-digit PIN');
             return;
         }
 
-        setUiState(prev => ({ ...prev, error: '' }));
+        setError('');
+        let key = loadKey(pin);
 
-        try {
-            // Check if generatePrivateKey function exists
-            if (typeof generatePrivateKey !== 'function') {
-                setUiState(prev => ({ ...prev, error: 'Import error' }));
-                return;
-            }
-
-            let privateKeyHex: `0x${string}` | undefined;
-            let privateKeyBytes: Uint8Array | null = null;
-
-            // Check if wallet exists in storage
-            const storedWallet = localStorage.getItem('encryptedWallet');
-
-            if (storedWallet) {
-                // Try to decrypt existing wallet
-                try {
-                    const encryptedData = JSON.parse(storedWallet);
-                    privateKeyBytes = await decryptPrivateKey(encryptedData, currentPin);
-                    // store bytes in ephemeral ref
-                    zeroBytes(privateKeyRef.current);
-                    privateKeyRef.current = privateKeyBytes;
-                    privateKeyHex = bytesToHex(privateKeyBytes) as `0x${string}`;
-                } catch (decryptError) {
-                    setUiState(prev => ({ ...prev, error: 'Wrong PIN' }));
-                    return;
-                }
-            } else {
-                // Create new wallet
-                privateKeyHex = generatePrivateKey();
-                // convert to bytes and place in ephemeral ref
-                const b = hexToBytes(privateKeyHex);
-                zeroBytes(privateKeyRef.current);
-                privateKeyRef.current = b;
-
-                // Encrypt and save the new wallet
-                try {
-                    const encryptedWallet = await encryptPrivateKey(privateKeyHex!, currentPin);
-                    localStorage.setItem('encryptedWallet', JSON.stringify(encryptedWallet));
-                    setWalletState(prev => ({ ...prev, walletExists: true }));
-                } catch (encryptError) {
-                    setUiState(prev => ({ ...prev, error: 'Failed to save wallet' }));
-                    return;
-                }
-            }
-
-            const viemAccount = privateKeyToAccount((privateKeyHex ?? bytesToHex(privateKeyBytes!)) as `0x${string}`);
-
-            const simpleAccount = {
-                address: viemAccount.address,
-            };
-
-            setWalletState(prev => ({
-                ...prev,
-                account: simpleAccount,
-                unlocked: true,
-                showPinInput: false,
-                pin: '',
-            }));
-
-            // Auto-fill the debug panel's target public key with our own public key (useful for tests)
-            try {
-                if (privateKeyRef.current) {
-                    const ourPub = bytesToHex(new Uint8Array(secp.getPublicKey(privateKeyRef.current, false)));
-                    setUiState(prev => ({ ...prev, targetPublicKey: ourPub, ourPublicKey: ourPub }));
-                }
-            } catch {
-                // ignore if public key derivation fails
-            }
-
-        } catch (err) {
-            setUiState(prev => ({ ...prev, error: 'Unlock failed' }));
+        if (!key) {
+            // Create new wallet
+            key = generatePrivateKey();
+            saveKey(key, pin);
         }
+
+        const account = privateKeyToAccount(key);
+        const pubKey = bytesToHex(new Uint8Array(secp.getPublicKey(hexToBytes(key), false)));
+
+        setPrivateKey(key);
+        setAddress(account.address);
+        setPublicKey(pubKey);
+        setTargetPublicKey(pubKey); // Default to self
+        setUnlocked(true);
+        setShowPinInput(false);
+        setPin('');
     };
 
-    // Enhanced message signing with validation
-    const handleSignMessage = async () => {
-        if (!walletState.unlocked || !walletState.account || !uiState.message.trim()) {
-            setUiState(prev => ({ ...prev, error: 'Unlock wallet and enter a message' }));
+    const lock = () => {
+        setPrivateKey(null);
+        setAddress('');
+        setPublicKey('');
+        setUnlocked(false);
+        setPin('');
+        setShowPinInput(false);
+        setMessage('');
+        setSealedMessage('');
+        setUnsealedMessage('');
+    };
+
+    const handleSeal = async () => {
+        if (!unlocked || !privateKey || !message.trim()) {
+            setError('Unlock wallet and enter a message');
+            return;
+        }
+        if (!targetPublicKey) {
+            setError('Enter target public key');
             return;
         }
 
         try {
-            if (!privateKeyRef.current) throw new Error('Private key not available');
-            const sig = await signMessage({ privateKey: bytesToHex(privateKeyRef.current) as `0x${string}`, message: uiState.message.trim() });
-            setUiState(prev => ({ ...prev, signature: sig, error: '' }));
+            const sealed = await sealMessage(message, targetPublicKey, privateKey, privacyMode);
+            setSealedMessage(sealed);
+            setError('');
         } catch (err: any) {
-            setUiState(prev => ({ ...prev, error: 'Failed to sign message' }));
+            setError('Failed to seal: ' + err.message);
         }
     };
 
-    // Unseal/decrypt a message using the wallet's private key
-    const handleUnsealMessage = async () => {
-        if (!walletState.unlocked || !walletState.account || !uiState.sealedMessage.trim()) {
-            setUiState(prev => ({ ...prev, error: 'Unlock wallet and enter a sealed message' }));
+    const handleUnseal = async () => {
+        if (!unlocked || !privateKey || !sealedMessage.trim()) {
+            setError('Unlock wallet and enter sealed message');
             return;
         }
 
         try {
-            if (!privateKeyRef.current) throw new Error('Private key not available');
-            const privHex = bytesToHex(privateKeyRef.current) as `0x${string}`;
-            const unsealed = await decryptWithPrivateKey(uiState.sealedMessage, privHex);
-            setUiState(prev => ({ ...prev, unsealedMessage: String(unsealed), error: '' }));
+            const unsealed = await unsealMessage(sealedMessage, privateKey);
+            setUnsealedMessage(unsealed);
+            setError('');
         } catch (err: any) {
-            setUiState(prev => ({ ...prev, error: 'Failed to unseal message: ' + err.message, unsealedMessage: '' }));
+            setError('Failed to unseal: ' + err.message);
         }
     };
 
-    // Create a test sealed message (base64 encoded for testing)
-    const handleCreateTestSeal = async () => {
-        if (!walletState.unlocked || !walletState.account || !uiState.message.trim()) {
-            setUiState(prev => ({ ...prev, error: 'Unlock wallet and enter a message to seal first' }));
-            return;
-        }
-
-        if (!uiState.targetPublicKey) {
-            setUiState(prev => ({ ...prev, error: 'Target public key required for secure sealing' }));
-            return;
-        }
-
-        try {
-            if (!privateKeyRef.current) throw new Error('Private key not available for sealing');
-            const senderPrivHex = bytesToHex(privateKeyRef.current) as `0x${string}`;
-            const sealed = await encryptWithPublicKey(uiState.message.trim(), uiState.targetPublicKey, senderPrivHex);
-            setUiState(prev => ({ ...prev, sealedMessage: sealed, error: '' }));
-        } catch (err: any) {
-            setUiState(prev => ({ ...prev, error: 'Failed to create seal: ' + err.message }));
-        }
+    const handleReset = () => {
+        removeKey();
+        lock();
     };
 
-    // Lock wallet and clear sensitive data
-    const handleLock = () => {
-        setWalletState(prev => ({
-            ...prev,
-            unlocked: false,
-            account: null,
-            pin: '',
-            showPinInput: false,
-        }));
-        setUiState(prev => ({
-            ...prev,
-            message: '',
-            signature: '',
-            error: '',
-            sealedMessage: '',
-            unsealedMessage: '',
-            ourPublicKey: '',
-        }));
-        // zero and clear ephemeral private key
-        zeroBytes(privateKeyRef.current);
-        privateKeyRef.current = null;
-    };
-
-    // Reset wallet - clear all data and start fresh
-    const handleResetWallet = () => {
-        localStorage.removeItem('encryptedWallet');
-        setWalletState({
-            pin: '',
-            unlocked: false,
-            account: null,
-            showPinInput: false,
-            walletExists: false,
-        });
-        setUiState({
-            message: '',
-            signature: '',
-            error: '',
-            sealedMessage: '',
-            unsealedMessage: '',
-            targetPublicKey: '',
-            ourPublicKey: '',
-            copyFeedback: false,
-            showDebugPanel: false,
-        });
-        // zero and clear ephemeral private key
-        zeroBytes(privateKeyRef.current);
-        privateKeyRef.current = null;
-    };
-
-    // Auto-import private key from file when selected
-    const handleFileSelect = async (file: File | null) => {
-        if (!file) {
-            return;
-        }
-
-        try {
-            const privateKeyText = await file.text();
-            const trimmedKey = privateKeyText.trim();
-
-            // Validate private key format
-            if (!trimmedKey.startsWith('0x') || trimmedKey.length !== 66) {
-                setUiState(prev => ({ ...prev, error: 'Invalid private key format in file' }));
-                // Clear the file input
-                const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-                if (fileInput) fileInput.value = '';
-                return;
-            }
-
-            // Validate it's a valid hex string
-            try {
-                hexToBytes(trimmedKey as `0x${string}`);
-            } catch {
-                setUiState(prev => ({ ...prev, error: 'Invalid hex format in file' }));
-                const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-                if (fileInput) fileInput.value = '';
-                return;
-            }
-
-            // Create account to verify it's valid
-            try {
-                privateKeyToAccount(trimmedKey as `0x${string}`);
-            } catch {
-                setUiState(prev => ({ ...prev, error: 'Invalid private key in file' }));
-                const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-                if (fileInput) fileInput.value = '';
-                return;
-            }
-
-            // Ask for PIN to encrypt the imported key
-            const pinForImport = prompt('Enter a 4-digit PIN to encrypt the imported private key:');
-            if (!pinForImport || pinForImport.length !== 4 || !/^\d{4}$/.test(pinForImport)) {
-                setUiState(prev => ({ ...prev, error: 'Valid 4-digit PIN required' }));
-                const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-                if (fileInput) fileInput.value = '';
-                return;
-            }
-
-            // Encrypt and save the imported wallet
-            const encryptedWallet = await encryptPrivateKey(trimmedKey as `0x${string}`, pinForImport);
-            localStorage.setItem('encryptedWallet', JSON.stringify(encryptedWallet));
-            setWalletState(prev => ({ ...prev, walletExists: true }));
-            setUiState(prev => ({ ...prev, error: '' }));
-
-            // Clear the file input
-            const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-            if (fileInput) fileInput.value = '';
-
-            // Automatically unlock the wallet with the PIN that was just set
-            handleUnlock(pinForImport);
-
-        } catch (err) {
-            setUiState(prev => ({ ...prev, error: 'Failed to read or process file' }));
-            const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-            if (fileInput) fileInput.value = '';
-        }
-    };
-
-    // Copy address to clipboard
-    const handleCopyAddress = async () => {
-        if (walletState.account?.address) {
-            try {
-                await navigator.clipboard.writeText(walletState.account.address);
-                setUiState(prev => ({ ...prev, copyFeedback: true }));
-                setTimeout(() => setUiState(prev => ({ ...prev, copyFeedback: false })), 2000);
-            } catch (err) {
-                console.error('Failed to copy address:', err);
-            }
-        }
-    };
-
-    // Download private key as file (debug only)
-    const handleCopyPrivateKey = async () => {
-        if (walletState.unlocked && privateKeyRef.current) {
-            try {
-                const hex = bytesToHex(privateKeyRef.current);
-                const blob = new Blob([hex], { type: 'text/plain' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'pockit.key';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                setUiState(prev => ({ ...prev, copyFeedback: true }));
-                setTimeout(() => setUiState(prev => ({ ...prev, copyFeedback: false })), 2000);
-            } catch (err) {
-                console.error('Failed to download private key:', err);
-                setUiState(prev => ({ ...prev, error: 'Failed to download private key' }));
-            }
-        }
-    };
-
-    // Handle PIN input changes and auto-submit on 4 digits
     const handlePinChange = (value: string) => {
-        // Only allow digits and max 4 characters
         const sanitized = value.replace(/\D/g, '').slice(0, 4);
-        setWalletState(prev => ({ ...prev, pin: sanitized }));
+        setPin(sanitized);
+        if (error) setError('');
 
-        // Clear errors immediately on input
-        if (uiState.error) setUiState(prev => ({ ...prev, error: '' }));
-
-        // Auto-submit when 4 digits are entered
         if (sanitized.length === 4) {
             setTimeout(() => {
-                handleUnlock(sanitized); // Pass the sanitized PIN directly
-            }, 100); // Small delay for better UX
+                const tempPin = sanitized;
+                setPin('');
+                if (tempPin.length === 4) {
+                    let key = loadKey(tempPin);
+                    if (!key) {
+                        key = generatePrivateKey();
+                        saveKey(key, tempPin);
+                    }
+                    const account = privateKeyToAccount(key);
+                    const pubKey = bytesToHex(new Uint8Array(secp.getPublicKey(hexToBytes(key), false)));
+                    setPrivateKey(key);
+                    setAddress(account.address);
+                    setPublicKey(pubKey);
+                    setTargetPublicKey(pubKey);
+                    setUnlocked(true);
+                    setShowPinInput(false);
+                }
+            }, 100);
         }
     };
 
-    // Optimized toggle function with state batching
-    const togglePinInput = () => {
-        if (walletState.unlocked) {
-            handleLock();
-        } else {
-            setWalletState(prev => ({ ...prev, showPinInput: !prev.showPinInput }));
-            if (uiState.error) setUiState(prev => ({ ...prev, error: '' }));
-            if (walletState.pin) setWalletState(prev => ({ ...prev, pin: '' }));
-        }
+    const copyAddress = async () => {
+        if (!address) return;
+        try {
+            await navigator.clipboard.writeText(address);
+            setCopyFeedback(true);
+            setTimeout(() => setCopyFeedback(false), 2000);
+        } catch { }
+    };
+
+    const copyPublicKey = async () => {
+        if (!publicKey) return;
+        try {
+            await navigator.clipboard.writeText(publicKey);
+            setCopyFeedback(true);
+            setTimeout(() => setCopyFeedback(false), 2000);
+        } catch { }
     };
 
     return (
         <div className="flex items-center justify-center relative">
-            {/* Single Pill Design */}
-            <div className={`bg-gray-800 rounded-full px-4 py-2 flex items-center space-x-3 min-w-0 ${walletState.showPinInput ? 'ring-2 ring-blue-400' : ''} transition-all`}>
-                {/* Wallet State Icon */}
+            <div className={`bg-gray-800 rounded-full px-4 py-2 flex items-center space-x-3 min-w-0 ${showPinInput ? 'ring-2 ring-blue-400' : ''} transition-all`}>
                 <button
-                    onClick={togglePinInput}
+                    onClick={() => {
+                        if (unlocked) {
+                            lock();
+                        } else {
+                            setShowPinInput(!showPinInput);
+                            setPin('');
+                            setError('');
+                        }
+                    }}
                     className="text-xl hover:scale-110 transition-transform cursor-pointer"
-                    title={walletState.unlocked ? "Lock wallet" : "Unlock wallet"}
+                    title={unlocked ? "Lock wallet" : "Unlock wallet"}
                 >
-                    {walletState.unlocked ? "🔓" : "🔒"}
+                    {unlocked ? "🔓" : "🔒"}
                 </button>
 
-                {/* Content based on state */}
-                {walletState.unlocked ? (
-                    // Unlocked state - show public key (full) and allow copy
-                    <button
-                        onClick={async () => {
-                            try {
-                                const toCopy = uiState.ourPublicKey || walletState.account?.address || '';
-                                if (!toCopy) return;
-                                await navigator.clipboard.writeText(toCopy);
-                                setUiState(prev => ({ ...prev, copyFeedback: true }));
-                                setTimeout(() => setUiState(prev => ({ ...prev, copyFeedback: false })), 2000);
-                            } catch (e) { /* ignore */ }
-                        }}
-                        className="text-white text-sm font-mono truncate max-w-64 hover:text-blue-300 transition-colors cursor-pointer"
-                        title={uiState.ourPublicKey ? 'Click to copy full public key' : 'Click to copy address'}
-                    >
-                        {uiState.copyFeedback ? 'Copied!' : (uiState.ourPublicKey ? formatPublicKeyShort(uiState.ourPublicKey) : `id: ${formatAddressShort(walletState.account?.address)}`)}
-                    </button>
-                ) : walletState.showPinInput ? (
-                    // PIN input state
+                {unlocked ? (
+                    <>
+                        <button
+                            onClick={() => setPrivacyMode(!privacyMode)}
+                            className="text-lg hover:scale-110 transition-transform cursor-pointer"
+                            title={privacyMode ? "Privacy mode: ephemeral key" : "Identity mode: your public key"}
+                        >
+                            {privacyMode ? "🥷" : "👤"}
+                        </button>
+
+                        <button
+                            onClick={copyPublicKey}
+                            className="text-white text-sm font-mono truncate max-w-64 hover:text-blue-300 transition-colors cursor-pointer"
+                            title="Copy public key"
+                        >
+                            {copyFeedback ? 'Copied!' : formatPublicKeyShort(publicKey)}
+                        </button>
+                    </>
+                ) : showPinInput ? (
                     <form
                         className="flex items-center space-x-2"
                         onSubmit={(e) => {
                             e.preventDefault();
-                            if (walletState.pin.length === 4) {
-                                handleUnlock();
-                            }
+                            if (pin.length === 4) unlock();
                         }}
                     >
                         <input
                             type="password"
-                            value={walletState.pin}
+                            value={pin}
                             onChange={(e) => handlePinChange(e.target.value)}
                             className="bg-transparent text-white text-center text-sm font-mono border border-gray-600 rounded px-2 py-1 w-16 focus:outline-none focus:border-blue-400"
                             maxLength={4}
-                            placeholder="Enter PIN or Create PIN"
+                            placeholder="PIN"
                             autoFocus
-                            autoComplete="new-password"
                         />
-                        {uiState.error && (
-                            <span className="text-red-400 text-xs">❌</span>
-                        )}
+                        {error && <span className="text-red-400 text-xs">❌</span>}
                     </form>
-                ) : (
-                    // Default state - just the lock icon
-                    <></>
-                )}
+                ) : null}
 
-                {/* Settings Icon for Debug Panel */}
-                {/* {process.env.NODE_ENV === 'development' &&} */}
-                {(
-                    <button
-                        onClick={() => setUiState(prev => ({ ...prev, showDebugPanel: !prev.showDebugPanel }))}
-                        className="text-white hover:text-blue-300 transition-colors cursor-pointer ml-2"
-                        title="Toggle debug panel"
-                    >
-                        ⚙️
-                    </button>
-                )}
+                <button
+                    onClick={() => setShowDebugPanel(!showDebugPanel)}
+                    className="text-white hover:text-blue-300 transition-colors cursor-pointer ml-2"
+                    title="Toggle debug panel"
+                >
+                    ⚙️
+                </button>
             </div>
 
-            {/* Debug/Development Panel - Palantir-style dense horizontal layout */}
-            {/* {process.env.NODE_ENV === 'development' && } */}
-            {uiState.showDebugPanel && (
+            {showDebugPanel && (
                 <ToyWalletDebug
-                    walletState={walletState}
-                    uiState={uiState}
-                    setUiState={setUiState}
-                    handleCopyAddress={handleCopyAddress}
-                    handleCopyPrivateKey={handleCopyPrivateKey}
-                    handleSignMessage={handleSignMessage}
-                    handleCreateTestSeal={handleCreateTestSeal}
-                    handleUnsealMessage={handleUnsealMessage}
-                    handleFileSelect={handleFileSelect}
-                    handleResetWallet={handleResetWallet}
+                    walletState={{
+                        unlocked,
+                        account: address ? { address: address as `0x${string}` } : null,
+                        pin: '',
+                        showPinInput,
+                        walletExists: keyExists()
+                    }}
+                    uiState={{
+                        message,
+                        signature: '',
+                        error,
+                        sealedMessage,
+                        unsealedMessage,
+                        targetPublicKey,
+                        ourPublicKey: publicKey,
+                        copyFeedback,
+                        showDebugPanel,
+                        privacyMode
+                    }}
+                    setUiState={(updater) => {
+                        const newState = typeof updater === 'function'
+                            ? updater({
+                                message,
+                                signature: '',
+                                error,
+                                sealedMessage,
+                                unsealedMessage,
+                                targetPublicKey,
+                                ourPublicKey: publicKey,
+                                copyFeedback,
+                                showDebugPanel,
+                                privacyMode
+                            })
+                            : updater;
+
+                        setMessage(newState.message);
+                        setError(newState.error);
+                        setSealedMessage(newState.sealedMessage);
+                        setUnsealedMessage(newState.unsealedMessage);
+                        setTargetPublicKey(newState.targetPublicKey);
+                        setCopyFeedback(newState.copyFeedback);
+                        setShowDebugPanel(newState.showDebugPanel);
+                        setPrivacyMode(newState.privacyMode);
+                    }}
+                    handleCopyAddress={copyAddress}
+                    handleCopyPrivateKey={async () => {
+                        if (!privateKey) return;
+                        try {
+                            const blob = new Blob([privateKey], { type: 'text/plain' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = 'pockit.key';
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                            setCopyFeedback(true);
+                            setTimeout(() => setCopyFeedback(false), 2000);
+                        } catch { }
+                    }}
+                    handleSignMessage={async () => {
+                        setError('Sign message not implemented in simple version');
+                    }}
+                    handleCreateTestSeal={handleSeal}
+                    handleUnsealMessage={handleUnseal}
+                    handleFileSelect={async (file: File | null) => {
+                        if (!file) return;
+                        try {
+                            const text = await file.text();
+                            const key = text.trim();
+                            if (!key.startsWith('0x') || key.length !== 66) throw new Error('Invalid format');
+                            const newPin = prompt('Enter a 4-digit PIN:');
+                            if (!newPin || newPin.length !== 4 || !/^\d{4}$/.test(newPin)) throw new Error('Invalid PIN');
+                            saveKey(key as `0x${string}`, newPin);
+                            setError('');
+                        } catch (err: any) {
+                            setError(err.message);
+                        }
+                    }}
+                    handleResetWallet={handleReset}
                 />
             )}
         </div>
     );
 }
 
-// Export the component as default
 export default ToyWallet;
-// Note: only default export is needed in this project. Helper functions remain internal to this module.

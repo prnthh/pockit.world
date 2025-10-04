@@ -21,6 +21,7 @@ interface UiState {
     ourPublicKey: string;
     copyFeedback: boolean;
     showDebugPanel: boolean;
+    privacyMode: boolean;
 }
 
 interface Props {
@@ -90,6 +91,25 @@ export default function ToyWalletDebug({
                                         <div className="text-gray-400 text-xs mb-1">Public Key</div>
                                         <div className="font-mono text-gray-200 text-xs break-all max-h-20 overflow-y-auto">
                                             {uiState.ourPublicKey}
+                                        </div>
+                                    </div>
+                                    <div className="bg-gray-700/50 rounded px-2 py-1">
+                                        <div className="flex items-center justify-between mb-1">
+                                            <span className="text-gray-400 text-xs">Privacy Mode</span>
+                                            <button
+                                                onClick={() => setUiState(prev => ({ ...prev, privacyMode: !prev.privacyMode }))}
+                                                className={`px-2 py-0.5 rounded text-xs transition-colors ${uiState.privacyMode
+                                                    ? 'bg-purple-600/20 text-purple-300 border border-purple-600/30'
+                                                    : 'bg-blue-600/20 text-blue-300 border border-blue-600/30'
+                                                    }`}
+                                            >
+                                                {uiState.privacyMode ? '🥷 Privacy' : '👤 Identity'}
+                                            </button>
+                                        </div>
+                                        <div className="text-gray-500 text-xs mt-1">
+                                            {uiState.privacyMode
+                                                ? 'Messages encrypted with ephemeral key'
+                                                : 'Messages encrypted with your identity key'}
                                         </div>
                                     </div>
                                     <div className="flex space-x-2">
