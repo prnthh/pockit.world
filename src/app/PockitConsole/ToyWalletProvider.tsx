@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import { hexToBytes } from "viem";
+import { hexToBytes, toHex } from "viem";
 import ToyWalletDebug from "./ToyWalletDebug";
 import * as secp from '@noble/secp256k1';
 
@@ -8,43 +8,45 @@ import * as secp from '@noble/secp256k1';
 const toBase64 = (b: Uint8Array) => btoa(String.fromCharCode(...b));
 const fromBase64 = (s: string) => new Uint8Array(atob(s).split('').map(c => c.charCodeAt(0)));
 
-function bytesToHex(bytes: Uint8Array): `0x${string}` {
-    return ('0x' + Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('')) as `0x${string}`;
-}
-
-function formatAddressShort(addr?: string) {
-    if (!addr || addr.length <= 12) return addr || '';
-    return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
-}
-
 function formatPublicKeyShort(pk?: string) {
     if (!pk || pk.length <= 24) return pk || '';
     return `${pk.slice(0, 10)}…${pk.slice(-6)}`;
 }
 
 // ==================== SIMPLE SEAL/UNSEAL ====================
+// Main seal function - works with or without identity
+// If getPrivateKey is provided and returns a key, uses it for identity sealing
+// If getPrivateKey is not provided or returns null, creates anonymous ephemeral seal
 async function sealMessage(
     message: string,
     recipientPublicKeyHex: string,
-    senderPrivateKeyHex: `0x${string}`,
-    usePrivacyMode: boolean
+    getPrivateKey?: () => Promise<`0x${string}` | null>
 ): Promise<string> {
     const recipientPubKey = hexToBytes(recipientPublicKeyHex.startsWith('0x') ? recipientPublicKeyHex as `0x${string}` : `0x${recipientPublicKeyHex}` as `0x${string}`);
 
     let senderPrivKey: Uint8Array;
-    let senderPubKeyForEnvelope: Uint8Array;
+    let senderPubKeyForEnvelope: string;
+    let fromAddress: string | undefined;
 
-    if (usePrivacyMode) {
-        // Privacy mode: use ephemeral key
-        senderPrivKey = hexToBytes(generatePrivateKey());
-        senderPubKeyForEnvelope = new Uint8Array(secp.getPublicKey(senderPrivKey, false));
-    } else {
-        // Identity mode: use your actual key
+    // Try to get private key just-in-time if getter function is provided
+    const senderPrivateKeyHex = getPrivateKey ? await getPrivateKey() : null;
+
+    if (senderPrivateKeyHex) {
+        // Identity seal: Include sender identity
         senderPrivKey = hexToBytes(senderPrivateKeyHex);
-        senderPubKeyForEnvelope = new Uint8Array(secp.getPublicKey(senderPrivKey, false));
+        const account = privateKeyToAccount(senderPrivateKeyHex);
+        senderPubKeyForEnvelope = account.publicKey;
+        fromAddress = account.address;
+    } else {
+        // Anonymous seal: use ephemeral key
+        const ephemeralKey = generatePrivateKey();
+        senderPrivKey = hexToBytes(ephemeralKey);
+        const ephemeralAccount = privateKeyToAccount(ephemeralKey);
+        senderPubKeyForEnvelope = ephemeralAccount.publicKey;
+        fromAddress = undefined;
     }
 
-    // Get shared secret
+    // Get shared secret using secp256k1
     const sharedSecret = secp.getSharedSecret(senderPrivKey, recipientPubKey, false);
     const sharedKey = sharedSecret[0] === 4 ? sharedSecret.slice(1, 33) : sharedSecret.slice(0, 32);
 
@@ -70,16 +72,26 @@ async function sealMessage(
 
     // Return envelope with sender's public key and encrypted data
     return JSON.stringify({
-        mode: usePrivacyMode ? 'privacy' : 'identity',
-        senderPubKey: bytesToHex(senderPubKeyForEnvelope),
+        senderPubKey: senderPubKeyForEnvelope,
+        from: fromAddress,
         data: toBase64(new Uint8Array(encrypted))
     });
 }
 
+interface UnsealedMessage {
+    message: string;
+    from?: string;
+}
+
 async function unsealMessage(
     sealedMessage: string,
-    myPrivateKeyHex: `0x${string}`
-): Promise<string> {
+    getPrivateKey: () => Promise<`0x${string}` | null>
+): Promise<UnsealedMessage> {
+    const myPrivateKeyHex = await getPrivateKey();
+    if (!myPrivateKeyHex) {
+        throw new Error('Private key required to unseal message');
+    }
+
     const envelope = JSON.parse(sealedMessage);
     const senderPubKey = hexToBytes(envelope.senderPubKey as `0x${string}`);
     const myPrivKey = hexToBytes(myPrivateKeyHex);
@@ -108,23 +120,102 @@ async function unsealMessage(
         fromBase64(envelope.data)
     );
 
-    return new TextDecoder().decode(decrypted);
+    return {
+        message: new TextDecoder().decode(decrypted),
+        from: envelope.from
+    };
 }
 
-// ==================== SIMPLE STORAGE ====================
-function saveKey(privateKeyHex: `0x${string}`, pin: string) {
-    localStorage.setItem('wallet', JSON.stringify({
-        key: privateKeyHex,
-        pin: pin
-    }));
+// ==================== ENCRYPTED STORAGE ====================
+// Derive AES key and IV from PBKDF2 output (deriveBits). We return both the CryptoKey and the IV bytes.
+async function deriveKeyAndIv(pin: string, salt: Uint8Array): Promise<{ key: CryptoKey; iv: Uint8Array }> {
+    const encoder = new TextEncoder();
+    const pinData = encoder.encode(pin);
+
+    const baseKey = await crypto.subtle.importKey(
+        'raw',
+        pinData,
+        'PBKDF2',
+        false,
+        ['deriveBits']
+    );
+
+    // Derive 256 bits for AES key + 96 bits for IV = 352 bits
+    const bits = await crypto.subtle.deriveBits(
+        {
+            name: 'PBKDF2',
+            salt: salt as unknown as BufferSource,
+            iterations: 100000,
+            hash: 'SHA-256'
+        },
+        baseKey,
+        352
+    );
+
+    const bytes = new Uint8Array(bits);
+    const keyBytes = bytes.slice(0, 32); // 256 bits
+    const ivBytes = bytes.slice(32, 32 + 12); // 96 bits
+
+    const aesKey = await crypto.subtle.importKey(
+        'raw',
+        keyBytes,
+        { name: 'AES-GCM' },
+        false,
+        ['encrypt', 'decrypt']
+    );
+
+    return { key: aesKey, iv: ivBytes };
 }
 
-function loadKey(pin: string): `0x${string}` | null {
+function generateSalt(): Uint8Array {
+    return crypto.getRandomValues(new Uint8Array(16)); // 128-bit salt
+}
+
+async function encryptPrivateKey(privateKeyHex: `0x${string}`, pin: string): Promise<string> {
+    const salt = generateSalt();
+    const { key, iv } = await deriveKeyAndIv(pin, salt);
+
+    const encrypted = await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv: iv as unknown as BufferSource },
+        key,
+        new TextEncoder().encode(privateKeyHex)
+    );
+
+    // Store salt + encrypted data; IV is derived from (pin, salt) so we don't store it
+    return JSON.stringify({
+        salt: toBase64(salt),
+        data: toBase64(new Uint8Array(encrypted))
+    });
+}
+
+async function decryptPrivateKey(encryptedData: string, pin: string): Promise<`0x${string}` | null> {
+    try {
+        const { salt, data } = JSON.parse(encryptedData);
+        const saltBytes = fromBase64(salt);
+        const { key, iv } = await deriveKeyAndIv(pin, saltBytes);
+
+        const decrypted = await crypto.subtle.decrypt(
+            { name: 'AES-GCM', iv: iv as unknown as BufferSource },
+            key,
+            fromBase64(data)
+        );
+
+        return new TextDecoder().decode(decrypted) as `0x${string}`;
+    } catch {
+        return null; // Decryption failed (wrong PIN or corrupted data)
+    }
+}
+
+async function saveEncryptedKey(privateKeyHex: `0x${string}`, pin: string) {
+    const encrypted = await encryptPrivateKey(privateKeyHex, pin);
+    localStorage.setItem('wallet', encrypted);
+}
+
+async function loadDecryptedKey(pin: string): Promise<`0x${string}` | null> {
     const stored = localStorage.getItem('wallet');
     if (!stored) return null;
-    const data = JSON.parse(stored);
-    if (data.pin !== pin) return null;
-    return data.key;
+
+    return await decryptPrivateKey(stored, pin);
 }
 
 function keyExists(): boolean {
@@ -137,93 +228,147 @@ function removeKey() {
 
 // ==================== MAIN COMPONENT ====================
 function ToyWallet() {
-    const [pin, setPin] = useState('');
+    const [currentPin, setCurrentPin] = useState('');
     const [unlocked, setUnlocked] = useState(false);
-    const [privateKey, setPrivateKey] = useState<`0x${string}` | null>(null);
     const [address, setAddress] = useState('');
     const [publicKey, setPublicKey] = useState('');
     const [showPinInput, setShowPinInput] = useState(false);
-    const [privacyMode, setPrivacyMode] = useState(false);
     const [error, setError] = useState('');
 
-    // UI state
-    const [message, setMessage] = useState('');
-    const [targetPublicKey, setTargetPublicKey] = useState('');
-    const [sealedMessage, setSealedMessage] = useState('');
-    const [unsealedMessage, setUnsealedMessage] = useState('');
+    // Minimal UI state
     const [showDebugPanel, setShowDebugPanel] = useState(false);
     const [copyFeedback, setCopyFeedback] = useState(false);
 
-    const unlock = () => {
+    // Helper to get private key when needed
+    const getPrivateKey = async (): Promise<`0x${string}` | null> => {
+        if (!unlocked || !currentPin) return null;
+        return await loadDecryptedKey(currentPin);
+    };
+
+    const unlock = async (pin: string) => {
         if (pin.length !== 4) {
             setError('Need 4-digit PIN');
             return;
         }
 
         setError('');
-        let key = loadKey(pin);
+        const walletExists = keyExists();
+        let key = await loadDecryptedKey(pin);
 
-        if (!key) {
+        if (!key && !walletExists) {
             // Create new wallet
             key = generatePrivateKey();
-            saveKey(key, pin);
+            await saveEncryptedKey(key, pin);
+        } else if (!key && walletExists) {
+            // Wallet exists but wrong PIN
+            setError('Incorrect PIN');
+            return;
         }
 
-        const account = privateKeyToAccount(key);
-        const pubKey = bytesToHex(new Uint8Array(secp.getPublicKey(hexToBytes(key), false)));
+        if (key) {
+            const account = privateKeyToAccount(key);
+            const pubKey = account.publicKey;
 
-        setPrivateKey(key);
-        setAddress(account.address);
-        setPublicKey(pubKey);
-        setTargetPublicKey(pubKey); // Default to self
-        setUnlocked(true);
-        setShowPinInput(false);
-        setPin('');
+            setCurrentPin(pin);
+            setAddress(account.address);
+            setPublicKey(pubKey);
+            setUnlocked(true);
+            setShowPinInput(false);
+        }
     };
 
     const lock = () => {
-        setPrivateKey(null);
+        setCurrentPin('');
         setAddress('');
         setPublicKey('');
         setUnlocked(false);
-        setPin('');
         setShowPinInput(false);
-        setMessage('');
-        setSealedMessage('');
-        setUnsealedMessage('');
     };
 
-    const handleSeal = async () => {
-        if (!unlocked || !privateKey || !message.trim()) {
+    const handleSign = async (message: string, useIdentityMode: boolean) => {
+        if (!unlocked || !message.trim()) {
             setError('Unlock wallet and enter a message');
-            return;
+            return '';
+        }
+
+        try {
+            const privateKey = await getPrivateKey();
+            if (!privateKey) {
+                setError('Failed to get private key');
+                return '';
+            }
+
+            let signingKey: `0x${string}`;
+            let fromAddress: string | undefined;
+
+            if (useIdentityMode) {
+                // Use your real identity key
+                signingKey = privateKey;
+                const account = privateKeyToAccount(privateKey);
+                fromAddress = account.address;
+            } else {
+                // Use ephemeral key (untraceable)
+                signingKey = generatePrivateKey();
+                fromAddress = undefined;
+            }
+
+            const account = privateKeyToAccount(signingKey);
+            const sig = await account.signMessage({ message });
+
+            // Create signed message envelope
+            // If signed with identity, include 'f' (from) so recipient knows who signed it
+            // If signed with ephemeral key, no 'f' field - signature is valid but untraceable
+            const signedEnvelope = JSON.stringify({
+                m: message,
+                s: sig,
+                ...(fromAddress && { f: fromAddress })
+            });
+
+            setError('');
+            return signedEnvelope;
+        } catch (err: any) {
+            setError('Failed to sign: ' + err.message);
+            return '';
+        }
+    };
+
+    const handleSeal = async (message: string, targetPublicKey: string, useIdentityMode: boolean) => {
+        if (!message.trim()) {
+            setError('Enter a message');
+            return '';
         }
         if (!targetPublicKey) {
             setError('Enter target public key');
-            return;
+            return '';
         }
 
         try {
-            const sealed = await sealMessage(message, targetPublicKey, privateKey, privacyMode);
-            setSealedMessage(sealed);
+            // If unlocked and using identity mode, pass the getter function
+            // Otherwise, pass undefined for anonymous sealing
+            const keyGetter = (unlocked && useIdentityMode) ? getPrivateKey : undefined;
+
+            const sealed = await sealMessage(message, targetPublicKey, keyGetter);
             setError('');
+            return sealed;
         } catch (err: any) {
             setError('Failed to seal: ' + err.message);
+            return '';
         }
     };
 
-    const handleUnseal = async () => {
-        if (!unlocked || !privateKey || !sealedMessage.trim()) {
+    const handleUnseal = async (sealedMessage: string) => {
+        if (!unlocked || !sealedMessage.trim()) {
             setError('Unlock wallet and enter sealed message');
-            return;
+            return null;
         }
 
         try {
-            const unsealed = await unsealMessage(sealedMessage, privateKey);
-            setUnsealedMessage(unsealed);
+            const result = await unsealMessage(sealedMessage, getPrivateKey);
             setError('');
+            return result;
         } catch (err: any) {
             setError('Failed to unseal: ' + err.message);
+            return null;
         }
     };
 
@@ -232,30 +377,17 @@ function ToyWallet() {
         lock();
     };
 
+    const [pinInput, setPinInput] = useState('');
+
     const handlePinChange = (value: string) => {
         const sanitized = value.replace(/\D/g, '').slice(0, 4);
-        setPin(sanitized);
+        setPinInput(sanitized);
         if (error) setError('');
 
         if (sanitized.length === 4) {
             setTimeout(() => {
-                const tempPin = sanitized;
-                setPin('');
-                if (tempPin.length === 4) {
-                    let key = loadKey(tempPin);
-                    if (!key) {
-                        key = generatePrivateKey();
-                        saveKey(key, tempPin);
-                    }
-                    const account = privateKeyToAccount(key);
-                    const pubKey = bytesToHex(new Uint8Array(secp.getPublicKey(hexToBytes(key), false)));
-                    setPrivateKey(key);
-                    setAddress(account.address);
-                    setPublicKey(pubKey);
-                    setTargetPublicKey(pubKey);
-                    setUnlocked(true);
-                    setShowPinInput(false);
-                }
+                unlock(sanitized);
+                setPinInput('');
             }, 100);
         }
     };
@@ -280,14 +412,14 @@ function ToyWallet() {
 
     return (
         <div className="flex items-center justify-center relative">
-            <div className={`bg-gray-800 rounded-full px-4 py-2 flex items-center space-x-3 min-w-0 ${showPinInput ? 'ring-2 ring-blue-400' : ''} transition-all`}>
+            <div className={`bg-gray-800/20 border rounded-full p-0.5 px-2 flex items-center space-x-3 min-w-0 ${showPinInput ? 'ring-2 ring-blue-400' : ''} transition-all`}>
                 <button
                     onClick={() => {
                         if (unlocked) {
                             lock();
                         } else {
                             setShowPinInput(!showPinInput);
-                            setPin('');
+                            setPinInput('');
                             setError('');
                         }
                     }}
@@ -299,14 +431,6 @@ function ToyWallet() {
 
                 {unlocked ? (
                     <>
-                        <button
-                            onClick={() => setPrivacyMode(!privacyMode)}
-                            className="text-lg hover:scale-110 transition-transform cursor-pointer"
-                            title={privacyMode ? "Privacy mode: ephemeral key" : "Identity mode: your public key"}
-                        >
-                            {privacyMode ? "🥷" : "👤"}
-                        </button>
-
                         <button
                             onClick={copyPublicKey}
                             className="text-white text-sm font-mono truncate max-w-64 hover:text-blue-300 transition-colors cursor-pointer"
@@ -320,29 +444,29 @@ function ToyWallet() {
                         className="flex items-center space-x-2"
                         onSubmit={(e) => {
                             e.preventDefault();
-                            if (pin.length === 4) unlock();
+                            if (pinInput.length === 4) unlock(pinInput);
                         }}
                     >
                         <input
                             type="password"
-                            value={pin}
+                            value={pinInput}
                             onChange={(e) => handlePinChange(e.target.value)}
-                            className="bg-transparent text-white text-center text-sm font-mono border border-gray-600 rounded px-2 py-1 w-16 focus:outline-none focus:border-blue-400"
+                            className="bg-transparent text-white text-center text-sm font-mono border border-gray-600 rounded px-1 pt-1 w-16 focus:outline-none focus:border-blue-400"
                             maxLength={4}
-                            placeholder="PIN"
+                            placeholder="****"
                             autoFocus
                         />
                         {error && <span className="text-red-400 text-xs">❌</span>}
                     </form>
                 ) : null}
 
-                <button
+                {(unlocked || showPinInput) && <button
                     onClick={() => setShowDebugPanel(!showDebugPanel)}
                     className="text-white hover:text-blue-300 transition-colors cursor-pointer ml-2"
                     title="Toggle debug panel"
                 >
                     ⚙️
-                </button>
+                </button>}
             </div>
 
             {showDebugPanel && (
@@ -354,45 +478,12 @@ function ToyWallet() {
                         showPinInput,
                         walletExists: keyExists()
                     }}
-                    uiState={{
-                        message,
-                        signature: '',
-                        error,
-                        sealedMessage,
-                        unsealedMessage,
-                        targetPublicKey,
-                        ourPublicKey: publicKey,
-                        copyFeedback,
-                        showDebugPanel,
-                        privacyMode
-                    }}
-                    setUiState={(updater) => {
-                        const newState = typeof updater === 'function'
-                            ? updater({
-                                message,
-                                signature: '',
-                                error,
-                                sealedMessage,
-                                unsealedMessage,
-                                targetPublicKey,
-                                ourPublicKey: publicKey,
-                                copyFeedback,
-                                showDebugPanel,
-                                privacyMode
-                            })
-                            : updater;
-
-                        setMessage(newState.message);
-                        setError(newState.error);
-                        setSealedMessage(newState.sealedMessage);
-                        setUnsealedMessage(newState.unsealedMessage);
-                        setTargetPublicKey(newState.targetPublicKey);
-                        setCopyFeedback(newState.copyFeedback);
-                        setShowDebugPanel(newState.showDebugPanel);
-                        setPrivacyMode(newState.privacyMode);
-                    }}
+                    initialTargetPublicKey={publicKey}
+                    error={error}
+                    setError={setError}
                     handleCopyAddress={copyAddress}
                     handleCopyPrivateKey={async () => {
+                        const privateKey = await getPrivateKey();
                         if (!privateKey) return;
                         try {
                             const blob = new Blob([privateKey], { type: 'text/plain' });
@@ -408,9 +499,7 @@ function ToyWallet() {
                             setTimeout(() => setCopyFeedback(false), 2000);
                         } catch { }
                     }}
-                    handleSignMessage={async () => {
-                        setError('Sign message not implemented in simple version');
-                    }}
+                    handleSignMessage={handleSign}
                     handleCreateTestSeal={handleSeal}
                     handleUnsealMessage={handleUnseal}
                     handleFileSelect={async (file: File | null) => {
@@ -421,13 +510,14 @@ function ToyWallet() {
                             if (!key.startsWith('0x') || key.length !== 66) throw new Error('Invalid format');
                             const newPin = prompt('Enter a 4-digit PIN:');
                             if (!newPin || newPin.length !== 4 || !/^\d{4}$/.test(newPin)) throw new Error('Invalid PIN');
-                            saveKey(key as `0x${string}`, newPin);
+                            await saveEncryptedKey(key as `0x${string}`, newPin);
                             setError('');
                         } catch (err: any) {
                             setError(err.message);
                         }
                     }}
                     handleResetWallet={handleReset}
+                    onClose={() => setShowDebugPanel(false)}
                 />
             )}
         </div>

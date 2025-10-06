@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface SecureAccount { address: `0x${string}` }
 
@@ -11,36 +11,31 @@ interface WalletState {
     walletExists: boolean;
 }
 
-interface UiState {
+interface UnsealedMessage {
     message: string;
-    signature: string;
-    error: string;
-    sealedMessage: string;
-    unsealedMessage: string;
-    targetPublicKey: string;
-    ourPublicKey: string;
-    copyFeedback: boolean;
-    showDebugPanel: boolean;
-    privacyMode: boolean;
+    from?: string;
 }
 
 interface Props {
     walletState: WalletState;
-    uiState: UiState;
-    setUiState: React.Dispatch<React.SetStateAction<UiState>>;
+    initialTargetPublicKey: string;
+    error: string;
+    setError: (error: string) => void;
     handleCopyAddress: () => Promise<void> | void;
     handleCopyPrivateKey: () => Promise<void> | void;
-    handleSignMessage: () => Promise<void> | void;
-    handleCreateTestSeal: () => Promise<void> | void;
-    handleUnsealMessage: () => Promise<void> | void;
+    handleSignMessage: (message: string, useIdentityMode: boolean) => Promise<string>;
+    handleCreateTestSeal: (message: string, targetPublicKey: string, useIdentityMode: boolean) => Promise<string>;
+    handleUnsealMessage: (sealedMessage: string) => Promise<UnsealedMessage | null>;
     handleFileSelect: (file: File | null) => Promise<void> | void;
     handleResetWallet: () => void;
+    onClose: () => void;
 }
 
 export default function ToyWalletDebug({
     walletState,
-    uiState,
-    setUiState,
+    initialTargetPublicKey,
+    error,
+    setError,
     handleCopyAddress,
     handleCopyPrivateKey,
     handleSignMessage,
@@ -48,7 +43,58 @@ export default function ToyWalletDebug({
     handleUnsealMessage,
     handleFileSelect,
     handleResetWallet,
+    onClose,
 }: Props) {
+    // Local UI state for debug panel
+    const [message, setMessage] = useState('');
+    const [signature, setSignature] = useState('');
+    const [sealedMessage, setSealedMessage] = useState('');
+    const [unsealedMessage, setUnsealedMessage] = useState('');
+    const [unsealedFrom, setUnsealedFrom] = useState<string | undefined>();
+    const [targetPublicKey, setTargetPublicKey] = useState(initialTargetPublicKey);
+    const [copyFeedback, setCopyFeedback] = useState(false);
+    const [useIdentityMode, setUseIdentityMode] = useState(true);
+
+    // Update target public key when wallet changes
+    useEffect(() => {
+        if (initialTargetPublicKey && !targetPublicKey) {
+            setTargetPublicKey(initialTargetPublicKey);
+        }
+    }, [initialTargetPublicKey]);
+
+    const onSignMessage = async () => {
+        const result = await handleSignMessage(message, useIdentityMode);
+        if (result) {
+            setSignature(result);
+        }
+    };
+
+    const onCreateTestSeal = async () => {
+        const result = await handleCreateTestSeal(message, targetPublicKey, useIdentityMode);
+        if (result) {
+            setSealedMessage(result);
+        }
+    };
+
+    const onUnsealMessage = async () => {
+        const result = await handleUnsealMessage(sealedMessage);
+        if (result) {
+            setUnsealedMessage(result.message);
+            setUnsealedFrom(result.from);
+        }
+    };
+
+    const onCopyAddress = async () => {
+        await handleCopyAddress();
+        setCopyFeedback(true);
+        setTimeout(() => setCopyFeedback(false), 2000);
+    };
+
+    const onCopyPrivateKey = async () => {
+        await handleCopyPrivateKey();
+        setCopyFeedback(true);
+        setTimeout(() => setCopyFeedback(false), 2000);
+    };
     return (
         <div className="fixed bottom-4 right-4 bg-gray-900/95 backdrop-blur-sm border border-gray-700 rounded-lg shadow-2xl text-xs max-w-4xl w-full z-50 overflow-hidden">
             {/* Header */}
@@ -58,7 +104,7 @@ export default function ToyWalletDebug({
                     <span className="text-gray-300 font-mono text-xs font-semibold">TOY WALLET DEBUG</span>
                 </div>
                 <button
-                    onClick={() => setUiState(prev => ({ ...prev, showDebugPanel: false }))}
+                    onClick={onClose}
                     className="text-gray-400 hover:text-white transition-colors text-xs"
                     title="Close debug panel"
                 >
@@ -90,38 +136,19 @@ export default function ToyWalletDebug({
                                     <div className="bg-gray-700/50 rounded px-2 py-1">
                                         <div className="text-gray-400 text-xs mb-1">Public Key</div>
                                         <div className="font-mono text-gray-200 text-xs break-all max-h-20 overflow-y-auto">
-                                            {uiState.ourPublicKey}
-                                        </div>
-                                    </div>
-                                    <div className="bg-gray-700/50 rounded px-2 py-1">
-                                        <div className="flex items-center justify-between mb-1">
-                                            <span className="text-gray-400 text-xs">Privacy Mode</span>
-                                            <button
-                                                onClick={() => setUiState(prev => ({ ...prev, privacyMode: !prev.privacyMode }))}
-                                                className={`px-2 py-0.5 rounded text-xs transition-colors ${uiState.privacyMode
-                                                    ? 'bg-purple-600/20 text-purple-300 border border-purple-600/30'
-                                                    : 'bg-blue-600/20 text-blue-300 border border-blue-600/30'
-                                                    }`}
-                                            >
-                                                {uiState.privacyMode ? '🥷 Privacy' : '👤 Identity'}
-                                            </button>
-                                        </div>
-                                        <div className="text-gray-500 text-xs mt-1">
-                                            {uiState.privacyMode
-                                                ? 'Messages encrypted with ephemeral key'
-                                                : 'Messages encrypted with your identity key'}
+                                            {initialTargetPublicKey}
                                         </div>
                                     </div>
                                     <div className="flex space-x-2">
                                         <button
-                                            onClick={handleCopyAddress}
+                                            onClick={onCopyAddress}
                                             className="flex-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 px-2 py-1 rounded text-xs transition-colors border border-blue-600/30"
                                             title="Copy address"
                                         >
                                             📋 Addr
                                         </button>
                                         <button
-                                            onClick={handleCopyPrivateKey}
+                                            onClick={onCopyPrivateKey}
                                             className="flex-1 bg-red-600/20 hover:bg-red-600/30 text-red-300 px-2 py-1 rounded text-xs transition-colors border border-red-600/30"
                                             title="Download private key as pockit.key file (dangerous!)"
                                         >
@@ -140,8 +167,8 @@ export default function ToyWalletDebug({
                                     {/* Message Input */}
                                     <input
                                         type="text"
-                                        value={uiState.message}
-                                        onChange={(e) => setUiState(prev => ({ ...prev, message: e.target.value }))}
+                                        value={message}
+                                        onChange={(e) => setMessage(e.target.value)}
                                         placeholder="Message to sign/seal..."
                                         className="w-full bg-gray-700/50 border border-gray-600 rounded px-2 py-1 text-gray-200 text-xs focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20"
                                     />
@@ -149,26 +176,42 @@ export default function ToyWalletDebug({
                                     {/* Target Public Key Input */}
                                     <input
                                         type="text"
-                                        value={uiState.targetPublicKey}
-                                        onChange={(e) => setUiState(prev => ({ ...prev, targetPublicKey: e.target.value }))}
+                                        value={targetPublicKey}
+                                        onChange={(e) => setTargetPublicKey(e.target.value)}
                                         placeholder="Recipient public key (hex, 0x... or raw)"
                                         className="w-full bg-gray-700/50 border border-gray-600 rounded px-2 py-1 text-gray-200 text-xs focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20"
                                     />
 
+                                    {/* Unified Mode Toggle */}
+                                    <div className="bg-gray-700/50 rounded px-2 py-1">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-gray-400 text-xs">Mode</span>
+                                            <button
+                                                onClick={() => setUseIdentityMode(!useIdentityMode)}
+                                                className={`px-2 py-0.5 rounded text-xs transition-colors ${useIdentityMode
+                                                    ? 'bg-green-600/20 text-green-300 border border-green-600/30'
+                                                    : 'bg-purple-600/20 text-purple-300 border border-purple-600/30'
+                                                    }`}
+                                            >
+                                                {useIdentityMode ? '🔑 Identity' : '👻 Anonymous'}
+                                            </button>
+                                        </div>
+                                    </div>
+
                                     {/* Action Buttons */}
                                     <div className="flex space-x-1">
                                         <button
-                                            onClick={handleSignMessage}
+                                            onClick={onSignMessage}
                                             className="flex-1 bg-green-600/20 hover:bg-green-600/30 text-green-300 px-2 py-1 rounded text-xs transition-colors border border-green-600/30 disabled:opacity-50"
-                                            disabled={!uiState.message.trim()}
+                                            disabled={!message.trim()}
                                             title="Sign message"
                                         >
                                             ✍️ Sign
                                         </button>
                                         <button
-                                            onClick={handleCreateTestSeal}
+                                            onClick={onCreateTestSeal}
                                             className="flex-1 bg-yellow-600/20 hover:bg-yellow-600/30 text-yellow-300 px-2 py-1 rounded text-xs transition-colors border border-yellow-600/30 disabled:opacity-50"
-                                            disabled={!uiState.message.trim()}
+                                            disabled={!message.trim() || !targetPublicKey.trim()}
                                             title="Seal with public key"
                                         >
                                             🔒 Seal
@@ -176,28 +219,28 @@ export default function ToyWalletDebug({
                                     </div>
 
                                     {/* Signature Display */}
-                                    {uiState.signature && (
-                                        <div className="bg-gray-700/50 rounded px-2 py-1">
+                                    {signature && (
+                                        <div className="bg-green-900/20 border border-green-600/30 rounded px-2 py-1">
                                             <div className="flex items-center justify-between mb-1">
-                                                <span className="text-gray-400 text-xs">SIG</span>
+                                                <span className="text-green-400 text-xs font-semibold">SIGNED MESSAGE</span>
                                                 <button
-                                                    onClick={() => setUiState(prev => ({ ...prev, signature: '' }))}
-                                                    className="text-gray-400 hover:text-gray-300 text-xs"
+                                                    onClick={() => setSignature('')}
+                                                    className="text-green-400 hover:text-green-300 text-xs"
                                                     title="Clear"
                                                 >
                                                     ✕
                                                 </button>
                                             </div>
-                                            <div className="font-mono text-gray-200 text-xs break-all">
-                                                {uiState.signature}
+                                            <div className="font-mono text-green-200 text-xs break-all max-h-24 overflow-y-auto">
+                                                {signature}
                                             </div>
                                         </div>
                                     )}
 
                                     {/* Sealed Message Input */}
                                     <textarea
-                                        value={uiState.sealedMessage}
-                                        onChange={(e) => setUiState(prev => ({ ...prev, sealedMessage: e.target.value }))}
+                                        value={sealedMessage}
+                                        onChange={(e) => setSealedMessage(e.target.value)}
                                         placeholder="Sealed message..."
                                         className="w-full bg-gray-700/50 border border-gray-600 rounded px-2 py-1 text-gray-200 text-xs focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 resize-none"
                                         rows={2}
@@ -205,28 +248,42 @@ export default function ToyWalletDebug({
 
                                     {/* Unseal Button */}
                                     <button
-                                        onClick={handleUnsealMessage}
+                                        onClick={onUnsealMessage}
                                         className="w-full bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 px-2 py-1 rounded text-xs transition-colors border border-blue-600/30 disabled:opacity-50"
-                                        disabled={!uiState.sealedMessage.trim()}
+                                        disabled={!sealedMessage.trim()}
                                     >
                                         🔓 Unseal
                                     </button>
 
                                     {/* Unsealed Message Display */}
-                                    {uiState.unsealedMessage && (
+                                    {unsealedMessage && (
                                         <div className="bg-green-900/20 border border-green-600/30 rounded px-2 py-1">
                                             <div className="flex items-center justify-between mb-1">
-                                                <span className="text-green-400 text-xs font-semibold">UNSEALED</span>
+                                                <span className="text-green-400 text-xs font-semibold">UNSEALED MESSAGE</span>
                                                 <button
-                                                    onClick={() => setUiState(prev => ({ ...prev, unsealedMessage: '' }))}
+                                                    onClick={() => {
+                                                        setUnsealedMessage('');
+                                                        setUnsealedFrom(undefined);
+                                                    }}
                                                     className="text-green-400 hover:text-green-300 text-xs"
                                                     title="Clear"
                                                 >
                                                     ✕
                                                 </button>
                                             </div>
+                                            {unsealedFrom && (
+                                                <div className="mb-1 pb-1 border-b border-green-600/20">
+                                                    <span className="text-green-500 text-xs">From: </span>
+                                                    <span className="font-mono text-green-300 text-xs">{unsealedFrom}</span>
+                                                </div>
+                                            )}
+                                            {!unsealedFrom && (
+                                                <div className="mb-1 pb-1 border-b border-green-600/20">
+                                                    <span className="text-gray-500 text-xs italic">Anonymous sender</span>
+                                                </div>
+                                            )}
                                             <div className="font-mono text-green-200 text-xs break-all max-h-12 overflow-y-auto">
-                                                {uiState.unsealedMessage}
+                                                {unsealedMessage}
                                             </div>
                                         </div>
                                     )}
@@ -270,13 +327,13 @@ export default function ToyWalletDebug({
                 )}
 
                 {/* Error Display */}
-                {uiState.error && (
+                {error && (
                     <div className="mt-3 bg-red-900/20 border border-red-600/30 rounded px-3 py-2">
                         <div className="flex items-center space-x-2">
                             <div className="w-1.5 h-1.5 bg-red-400 rounded-full"></div>
                             <span className="text-red-400 text-xs font-semibold">ERROR</span>
                         </div>
-                        <div className="text-red-300 text-xs mt-1">{uiState.error}</div>
+                        <div className="text-red-300 text-xs mt-1">{error}</div>
                     </div>
                 )}
             </div>
