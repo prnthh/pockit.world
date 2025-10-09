@@ -28,7 +28,39 @@ const roomId = 'my-room-id'
 // @ts-expect-error polyfill types
 const room = joinRoom({ appId, rtcPolyfill: RTCPeerConnection }, roomId)
 
+const [sendState, getState] = room.makeAction('peerState')
+const [sendChat, getChat] = room.makeAction('chat')
+
+
+const seenUsers = new Set<string>()
+const connectedUsers = new Set<string>()
+
 var chatLogs: Array<{ from: string, message: string, timestamp: number }> = []
+function addMessageToLog(from: string, message: string) {
+  chatLogs.push({ from, message, timestamp: Date.now() })
+  // if messages over 40, delete the last 20
+  if (chatLogs.length > 40) {
+    chatLogs = chatLogs.slice(chatLogs.length - 20)
+  }
+}
+
+room.onPeerJoin((peerId) => {
+  console.log(`Peer joined: ${peerId}`)
+  connectedUsers.add(peerId)
+  if (!seenUsers.has(peerId)) {
+    seenUsers.add(peerId)
+    // Welcome new user
+    sendState({profile: {name: 'PockitCEO'}})
+    sendChat(`Welcome to the crusty burger, this is Patrick. Waddle around and make new friends ${peerId}! Type /help for commands.`, peerId)
+  } else {
+    sendChat(`Welcome back, ${peerId}!`, peerId)
+  }
+})
+
+room.onPeerLeave((peerId) => {
+  console.log(`Peer left: ${peerId}`)
+  connectedUsers.delete(peerId)
+})
 
 // todo store this in postgres
 var pointsByWallet: Record<`0x${string}`, number> = {}
@@ -37,20 +69,20 @@ var profileByWallet: Record<`0x${string}`, any> = {}
 // users can claim cheese every hour
 var cheeseById: Record<string, { lastClaim: number, amount: number }> = {}
 
-const [sendChat, getChat] = room.makeAction('chat')
 
 
 // Echo back any chat messages received
 getChat((message, peerId) => {
   if (typeof message === 'string') {
+    addMessageToLog(peerId, message)
     // Don't echo commands or events
     if (message.startsWith('/')) {
       handleCommand(message, peerId)
       return
     }
     // Echo the message back to sender
-    sendChat(`*mockingly* ${message}`, peerId)
-    sendChat(`${peerId} said ${message}`)
+    // sendChat(`*mockingly* ${message}`, peerId)
+    // sendChat(`${peerId} said ${message}`)
   }
 })
 
@@ -60,7 +92,7 @@ const handleCommand = (message: string, peerId: string) => {
   const args = parts.slice(1)
   
   if (command === '/claim') {
-    const userId = peerId // In a real app, map peerId to a user ID
+    const userId = peerId
     const now = Date.now()
     const record = cheeseById[userId] || { lastClaim: 0, amount: 0 }
     if (now - record.lastClaim < 3600000) { // 1 hour cooldown
@@ -77,10 +109,21 @@ const handleCommand = (message: string, peerId: string) => {
     const record = cheeseById[userId]
     const amount = record ? record.amount : 0
     sendChat(`You have ${amount} cheese.`, peerId)
+  } else if (command === '/history') {
+    // show all messages in log 
+    const history = chatLogs.map(log => {
+      const date = new Date(log.timestamp)
+      const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      return `[${time}] ${log.from}: ${log.message}`
+    }).join('\n')
+    sendChat(`Chat history:\n${history}`, peerId)
   } else {
+    // return this help as a fallback
     sendChat(`Available commands:
 /claim - Claim cheese (1 hour cooldown) \n
 /cheese - Check your cheese balance \n
+/history - Show recent chat history \n
 /help - Show this help message \n`, peerId)
+    }
   }
-}
+  
