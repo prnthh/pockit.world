@@ -3,7 +3,7 @@
 
 import './polyfill.js';
 
-import { joinRoom } from 'trystero'
+import { DataPayload, joinRoom } from 'trystero'
 import { RTCPeerConnection } from 'node-datachannel/polyfill'
 import ws from 'ws';
 global.WebSocket = ws as unknown as typeof WebSocket;
@@ -32,10 +32,13 @@ const [sendState, getState] = room.makeAction('peerState')
 const [sendChat, getChat] = room.makeAction('chat')
 
 
-const seenUsers = new Set<string>()
-const connectedUsers = new Set<string>()
+// todo store this in postgres
+var profileDB = new Set<any>()
+var cheeseById: Record<string, { lastClaim: number, amount: number }> = {}
 
+var connectedPeerIDProfiles: Record<string, any> = {}
 var chatLogs: Array<{ from: string, message: string, timestamp: number }> = []
+
 function addMessageToLog(from: string, message: string) {
   chatLogs.push({ from, message, timestamp: Date.now() })
   // if messages over 40, delete the last 20
@@ -46,12 +49,11 @@ function addMessageToLog(from: string, message: string) {
 
 room.onPeerJoin((peerId) => {
   console.log(`Peer joined: ${peerId}`)
-  connectedUsers.add(peerId)
-  if (!seenUsers.has(peerId)) {
-    seenUsers.add(peerId)
+  if (!connectedPeerIDProfiles[peerId]) {
+    connectedPeerIDProfiles[peerId] = {}
     // Welcome new user
     sendState({profile: {name: 'PockitCEO'}}, peerId)
-    sendChat(`Welcome to the crusty burger, this is Patrick. Waddle around and make new friends ${peerId}! Type /help for commands.`, peerId)
+    sendChat(`Welcome to crusty burger, this is Patrick. Waddle around and make new friends ${peerId}! Type /help for commands.`, peerId)
   } else {
     sendChat(`Welcome back, ${peerId}!`, peerId)
   }
@@ -59,17 +61,18 @@ room.onPeerJoin((peerId) => {
 
 room.onPeerLeave((peerId) => {
   console.log(`Peer left: ${peerId}`)
-  connectedUsers.delete(peerId)
+  delete connectedPeerIDProfiles[peerId]
+  delete cheeseById[peerId]
 })
 
-// todo store this in postgres
-var pointsByWallet: Record<`0x${string}`, number> = {}
-var profileByWallet: Record<`0x${string}`, any> = {}
-
-// users can claim cheese every hour
-var cheeseById: Record<string, { lastClaim: number, amount: number }> = {}
-
-
+getState((data: DataPayload, peerId) => {
+  // Handle state updates for each peer
+  console.log(`State updated for ${peerId}:`, data)
+  if (data && typeof data === 'object' && !Array.isArray(data) && 'profile' in data) {
+    connectedPeerIDProfiles[peerId] = data.profile
+    profileDB.add(data.profile)
+  }
+})
 
 // Echo back any chat messages received
 getChat((message, peerId) => {
@@ -109,8 +112,15 @@ const handleCommand = (message: string, peerId: string) => {
     const record = cheeseById[userId]
     const amount = record ? record.amount : 0
     sendChat(`You have ${amount} cheese.`, peerId)
+  } else if (command === '/profile') {
+    const profile = connectedPeerIDProfiles[peerId]
+    if (profile) {
+      sendChat(`Your profile: ${JSON.stringify(profile)}`, peerId)
+    } else {
+      sendChat(`No profile found.`, peerId)
+    }
   } else if (command === '/history') {
-    // show all messages in log 
+    // show all messages in log
     const history = chatLogs.map(log => {
       const date = new Date(log.timestamp)
       const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -122,6 +132,7 @@ const handleCommand = (message: string, peerId: string) => {
     sendChat(`Available commands:
 /claim - Claim cheese (1 hour cooldown) \n
 /cheese - Check your cheese balance \n
+/profile - View your profile \n
 /history - Show recent chat history \n
 /help - Show this help message \n`, peerId)
     }
