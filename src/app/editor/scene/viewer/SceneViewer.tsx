@@ -3,8 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import { Object3D, Object3DEventMap } from "three";
 import { GameInstance, GameInstanceProvider } from "../editor/InstanceProvider";
 import * as THREE from "three";
-import { OrbitControls, TransformControls } from "@react-three/drei";
+import { MapControls, TransformControls } from "@react-three/drei";
 import { useEditorContext } from "../editor/EditorContext";
+import { WaterMaterial } from "@/shared/shaders/Water";
 
 export enum EditorModes {
     Edit = "edit",
@@ -95,14 +96,14 @@ export function Viewer() {
 
             {isEditMode && (
                 <>
-                    <OrbitControls makeDefault />
+                    <MapControls makeDefault />
                     <gridHelper args={[10, 10]} />
-                    {selectedNodeId && selectedRef?.current && selectedRef.current instanceof Object3D && nodeExists(sceneGraph, selectedNodeId) && (
+                    {selectedNodeId && selectedRef?.current && nodeExists(sceneGraph, selectedNodeId) && (
                         <TransformControls
                             object={selectedRef.current}
                             mode="translate"
                             onObjectChange={() => {
-                                const obj = selectedRef.current as Object3D | null;
+                                const obj = selectedRef.current;
                                 if (obj) {
                                     setSceneGraph(prev => updateNodeTransform(prev, selectedNodeId, {
                                         position: [obj.position.x, obj.position.y, obj.position.z],
@@ -200,12 +201,14 @@ export default function RecursiveNode({ node, onSelect, selectedNodeId, setScene
 const ComponentMapper = ({ node }: { node: SceneNode }) => {
     const geometry = node.components?.find(c => c.type === 'boxGeometry');
     const material = node.components?.find(c => c.type === 'meshStandardMaterial');
+    const waterMaterial = node.components?.find(c => c.type === 'waterMaterial');
     const model = node.components?.find(c => c.type === 'model');
 
     return (
         <>
             {geometry && <boxGeometry args={geometry.args || [1, 1, 1]} />}
             {material && <meshStandardMaterial {...material.props} />}
+            {waterMaterial && <WaterMaterial />}
             {model && (model.object ? (
                 model.instanced ? (
                     <GameInstance
