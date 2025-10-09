@@ -50,7 +50,7 @@ room.onPeerJoin((peerId) => {
   if (!seenUsers.has(peerId)) {
     seenUsers.add(peerId)
     // Welcome new user
-    sendState({profile: {name: 'PockitCEO'}})
+    sendState({profile: {name: 'PockitCEO'}}, peerId)
     sendChat(`Welcome to the crusty burger, this is Patrick. Waddle around and make new friends ${peerId}! Type /help for commands.`, peerId)
   } else {
     sendChat(`Welcome back, ${peerId}!`, peerId)
