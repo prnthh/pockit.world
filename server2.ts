@@ -56,7 +56,7 @@ function getWallet(peerId: string): string | undefined {
 room.onPeerJoin((peerId) => {
   console.log(`Peer joined: ${peerId}`)
   sendState({profile: {name: 'PockitCEO', walletAddress: '0xPOCKIT'}}, peerId)
-  sendChat(`Welcome! Send your profile with wallet address to get verified.`, peerId)
+  sendChat(`Welcome to crusty burger, this is Patrick. Waddle around and make new friends ${peerId}! Type /help for commands.`, peerId)
 })
 
 room.onPeerLeave((peerId) => {
@@ -115,7 +115,7 @@ const handleCommand = (message: string, peerId: string) => {
 
   // Simple verification check
   if (!isVerified(peerId)) {
-    sendChat(`You must be verified first! Send your profile.`, peerId)
+    sendChat(`You must be verified first! Set up a pin in your profile.`, peerId)
     return
   }
   
