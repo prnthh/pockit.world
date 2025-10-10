@@ -116,6 +116,7 @@ export function GameEngine({ resourcePath = "", mode = EditorModes.Play, sceneGr
             });
         }
         collectModelFiles(graph);
+
         // Mark missing models
         setModels(prevModels => {
             const newModels = { ...prevModels };
@@ -126,33 +127,44 @@ export function GameEngine({ resourcePath = "", mode = EditorModes.Play, sceneGr
             });
             return newModels;
         });
-        // Try to load each missing model from /resources/
-        referencedFiles.forEach(filename => {
-            if (models[filename] && !models[filename].missing) return; // Already loaded
-            if (filename.endsWith('.glb') || filename.endsWith('.gltf')) {
-                const loader = new GLTFLoader();
-                loader.load(`${resourcePath}/${filename}`,
-                    gltf => {
-                        setModels(prev => ({ ...prev, [filename]: gltf.scene }));
-                    },
-                    undefined,
-                    err => {
-                        setModels(prev => ({ ...prev, [filename]: { missing: true, error: err } }));
+
+        // Defer model loading to prevent canvas initialization race conditions
+        setTimeout(() => {
+            referencedFiles.forEach(filename => {
+                // Check current models state to avoid race conditions
+                setModels(currentModels => {
+                    if (currentModels[filename] && !currentModels[filename].missing) {
+                        return currentModels; // Already loaded
                     }
-                );
-            } else if (filename.endsWith('.fbx')) {
-                const loader = new FBXLoader();
-                loader.load(`${resourcePath}/${filename}`,
-                    model => {
-                        setModels(prev => ({ ...prev, [filename]: model }));
-                    },
-                    undefined,
-                    err => {
-                        setModels(prev => ({ ...prev, [filename]: { missing: true, error: err } }));
+
+                    if (filename.endsWith('.glb') || filename.endsWith('.gltf')) {
+                        const loader = new GLTFLoader();
+                        loader.load(`${resourcePath}/${filename}`,
+                            gltf => {
+                                setModels(prev => ({ ...prev, [filename]: gltf.scene }));
+                            },
+                            undefined,
+                            err => {
+                                setModels(prev => ({ ...prev, [filename]: { missing: true, error: err } }));
+                            }
+                        );
+                    } else if (filename.endsWith('.fbx')) {
+                        const loader = new FBXLoader();
+                        loader.load(`${resourcePath}/${filename}`,
+                            model => {
+                                setModels(prev => ({ ...prev, [filename]: model }));
+                            },
+                            undefined,
+                            err => {
+                                setModels(prev => ({ ...prev, [filename]: { missing: true, error: err } }));
+                            }
+                        );
                     }
-                );
-            }
-        });
+
+                    return currentModels;
+                });
+            });
+        }, 100); // Small delay to let canvas initialize
     };
     // Run once on mount
     React.useEffect(() => {
