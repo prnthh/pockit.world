@@ -13,11 +13,9 @@ import dynamic from 'next/dynamic'
 import { Group, Mesh } from "three";
 import { useContext } from 'react'
 import { usePathname } from 'next/navigation';
-import { MPContext } from './PockitConsole/MP'
 import tunnel from "tunnel-rat";
 import ModelAttachment from "@/shared/ped/ModelAttachment";
 import * as THREE from "three";
-import type { PeerState } from "./PockitConsole/MP";
 import Ped from "@/shared/ped/ped";
 
 import office from "./map";
@@ -106,7 +104,7 @@ const Game = () => {
 
         <scenePortal.Out />
 
-        <MPStuff />
+        {/* <MPStuff /> */}
 
         <ambientLight intensity={0.5} />
         <ShadowLight intensity={3} />
@@ -141,44 +139,44 @@ const SceneEventHandler = () => {
     return null;
 };
 
-function PeerPed({ peerId, state }: { peerId: string, state: PeerState }) {
-    // Show latest chat message if less than 5 seconds old
-    const now = Date.now();
-    const showMsg = state.latestMessage && (now - state.latestMessage.timestamp < 5000);
+// function PeerPed({ peerId, state }: { peerId: string, state: PeerState }) {
+//     // Show latest chat message if less than 5 seconds old
+//     const now = Date.now();
+//     const showMsg = state.latestMessage && (now - state.latestMessage.timestamp < 5000);
 
-    return (
-        <Ped
-            key={peerId}
-            basePath={"/models/human/onimilio/"}
-            modelUrl={"rigged.glb"}
-            position={state.position} height={1.5}
-        >
-            {state.profile?.avatar && <ModelAttachment
-                model="/models/environment/Katana.glb"
-                attachpoint="mixamorigRightHand"
-                offset={new THREE.Vector3(0, 0, 0)}
-                scale={new THREE.Vector3(100, 100, 100)}
-                rotation={new THREE.Vector3(0, 0, 0)}
-            />}
-            {showMsg && (
-                <Html position={[0, 1.4, 0]} zIndexRange={[5, 10]}>
-                    <div className="-translate-x-[50%] min-w-[300px] text-3xl text-yellow-300 text-center p-2 rounded drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]">
-                        {state.latestMessage?.message}
-                    </div>
-                </Html>
-            )}
-        </Ped>
-    );
-}
+//     return (
+//         <Ped
+//             key={peerId}
+//             basePath={"/models/human/onimilio/"}
+//             modelUrl={"rigged.glb"}
+//             position={state.position} height={1.5}
+//         >
+//             {state.profile?.avatar && <ModelAttachment
+//                 model="/models/environment/Katana.glb"
+//                 attachpoint="mixamorigRightHand"
+//                 offset={new THREE.Vector3(0, 0, 0)}
+//                 scale={new THREE.Vector3(100, 100, 100)}
+//                 rotation={new THREE.Vector3(0, 0, 0)}
+//             />}
+//             {showMsg && (
+//                 <Html position={[0, 1.4, 0]} zIndexRange={[5, 10]}>
+//                     <div className="-translate-x-[50%] min-w-[300px] text-3xl text-yellow-300 text-center p-2 rounded drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]">
+//                         {state.latestMessage?.message}
+//                     </div>
+//                 </Html>
+//             )}
+//         </Ped>
+//     );
+// }
 
-const MPStuff = () => {
-    const { peerStates } = useContext(MPContext)
-    return <>
-        {/* Peer peds */}
-        {Object.entries(peerStates).map(([peerId, state]) => (
-            <PeerPed key={peerId} peerId={peerId} state={state} />
-        ))}
-    </>
-}
+// const MPStuff = () => {
+//     const { peerStates } = useContext(MPContext)
+//     return <>
+//         {/* Peer peds */}
+//         {Object.entries(peerStates).map(([peerId, state]) => (
+//             <PeerPed key={peerId} peerId={peerId} state={state} />
+//         ))}
+//     </>
+// }
 
 export default GameWrappers;

@@ -32,52 +32,73 @@ const [sendState, getState] = room.makeAction('peerState')
 const [sendChat, getChat] = room.makeAction('chat')
 
 
-// todo store this in postgres
-var profileDB = new Set<any>()
-var cheeseById: Record<string, { lastClaim: number, amount: number }> = {}
-
-var connectedPeerIDProfiles: Record<string, any> = {}
+// Simple storage
+var profileDB = new Map<string, any>() // wallet -> profile
+var verifiedPeers = new Map<string, string>() // peerId -> wallet
+var cheeseByWallet: Record<string, { lastClaim: number, amount: number }> = {}
 var chatLogs: Array<{ from: string, message: string, timestamp: number }> = []
 
 function addMessageToLog(from: string, message: string) {
   chatLogs.push({ from, message, timestamp: Date.now() })
-  // if messages over 40, delete the last 20
   if (chatLogs.length > 40) {
-    chatLogs = chatLogs.slice(chatLogs.length - 20)
+    chatLogs = chatLogs.slice(-20)
   }
+}
+
+function isVerified(peerId: string): boolean {
+  return verifiedPeers.has(peerId)
+}
+
+function getWallet(peerId: string): string | undefined {
+  return verifiedPeers.get(peerId)
 }
 
 room.onPeerJoin((peerId) => {
   console.log(`Peer joined: ${peerId}`)
-  if (!connectedPeerIDProfiles[peerId]) {
-    connectedPeerIDProfiles[peerId] = {}
-    // Welcome new user
-    sendState({profile: {name: 'PockitCEO'}}, peerId)
-    sendChat(`Welcome to crusty burger, this is Patrick. Waddle around and make new friends ${peerId}! Type /help for commands.`, peerId)
-  } else {
-    sendChat(`Welcome back, ${peerId}!`, peerId)
-  }
+  sendState({profile: {name: 'PockitCEO', walletAddress: '0xPOCKIT'}}, peerId)
+  sendChat(`Welcome! Send your profile with wallet address to get verified.`, peerId)
 })
 
 room.onPeerLeave((peerId) => {
   console.log(`Peer left: ${peerId}`)
-  delete connectedPeerIDProfiles[peerId]
-  delete cheeseById[peerId]
+  verifiedPeers.delete(peerId)
+  // Note: cheese data persists by wallet address, not peer ID
 })
 
 getState((data: DataPayload, peerId) => {
-  // Handle state updates for each peer
+  // Handle state updates for each peer - this is where users register
   console.log(`State updated for ${peerId}:`, data)
   if (data && typeof data === 'object' && !Array.isArray(data) && 'profile' in data) {
-    connectedPeerIDProfiles[peerId] = data.profile
-    profileDB.add(data.profile)
+    const profile = (data as any).profile
+    if (profile && typeof profile === 'object' && !Array.isArray(profile) && 'walletAddress' in profile && typeof (profile as any).walletAddress === 'string') {
+      const walletAddress = (profile as any).walletAddress
+      
+      // Simple validation and registration
+      if (walletAddress.match(/^0x[a-fA-F0-9]{40}$/)) {
+        profileDB.set(walletAddress, profile)
+        verifiedPeers.set(peerId, walletAddress)
+        
+        console.log(`User ${peerId} verified with wallet ${walletAddress}`)
+        sendChat(`Welcome ${profile.name || 'Anonymous'}! You're verified.`, peerId)
+      } else {
+        sendChat(`Invalid wallet address.`, peerId)
+      }
+    }
   }
 })
 
 // Echo back any chat messages received
 getChat((message, peerId) => {
   if (typeof message === 'string') {
-    addMessageToLog(peerId, message)
+    // Use wallet address or name for persistent chat identity
+    let chatFrom = peerId; // fallback to peerId for unverified users
+    if (isVerified(peerId)) {
+      const wallet = getWallet(peerId)!;
+      const profile = profileDB.get(wallet);
+      chatFrom = profile?.name || wallet.slice(0, 8) + '...';
+    }
+    
+    addMessageToLog(chatFrom, message)
     // Don't echo commands or events
     if (message.startsWith('/')) {
       handleCommand(message, peerId)
@@ -90,51 +111,56 @@ getChat((message, peerId) => {
 })
 
 const handleCommand = (message: string, peerId: string) => {
-  const parts = message.split(' ')
-  const command = parts[0]
-  const args = parts.slice(1)
+  const [command, ...args] = message.split(' ')
+
+  // Simple verification check
+  if (!isVerified(peerId)) {
+    sendChat(`You must be verified first! Send your profile.`, peerId)
+    return
+  }
+  
+  const wallet = getWallet(peerId)!
+  const profile = profileDB.get(wallet)
   
   if (command === '/claim') {
-    const userId = peerId
+    const record = cheeseByWallet[wallet] || { lastClaim: 0, amount: 0 }
     const now = Date.now()
-    const record = cheeseById[userId] || { lastClaim: 0, amount: 0 }
-    if (now - record.lastClaim < 3600000) { // 1 hour cooldown
-      const minutesLeft = Math.ceil((3600000 - (now - record.lastClaim)) / 60000)
-      sendChat(`You can claim cheese again in ${minutesLeft} minutes.`, peerId)
+    if (now - record.lastClaim < 3600000) {
+      const mins = Math.ceil((3600000 - (now - record.lastClaim)) / 60000)
+      sendChat(`Wait ${mins} more minutes to claim.`, peerId)
       return
     }
     record.lastClaim = now
     record.amount += 1
-    cheeseById[userId] = record
-    sendChat(`You have claimed cheese! Total cheese: ${record.amount}`, peerId)
+    cheeseByWallet[wallet] = record
+    sendChat(`Claimed! Total cheese: ${record.amount}`, peerId)
+    
   } else if (command === '/cheese') {
-    const userId = peerId
-    const record = cheeseById[userId]
-    const amount = record ? record.amount : 0
+    const amount = cheeseByWallet[wallet]?.amount || 0
     sendChat(`You have ${amount} cheese.`, peerId)
+    
   } else if (command === '/profile') {
-    const profile = connectedPeerIDProfiles[peerId]
-    if (profile) {
-      sendChat(`Your profile: ${JSON.stringify(profile)}`, peerId)
-    } else {
-      sendChat(`No profile found.`, peerId)
-    }
+    sendChat(`Profile: ${JSON.stringify(profile)}`, peerId)
+    
   } else if (command === '/history') {
-    // show all messages in log
     const history = chatLogs.map(log => {
-      const date = new Date(log.timestamp)
-      const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      const time = new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       return `[${time}] ${log.from}: ${log.message}`
     }).join('\n')
-    sendChat(`Chat history:\n${history}`, peerId)
+    sendChat(`History:\n${history}`, peerId)
+    
+  } else if (command === '/users') {
+    const users = Array.from(verifiedPeers.values()).map(wallet => {
+      const p = profileDB.get(wallet)
+      const name = p?.name || 'Anonymous'
+      return `${name} (${wallet.slice(0, 6)}...)`
+    }).join('\n')
+    sendChat(`Online users:\n${users}`, peerId)
+    
   } else {
-    // return this help as a fallback
-    sendChat(`Available commands:
-/claim - Claim cheese (1 hour cooldown) \n
-/cheese - Check your cheese balance \n
-/profile - View your profile \n
-/history - Show recent chat history \n
-/help - Show this help message \n`, peerId)
-    }
+    sendChat(`Commands: /claim /cheese /profile /users /history`, peerId)
   }
-  
+}
+
+console.log('🚀 Pockit.world server started!')
+console.log(`Users: ${verifiedPeers.size}, Profiles: ${profileDB.size}`)
