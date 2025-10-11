@@ -7,6 +7,9 @@ import { DataPayload, joinRoom } from 'trystero'
 import { RTCPeerConnection } from 'node-datachannel/polyfill'
 import ws from 'ws';
 global.WebSocket = ws as unknown as typeof WebSocket;
+import { verifyMessage } from 'viem'
+import { privateKeyToAccount, generatePrivateKey } from 'viem/accounts'
+import * as secp from '@noble/secp256k1'
 // Prevent server crash on WebSocket errors
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception:', err);
@@ -38,6 +41,26 @@ var verifiedPeers = new Map<string, string>() // peerId -> wallet
 var cheeseByWallet: Record<string, { lastClaim: number, amount: number }> = {}
 var chatLogs: Array<{ from: string, message: string, timestamp: number }> = []
 
+// Server identity (used to sign outbound messages)
+const SERVER_PRIVATE_KEY = (process.env.SERVER_PRIVATE_KEY as string) || generatePrivateKey()
+const SERVER_ACCOUNT = privateKeyToAccount(SERVER_PRIVATE_KEY as `0x${string}`)
+const SERVER_ADDRESS = SERVER_ACCOUNT.address
+// compressed public key (0x...)
+function getCompressedPublicKey(privateKeyHex: `0x${string}`): string {
+  const priv = Buffer.from(privateKeyHex.slice(2), 'hex')
+  const pub = secp.getPublicKey(priv, true)
+  return `0x${Buffer.from(pub).toString('hex')}`
+}
+const SERVER_PUBLIC_KEY = getCompressedPublicKey(SERVER_PRIVATE_KEY as `0x${string}`)
+
+// Canonicalize an object to a stable JSON string (sorts keys)
+function canonicalize(obj: Record<string, any>) {
+  const keys = Object.keys(obj).sort()
+  const out: Record<string, any> = {}
+  for (const k of keys) out[k] = obj[k]
+  return JSON.stringify(out)
+}
+
 function addMessageToLog(from: string, message: string) {
   chatLogs.push({ from, message, timestamp: Date.now() })
   if (chatLogs.length > 40) {
@@ -53,9 +76,13 @@ function getWallet(peerId: string): string | undefined {
   return verifiedPeers.get(peerId)
 }
 
-room.onPeerJoin((peerId) => {
+room.onPeerJoin(async (peerId) => {
   console.log(`Peer joined: ${peerId}`)
-  sendState({profile: {name: 'PockitCEO', walletAddress: '0xPOCKIT'}}, peerId)
+  // send signed server profile state to new peer
+  const serverProfile = { name: 'PockitCEO', walletAddress: SERVER_ADDRESS, publicKey: SERVER_PUBLIC_KEY }
+  const canonical = canonicalize(serverProfile)
+  const signature = await SERVER_ACCOUNT.signMessage({ message: canonical })
+  sendState({ profile: serverProfile, signature }, peerId)
   sendChat(`Welcome to crusty burger, this is Patrick. Waddle around and make new friends ${peerId}! Type /help for commands.`, peerId)
 })
 
@@ -70,19 +97,42 @@ getState((data: DataPayload, peerId) => {
   console.log(`State updated for ${peerId}:`, data)
   if (data && typeof data === 'object' && !Array.isArray(data) && 'profile' in data) {
     const profile = (data as any).profile
+    const signature = (data as any).signature
     if (profile && typeof profile === 'object' && !Array.isArray(profile) && 'walletAddress' in profile && typeof (profile as any).walletAddress === 'string') {
       const walletAddress = (profile as any).walletAddress
-      
-      // Simple validation and registration
-      if (walletAddress.match(/^0x[a-fA-F0-9]{40}$/)) {
-        profileDB.set(walletAddress, profile)
-        verifiedPeers.set(peerId, walletAddress)
-        
-        console.log(`User ${peerId} verified with wallet ${walletAddress}`)
-        sendChat(`Welcome ${profile.name || 'Anonymous'}! You're verified.`, peerId)
-      } else {
+
+      // Validate wallet address format
+      if (!walletAddress.match(/^0x[a-fA-F0-9]{40}$/)) {
         sendChat(`Invalid wallet address.`, peerId)
+        return
       }
+
+      // If a signature is present, verify it. If not, reject the profile.
+      if (!signature || typeof signature !== 'string') {
+        sendChat(`Unlock your wallet to verify your profile.`, peerId)
+        return
+      }
+
+      try {
+        // canonicalize profile before verifying
+        const canonical = canonicalize(profile)
+        const valid = verifyMessage({ address: walletAddress as `0x${string}`, message: canonical, signature: signature as `0x${string}` })
+        if (!valid) {
+          sendChat(`Signature verification failed.`, peerId)
+          return
+        }
+      } catch (err) {
+        console.error('Verification error', err)
+        sendChat(`Signature verification error.`, peerId)
+        return
+      }
+
+      // Passed verification - register
+      profileDB.set(walletAddress, profile)
+      verifiedPeers.set(peerId, walletAddress)
+
+      console.log(`User ${peerId} verified with wallet ${walletAddress}`)
+      sendChat(`Welcome ${profile.name || 'Anonymous'}! You're verified.`, peerId)
     }
   }
 })
