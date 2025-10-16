@@ -6,6 +6,7 @@ import * as THREE from "three";
 import { MapControls, TransformControls } from "@react-three/drei";
 import { useEditorContext } from "../editor/EditorContext";
 import { WaterMaterial } from "@/shared/shaders/Water";
+import { useThree } from "@react-three/fiber";
 
 export enum EditorModes {
     Edit = "edit",
@@ -70,7 +71,14 @@ function cloneObject(object: Object3D): Object3D | null {
 }
 
 export function Viewer() {
-    const { sceneGraph, setSceneGraph, models, selectedNodeId, setSelectedNodeId, getNodeRef, playMode } = useEditorContext();
+    const { sceneGraph, setSceneGraph, models, selectedNodeId, setSelectedNodeId, getNodeRef, playMode, sceneRef } = useEditorContext();
+    const { scene } = useThree();
+
+    useEffect(() => {
+        if (sceneRef.current !== scene) {
+            sceneRef.current = scene;
+        }
+    }, [scene, sceneRef]);
 
     useEffect(() => {
         if (selectedNodeId && !nodeExists(sceneGraph, selectedNodeId)) {

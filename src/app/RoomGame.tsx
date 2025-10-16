@@ -17,7 +17,7 @@ const RoomSpecificGame = () => {
                 key={'np21'}
                 basePath={"/models/human/onimilio/"}
                 modelUrl={"rigged.glb"}
-                position={[2.4, 0, 1]} height={1.5}
+                position={[1, 0, -4]} height={1.5}
             >
                 <DialogCollider>
                     {(

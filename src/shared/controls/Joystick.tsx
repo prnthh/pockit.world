@@ -2,31 +2,31 @@
  * Copyright (c) prnth.com. All rights reserved.
  *
  * This source code is licensed under the GPL-3.0 license found in the LICENSE
- * file in the root directory of this source tree.
+/**
+ * Clean Joystick implementation
+/**
+ * Joystick component with floating support and imperative handle.
  */
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 
 type JoystickProps = {
     controlScheme: string;
     onMove?: (pos: { x: number; y: number }) => void;
+    floating?: boolean;
+    left?: number;
+    top?: number;
 };
 
 const size = 100;
 const radius = size / 2;
 const knobRadius = 30;
 
-const clamp = (value: number, min: number, max: number) =>
-    Math.max(min, Math.min(max, value));
+const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 
-const getRelativePosition = (
-    clientX: number,
-    clientY: number,
-    rect: DOMRect
-) => {
+const getRelativePosition = (clientX: number, clientY: number, rect: DOMRect) => {
     const x = clientX - rect.left - radius;
     const y = clientY - rect.top - radius;
-    // Clamp to circle
     const dist = Math.sqrt(x * x + y * y);
     if (dist > radius - knobRadius / 2) {
         const angle = Math.atan2(y, x);
@@ -54,14 +54,19 @@ function triggerKey(name: string, type: 'keydown' | 'keyup') {
     }
 }
 
-const Joystick: React.FC<JoystickProps> = ({ controlScheme, onMove }) => {
+export type JoystickHandle = {
+    startFrom: (clientX: number, clientY: number, isTouch?: boolean, touchId?: number) => void;
+    moveTo: (clientX: number, clientY: number) => void;
+    end: () => void;
+};
+
+const Joystick = forwardRef<JoystickHandle, JoystickProps>(({ controlScheme, onMove, floating, left, top }, ref) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [knob, setKnob] = useState({ x: 0, y: 0 });
     const dragging = useRef(false);
-    const lastDirections = useRef<{ [k: string]: boolean }>({});
-    const activeTouchId = useRef<number | null>(null); // Track active touch
+    const lastDirections = useRef<Record<string, boolean>>({});
+    const activeTouchId = useRef<number | null>(null);
 
-    // Helper to determine direction from x/y
     const getDirections = (x: number, y: number) => {
         const threshold = 0.3;
         return {
@@ -72,51 +77,57 @@ const Joystick: React.FC<JoystickProps> = ({ controlScheme, onMove }) => {
         };
     };
 
-    // Fire key events based on joystick movement
     useEffect(() => {
         const { x, y } = knob;
         const dirs = getDirections(x / (radius - knobRadius / 2), y / (radius - knobRadius / 2));
-        for (const dir of Object.keys(dirs) as (keyof typeof dirs)[]) {
-            if (dirs[dir] && !lastDirections.current[dir]) {
-                triggerKey(dir, 'keydown');
-            }
-            if (!dirs[dir] && lastDirections.current[dir]) {
-                triggerKey(dir, 'keyup');
-            }
+        for (const dir of Object.keys(dirs)) {
+            const d = dir as keyof typeof dirs;
+            if (dirs[d] && !lastDirections.current[d]) triggerKey(d, 'keydown');
+            if (!dirs[d] && lastDirections.current[d]) triggerKey(d, 'keyup');
         }
         lastDirections.current = dirs;
-        // Cleanup on unmount: release all keys
         return () => {
             for (const dir of Object.keys(lastDirections.current)) {
-                if (lastDirections.current[dir]) {
-                    triggerKey(dir, 'keyup');
-                }
+                if (lastDirections.current[dir]) triggerKey(dir, 'keyup');
             }
             lastDirections.current = {};
         };
     }, [knob.x, knob.y]);
 
-    // Helper to update knob and call onMove
     const updateKnobFromCoords = (clientX: number, clientY: number) => {
         const rect = containerRef.current?.getBoundingClientRect();
         if (!rect) return;
         const pos = getRelativePosition(clientX, clientY, rect);
         setKnob(pos);
-        if (onMove) {
-            onMove({
-                x: clamp(pos.x / (radius - knobRadius / 2), -1, 1),
-                y: clamp(pos.y / (radius - knobRadius / 2), -1, 1),
-            });
-        }
+        if (onMove) onMove({ x: clamp(pos.x / (radius - knobRadius / 2), -1, 1), y: clamp(pos.y / (radius - knobRadius / 2), -1, 1) });
     };
 
-    // Only start joystick drag if touch starts on joystick area and not already dragging
+    useImperativeHandle(ref, () => ({
+        startFrom: (clientX: number, clientY: number, isTouch?: boolean, touchId?: number) => {
+            dragging.current = true;
+            if (isTouch && typeof touchId === 'number') activeTouchId.current = touchId;
+            updateKnobFromCoords(clientX, clientY);
+        },
+        moveTo: (clientX: number, clientY: number) => {
+            if (!dragging.current) return;
+            updateKnobFromCoords(clientX, clientY);
+        },
+        end: () => {
+            dragging.current = false;
+            activeTouchId.current = null;
+            setKnob({ x: 0, y: 0 });
+            if (onMove) onMove({ x: 0, y: 0 });
+            for (const dir of Object.keys(lastDirections.current)) {
+                if (lastDirections.current[dir]) triggerKey(dir, 'keyup');
+            }
+            lastDirections.current = {};
+        }
+    }), [onMove]);
+
     const handleStart = (e: React.TouchEvent | React.MouseEvent) => {
         if ('touches' in e) {
             if (e.touches.length === 0) return;
-            // Only start if not already dragging
             if (!dragging.current) {
-                // Find the touch that started on the joystick area
                 const rect = containerRef.current?.getBoundingClientRect();
                 if (!rect) return;
                 let found = false;
@@ -140,14 +151,10 @@ const Joystick: React.FC<JoystickProps> = ({ controlScheme, onMove }) => {
         }
     };
 
-    // Only track the active touch for joystick
     const handleMove = (e: React.TouchEvent | React.MouseEvent) => {
         if ('touches' in e) {
             if (!dragging.current || activeTouchId.current === null) return;
-            // Only track the active touch
-            const touch = Array.from(e.touches).find(
-                t => t.identifier === activeTouchId.current
-            );
+            const touch = Array.from(e.touches).find(t => t.identifier === activeTouchId.current);
             if (!touch) return;
             updateKnobFromCoords(touch.clientX, touch.clientY);
         } else {
@@ -156,60 +163,69 @@ const Joystick: React.FC<JoystickProps> = ({ controlScheme, onMove }) => {
         }
     };
 
-    // On touchend/touchcancel, only end if the released touch is the one tracked by joystick
     const handleEnd = (e?: React.TouchEvent | React.MouseEvent) => {
         if (e && 'changedTouches' in e) {
             if (activeTouchId.current === null) return;
-            const ended = Array.from(e.changedTouches).some(
-                t => t.identifier === activeTouchId.current
-            );
+            const ended = Array.from(e.changedTouches).some(t => t.identifier === activeTouchId.current);
             if (!ended) return;
         }
         dragging.current = false;
         activeTouchId.current = null;
         setKnob({ x: 0, y: 0 });
         if (onMove) onMove({ x: 0, y: 0 });
-        // Release all keys on joystick release
         for (const dir of Object.keys(lastDirections.current)) {
-            if (lastDirections.current[dir]) {
-                triggerKey(dir, 'keyup');
-            }
+            if (lastDirections.current[dir]) triggerKey(dir, 'keyup');
         }
         lastDirections.current = {};
+    };
+
+    const containerStyle: React.CSSProperties = floating ? {
+        position: 'absolute',
+        left: (typeof left === 'number' ? left - radius : 0),
+        top: (typeof top === 'number' ? top - radius : 0),
+        width: size,
+        height: size,
+        background: 'rgba(255,255,255,0.0)',
+        borderRadius: '50%',
+        touchAction: 'none',
+        userSelect: 'none',
+        zIndex: 9999,
+        pointerEvents: 'none',
+    } : {
+        width: size,
+        height: size,
+        background: 'rgba(255,255,255,0.2)',
+        borderRadius: '50%',
+        border: '2px solid white',
+        touchAction: 'none',
+        position: 'relative',
+        userSelect: 'none',
     };
 
     return (
         <div
             ref={containerRef}
-            style={{
-                width: size,
-                height: size,
-                background: 'rgba(255,255,255,0.2)',
-                borderRadius: '50%',
-                border: '2px solid white',
-                touchAction: 'none',
-                position: 'relative',
-                userSelect: 'none',
-            }}
-            onTouchStart={handleStart}
-            onTouchMove={handleMove}
-            onTouchEnd={handleEnd}
-            onTouchCancel={handleEnd}
-            onMouseDown={e => {
-                e.preventDefault();
-                handleStart(e);
-                // Only listen to mousemove/mouseup on the joystick area
-                const div = containerRef.current;
-                if (!div) return;
-                const moveListener = handleMove as any;
-                const upListener = () => {
-                    handleEnd();
-                    div.removeEventListener('mousemove', moveListener);
-                    div.removeEventListener('mouseup', upListener);
-                };
-                div.addEventListener('mousemove', moveListener);
-                div.addEventListener('mouseup', upListener, { once: true });
-            }}
+            style={containerStyle}
+            {...(floating ? {} : {
+                onTouchStart: handleStart,
+                onTouchMove: handleMove,
+                onTouchEnd: handleEnd,
+                onTouchCancel: handleEnd,
+                onMouseDown: (e: React.MouseEvent) => {
+                    e.preventDefault();
+                    handleStart(e);
+                    const div = containerRef.current;
+                    if (!div) return;
+                    const moveListener = handleMove as any;
+                    const upListener = () => {
+                        handleEnd();
+                        div.removeEventListener('mousemove', moveListener);
+                        div.removeEventListener('mouseup', upListener);
+                    };
+                    div.addEventListener('mousemove', moveListener);
+                    div.addEventListener('mouseup', upListener, { once: true });
+                }
+            })}
         >
             <div
                 style={{
@@ -226,8 +242,20 @@ const Joystick: React.FC<JoystickProps> = ({ controlScheme, onMove }) => {
                     pointerEvents: 'none',
                 }}
             />
+            {floating && (
+                <div style={{
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    width: size,
+                    height: size,
+                    borderRadius: '50%',
+                    border: '2px solid rgba(255,255,255,0.2)',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+                }} />
+            )}
         </div>
     );
-};
+});
 
 export default Joystick;

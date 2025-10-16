@@ -1,8 +1,7 @@
-
 import { DragDropLoader } from "../../dragdrop/DragDropLoader";
 import React, { useEffect, useRef, useState, useContext, createContext, useMemo } from "react";
 import SceneEditor from "../editor/SceneEditor";
-import { Object3D, Object3DEventMap } from "three";
+import { Object3D, Object3DEventMap, Scene } from "three";
 import { EditorModes, SceneNode, Viewer } from "../viewer/SceneViewer";
 import { GLTFLoader, FBXLoader } from "three/examples/jsm/Addons.js";
 
@@ -17,6 +16,7 @@ interface EditorContextType {
     setSelectedNodeId: React.Dispatch<React.SetStateAction<string | null>>;
     getNodeRef: (id: string) => React.RefObject<Object3D<Object3DEventMap> | null>;
     scanAndLoadMissingModels: (customSceneGraph?: SceneNode[]) => void;
+    sceneRef: React.RefObject<Scene | null>;
 }
 
 const EditorContext = createContext<EditorContextType | undefined>(undefined);
@@ -60,6 +60,9 @@ export function GameEngine({ resourcePath = "", mode = EditorModes.Play, sceneGr
         if (!nodeRefs.current[id]) nodeRefs.current[id] = React.createRef<Object3D<Object3DEventMap>>();
         return nodeRefs.current[id];
     };
+
+    // Scene ref for exporting
+    const sceneRef = useRef<Scene | null>(null);
 
     function addModelNodeToSceneGraph(model: any, filename: string) {
         // Always store the model in models state by filename
@@ -168,7 +171,7 @@ export function GameEngine({ resourcePath = "", mode = EditorModes.Play, sceneGr
     }, []);
 
     return (
-        <EditorContext.Provider value={useMemo(() => ({ sceneGraph, setSceneGraph, models, setModels, playMode, setPlayMode, selectedNodeId, setSelectedNodeId, getNodeRef, scanAndLoadMissingModels }), [sceneGraph, models, playMode, setPlayMode, selectedNodeId,])}>
+        <EditorContext.Provider value={useMemo(() => ({ sceneGraph, setSceneGraph, models, setModels, playMode, setPlayMode, selectedNodeId, setSelectedNodeId, getNodeRef, scanAndLoadMissingModels, sceneRef }), [sceneGraph, models, playMode, setPlayMode, selectedNodeId,])}>
             {playMode == EditorModes.Edit && <DragDropLoader onModelLoaded={(model, filename) => addModelNodeToSceneGraph(model, filename)} />}
             <div className="w-full items-center justify-items-center min-h-screen bg-black/70" style={{ height: "100vh" }}>
                 {children}

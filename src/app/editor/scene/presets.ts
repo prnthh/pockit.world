@@ -41,33 +41,27 @@ const presets = {
     "name": "Root",
     "children": [
       {
-        "id": "7qhl5spkj",
-        "name": "burnin_rubber_4_city.glb",
+        "id": "rpbjk31xk",
+        "name": "cathedral.glb",
         "children": [],
         "components": [
           {
             "type": "model",
-            "filename": "burnin_rubber_4_city.glb"
-          },
-          {
-            "type": "physics",
-            "props": {
-              "type": "fixed"
-            }
+            "filename": "cathedral.glb"
           }
         ],
         "transform": {
           "position": [
-            -898.323828568215,
-            -34.07424686128641,
-            1359.7209057722787
+            0,
+            0,
+            0
           ],
           "rotation": [
             0,
             0,
             0
           ],
-          "scale": 0.7999999999999999
+          "scale": 1
         }
       }
     ],

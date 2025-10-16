@@ -4,6 +4,7 @@ import { SceneNode } from "../viewer/SceneViewer";
 import { FilePicker } from "../../dragdrop/DragDropLoader";
 import presets from "../presets";
 import { useEditorContext } from "./EditorContext";
+import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
 
 function generateId() {
     return Math.random().toString(36).substr(2, 9);
@@ -141,7 +142,7 @@ interface SceneEditorProps {
 }
 
 export default function SceneEditor({ sceneGraph, setSceneGraph, selectedNodeId, setSelectedNodeId, models, setModels }: SceneEditorProps) {
-    const { scanAndLoadMissingModels } = useEditorContext();
+    const { scanAndLoadMissingModels, sceneRef } = useEditorContext();
     const [rawMode, setRawMode] = useState(false);
     const dragNode = useRef<SceneNode | null>(null);
     const dragOverInfo = useRef<{ nodeId: string; position: 'before' | 'after' | 'into' } | null>(null);
@@ -152,6 +153,43 @@ export default function SceneEditor({ sceneGraph, setSceneGraph, selectedNodeId,
     // History manager
     const historyManager = useRef(new HistoryManager());
     const [, forceUpdate] = useState({});
+
+    // Download GLB function
+    const handleDownloadGLB = useCallback(() => {
+        if (!sceneRef.current) {
+            alert('Scene not available');
+            return;
+        }
+        const exporter = new GLTFExporter();
+        exporter.parse(
+            sceneRef.current,
+            function (result) {
+                if (result instanceof ArrayBuffer) {
+                    saveArrayBuffer(result, 'scene.glb');
+                } else {
+                    console.log('Unexpected result type:', result);
+                }
+            },
+            function (error) {
+                console.error('Error exporting GLTF:', error);
+            },
+            { binary: true }
+        );
+    }, [sceneRef]);
+
+    const saveArrayBuffer = (buffer: ArrayBuffer, filename: string) => {
+        save(new Blob([buffer], { type: 'application/octet-stream' }), filename);
+    };
+
+    const save = (blob: Blob, filename: string) => {
+        const link = document.createElement('a');
+        link.style.display = 'none';
+        document.body.appendChild(link); // Firefox workaround
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        link.click();
+        document.body.removeChild(link);
+    };
 
     // Save current state to history
     const saveToHistory = useCallback(() => {
@@ -673,6 +711,12 @@ export default function SceneEditor({ sceneGraph, setSceneGraph, selectedNodeId,
                                         onClick={handleLoadJSON}
                                     >
                                         Load JSON
+                                    </button>
+                                    <button
+                                        className="px-3 py-1 border rounded bg-white hover:bg-purple-50 text-purple-700"
+                                        onClick={handleDownloadGLB}
+                                    >
+                                        Download GLB
                                     </button>
                                 </div>
                             </div>
