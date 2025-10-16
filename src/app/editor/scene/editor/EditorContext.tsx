@@ -1,6 +1,6 @@
 
 import { DragDropLoader } from "../../dragdrop/DragDropLoader";
-import React, { useEffect, useRef, useState, useContext, createContext } from "react";
+import React, { useEffect, useRef, useState, useContext, createContext, useMemo } from "react";
 import SceneEditor from "../editor/SceneEditor";
 import { Object3D, Object3DEventMap } from "three";
 import { EditorModes, SceneNode, Viewer } from "../viewer/SceneViewer";
@@ -53,10 +53,6 @@ export function GameEngine({ resourcePath = "", mode = EditorModes.Play, sceneGr
     useEffect(() => {
         setPlayMode(mode);
     }, [mode]);
-
-    useEffect(() => {
-        console.log("Scene graph updated:", sceneGraph);
-    }, [sceneGraph]);
 
     // Map of nodeId to ref
     const nodeRefs = useRef<{ [id: string]: React.RefObject<Object3D<Object3DEventMap> | null> }>({});
@@ -172,7 +168,7 @@ export function GameEngine({ resourcePath = "", mode = EditorModes.Play, sceneGr
     }, []);
 
     return (
-        <EditorContext.Provider value={{ sceneGraph, setSceneGraph, models, setModels, playMode, setPlayMode, selectedNodeId, setSelectedNodeId, getNodeRef, scanAndLoadMissingModels }}>
+        <EditorContext.Provider value={useMemo(() => ({ sceneGraph, setSceneGraph, models, setModels, playMode, setPlayMode, selectedNodeId, setSelectedNodeId, getNodeRef, scanAndLoadMissingModels }), [sceneGraph, models, playMode, setPlayMode, selectedNodeId,])}>
             {playMode == EditorModes.Edit && <DragDropLoader onModelLoaded={(model, filename) => addModelNodeToSceneGraph(model, filename)} />}
             <div className="w-full items-center justify-items-center min-h-screen bg-black/70" style={{ height: "100vh" }}>
                 {children}

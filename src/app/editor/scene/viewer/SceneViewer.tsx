@@ -131,6 +131,7 @@ export default function RecursiveNode({ node, onSelect, selectedNodeId, setScene
     const position = node.transform?.position?.map(v => v ?? 0) as [number, number, number] | undefined;
     const rotation = node.transform?.rotation?.map(v => v ?? 0) as [number, number, number] | undefined;
     const scale = node.transform?.scale ?? 1;
+    const movedRef = useRef(false);
 
     const renderChildren = () => node.children?.map((child, index) => (
         <RecursiveNode
@@ -164,10 +165,11 @@ export default function RecursiveNode({ node, onSelect, selectedNodeId, setScene
     }
 
     // Pointer event support
-    const pointerEventComp = node.components?.find(c => c.type === 'pointerEvent');
-    const hasPointerEvent = !!pointerEventComp;
-    const handlePointerDown = (e: any) => {
-        if (hasPointerEvent) {
+    const handlePointerUp = (e: any) => {
+        const pointerEventComp = node.components?.find(c => c.type === 'pointerEvent');
+
+        if (movedRef.current) return;
+        if (!!pointerEventComp) {
             const mode = pointerEventComp.args?.[0] || 'event';
             if (mode === 'link') {
                 const url = pointerEventComp.args?.[1];
@@ -180,6 +182,7 @@ export default function RecursiveNode({ node, onSelect, selectedNodeId, setScene
             console.log(`Pointer event on node: ${node.name}`);
             e.stopPropagation();
         }
+        movedRef.current = false;
 
         if (playMode === EditorModes.Edit && node.id) {
             e.stopPropagation();
@@ -190,7 +193,11 @@ export default function RecursiveNode({ node, onSelect, selectedNodeId, setScene
     // Regular rendering
     return (
         <group ref={groupRef} position={position || [0, 0, 0]} rotation={rotation} scale={scale}>
-            <mesh onPointerDown={handlePointerDown} castShadow receiveShadow>
+            <mesh
+                onPointerDown={e => { movedRef.current = false; }}
+                onPointerMove={e => { playMode === EditorModes.Edit && (movedRef.current = true); }}
+                onPointerUp={handlePointerUp}
+                castShadow receiveShadow>
                 <ComponentMapper node={node} />
                 {renderChildren()}
             </mesh>
