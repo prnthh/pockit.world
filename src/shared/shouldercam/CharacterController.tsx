@@ -280,7 +280,7 @@ export const CharacterController = ({ lookTarget, name = 'bob', mode = 'third-pe
                                 ? new Vector3(0, 1, 2) // Camera in front, lower
                                 : (shoulderCamMode
                                     ? new Vector3(-0.5, 0.5, -0.5)
-                                    : new Vector3(0, 0.5, -1.5))
+                                    : new Vector3(0, 1.5, -3.5))
                         }
                         targetOffset={
                             mode === "side-scroll"

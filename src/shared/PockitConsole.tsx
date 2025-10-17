@@ -8,7 +8,7 @@ export default function PockitConsole() {
         <iframe
             onMouseEnter={() => setToggled(true)}
             onMouseLeave={() => setToggled(false)}
-            className={`fixed bottom-2 transition-all ${toggled ? "right-2" : "-right-[300px]"} w-[400px] h-[220px]`}
+            className={`z-[10] fixed bottom-2 transition-all ${toggled ? "right-2" : "-right-[310px]"} w-[400px] h-[220px]`}
             src="https://toy.pockit.world"
             id="pockitconsole"
             title="PockitConsole"
