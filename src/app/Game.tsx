@@ -24,6 +24,7 @@ import killbox from "./milady/map";
 import test from "./test/map";
 import { ScenePortalContext } from "./ScenePortalProvider";
 import PostProcessingEffects from "@/shared/shaders/PostProcessingEffects";
+import RenderPipeline from "@/shared/shaders/PostProcessingEffects";
 
 const ui = tunnel()
 
@@ -57,6 +58,7 @@ const GameWrappers = () => {
                                 {/* remove the pathname key to persist the world between pages */}
                                 <Game key={pathname} />
                             </Physics>
+                            {/* <RenderPipeline /> */}
                         </GameCanvas>
                     </GameEngine>
                 </Controls>
