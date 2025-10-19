@@ -76,8 +76,9 @@ export const CharacterController = ({ lookTarget, name = 'bob', mode = 'third-pe
     useEffect(() => {
         if (mode !== "third-person" || !rotationTarget || !character.current || !container.current) return;
         // Save current facing so we can restore it when returning to side-scroll
-        savedFacingRef.current = lastFacingRef.current;
-        const composed = container.current.rotation.y + character.current.rotation.y;
+        savedFacingRef.current = normalizeAngle(lastFacingRef.current);
+        const composedRaw = container.current.rotation.y + character.current.rotation.y;
+        const composed = normalizeAngle(composedRaw);
         rotationTarget.current = composed;
         container.current.rotation.y = composed;
         character.current.rotation.y = 0;
@@ -87,7 +88,7 @@ export const CharacterController = ({ lookTarget, name = 'bob', mode = 'third-pe
     // Restore facing when switching back to side-scroll from third-person
     useEffect(() => {
         if (mode !== "side-scroll" || !character.current || !container.current) return;
-        const restored = savedFacingRef.current ?? lastFacingRef.current;
+        const restored = normalizeAngle(savedFacingRef.current ?? lastFacingRef.current);
         character.current.rotation.y = restored;
         container.current.rotation.y = 0;
         if (rotationTarget && rotationTarget.current !== undefined) rotationTarget.current = container.current.rotation.y;
@@ -101,6 +102,10 @@ export const CharacterController = ({ lookTarget, name = 'bob', mode = 'third-pe
     }, [forwardRef]);
 
     // --- Movement helpers ---
+    // Normalize an angle to the range [-PI, PI]
+    const normalizeAngle = useCallback((a: number) => {
+        return Math.atan2(Math.sin(a), Math.cos(a));
+    }, []);
     const setVelocity = useCallback((x: number, y: number, z: number) => {
         if (!rb.current) return;
         velocityRef.current.set(x, y, z);
@@ -195,15 +200,15 @@ export const CharacterController = ({ lookTarget, name = 'bob', mode = 'third-pe
                 if (runActionRef.current) runActionRef.current.timeScale = 1;
             }
         }
-        // Smoothly rotate character to targetFacing in simple/side-scroll
+        // Smoothly rotate character to targetFacing in simple/side-scroll using normalized shortest delta
         if ((mode === "simple" || mode === "side-scroll") && character.current) {
             let facing = targetFacing;
             if (mode === "side-scroll") facing += Math.PI;
-            const currentY = character.current.rotation.y;
-            let delta = facing - currentY;
-            if (delta > Math.PI) delta -= Math.PI * 2;
-            if (delta < -Math.PI) delta += Math.PI * 2;
-            character.current.rotation.y += delta * 0.2;
+            facing = normalizeAngle(facing);
+            const currentY = normalizeAngle(character.current.rotation.y);
+            // shortest delta between angles in [-PI, PI]
+            let delta = normalizeAngle(facing - currentY);
+            character.current.rotation.y = normalizeAngle(currentY + delta * 0.2);
         }
         setAnimation(nextAnimation);
     }, [mode, animation]);

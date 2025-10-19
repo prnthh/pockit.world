@@ -7,7 +7,7 @@ import { ScenePortalContext } from "./ScenePortalProvider";
 import NetworkThing from "./NetworkThing";
 import * as THREE from "three";
 import { useAudio } from "@/shared/AudioProvider";
-import RenderPipeline from "@/shared/shaders/PostProcessingEffects";
+import { Stats } from "@react-three/drei";
 
 const RoomSpecificGame = () => {
     const { scenePortal } = useContext(ScenePortalContext);
@@ -41,7 +41,7 @@ const RoomSpecificGame = () => {
 
                 }}
             />
-            <RenderPipeline />
+            <Stats />
         </scenePortal.In>
     </>;
 

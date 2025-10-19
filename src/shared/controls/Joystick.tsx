@@ -65,6 +65,7 @@ const Joystick = forwardRef<JoystickHandle, JoystickProps>(({ controlScheme, onM
     const [knob, setKnob] = useState({ x: 0, y: 0 });
     const dragging = useRef(false);
     const lastDirections = useRef<Record<string, boolean>>({});
+    const shiftHeld = useRef(false);
     const activeTouchId = useRef<number | null>(null);
 
     const getDirections = (x: number, y: number) => {
@@ -85,10 +86,33 @@ const Joystick = forwardRef<JoystickHandle, JoystickProps>(({ controlScheme, onM
             if (dirs[d] && !lastDirections.current[d]) triggerKey(d, 'keydown');
             if (!dirs[d] && lastDirections.current[d]) triggerKey(d, 'keyup');
         }
+        // Hold Shift when joystick magnitude passes 50% of the usable radius.
+        const nx = x / (radius - knobRadius / 2);
+        const ny = y / (radius - knobRadius / 2);
+        const magnitude = Math.sqrt(nx * nx + ny * ny);
+        const shiftThreshold = 0.5;
+        if (magnitude > shiftThreshold && !shiftHeld.current) {
+            // press Shift
+            shiftHeld.current = true;
+            const ev = new KeyboardEvent('keydown', { code: 'ShiftLeft', key: 'Shift', bubbles: true });
+            window.dispatchEvent(ev);
+        }
+        if (magnitude <= shiftThreshold && shiftHeld.current) {
+            // release Shift
+            shiftHeld.current = false;
+            const ev = new KeyboardEvent('keyup', { code: 'ShiftLeft', key: 'Shift', bubbles: true });
+            window.dispatchEvent(ev);
+        }
         lastDirections.current = dirs;
         return () => {
             for (const dir of Object.keys(lastDirections.current)) {
                 if (lastDirections.current[dir]) triggerKey(dir, 'keyup');
+            }
+            // ensure Shift is released on unmount/cleanup
+            if (shiftHeld.current) {
+                shiftHeld.current = false;
+                const ev = new KeyboardEvent('keyup', { code: 'ShiftLeft', key: 'Shift', bubbles: true });
+                window.dispatchEvent(ev);
             }
             lastDirections.current = {};
         };
@@ -121,6 +145,11 @@ const Joystick = forwardRef<JoystickHandle, JoystickProps>(({ controlScheme, onM
                 if (lastDirections.current[dir]) triggerKey(dir, 'keyup');
             }
             lastDirections.current = {};
+            if (shiftHeld.current) {
+                shiftHeld.current = false;
+                const ev = new KeyboardEvent('keyup', { code: 'ShiftLeft', key: 'Shift', bubbles: true });
+                window.dispatchEvent(ev);
+            }
         }
     }), [onMove]);
 
@@ -177,6 +206,11 @@ const Joystick = forwardRef<JoystickHandle, JoystickProps>(({ controlScheme, onM
             if (lastDirections.current[dir]) triggerKey(dir, 'keyup');
         }
         lastDirections.current = {};
+        if (shiftHeld.current) {
+            shiftHeld.current = false;
+            const ev = new KeyboardEvent('keyup', { code: 'ShiftLeft', key: 'Shift', bubbles: true });
+            window.dispatchEvent(ev);
+        }
     };
 
     const containerStyle: React.CSSProperties = floating ? {
