@@ -4,17 +4,17 @@
  * This source code is licensed under the GPL-3.0 license
  */
 
-import { Box, useKeyboardControls } from "@react-three/drei";
+import { useKeyboardControls } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { CapsuleCollider, RapierRigidBody, RigidBody, useRapier } from "@react-three/rapier";
 import { useEffect, useRef, useState, useMemo, useCallback, RefObject } from "react";
-import { MathUtils, Vector3, Group } from "three";
+import { Vector3, Group } from "three";
 import * as THREE from "three";
 import { usePointerLockControls } from "./usePointerLockControls";
 import { FollowCam } from "@/shared/FollowCam";
-import TSLLine from "./TSLLine";
 import { useWeapon } from "./useWeapon";
 import AnimatedModel from "../ped/HumanoidModel";
+import { useAudio } from "../AudioProvider";
 
 
 export const CharacterController = ({ lookTarget, name = 'bob', mode = 'third-person', children, forwardRef }: {
@@ -24,11 +24,20 @@ export const CharacterController = ({ lookTarget, name = 'bob', mode = 'third-pe
     children?: React.ReactNode,
     forwardRef?: (refs: { rbref: RefObject<RapierRigidBody | null>, meshref: RefObject<Group | null> }) => void
 }) => {
+    const { playSound } = useAudio();
+
     // --- Constants & refs ---
     const lastFacingRef = useRef<number>(0);
     const savedFacingRef = useRef<number | null>(null);
     const WALK_SPEED = 1.2, RUN_SPEED = 3, JUMP_FORCE = 1;
     const height = 1.2, roundHeight = 0.25;
+    // Tunables for simple-mode strafing behavior
+    const STRAFE_FORWARD_BIAS = 0.6; // forward push when strafing-only
+    const HORIZONTAL_BOOST = 1.15; // lateral multiplier so strafing feels equally fast
+
+    // Reusable temp vectors to avoid per-frame allocations
+    const _tmpDir = useRef(new Vector3());
+    const _yAxis = useRef(new Vector3(0, 1, 0));
     const { rapier, world } = useRapier();
     const rb = useRef<RapierRigidBody | null>(null);
     const container = useRef<Group>(null);
@@ -37,6 +46,9 @@ export const CharacterController = ({ lookTarget, name = 'bob', mode = 'third-pe
     const walkActionRef = useRef<THREE.AnimationAction | null>(null);
     const walkLeftActionRef = useRef<THREE.AnimationAction | null>(null);
     const runActionRef = useRef<THREE.AnimationAction | null>(null);
+
+    // Track last step index to avoid duplicate triggers
+    const lastStepIndexRef = useRef<number | null>(null);
     // --- Jump state ---
     const jumping = useRef(false);
     const jumpReleased = useRef(true);
@@ -114,21 +126,31 @@ export const CharacterController = ({ lookTarget, name = 'bob', mode = 'third-pe
 
     const handleSimpleMode = useCallback((keyInputs: any) => {
         if (container.current) {
-            const ROT_SPEED = 0.04;
+            // Reduce rotation speed for a gentler left/right camera turn in simple mode
+            const ROT_SPEED = 0.02; // was 0.04
             if (keyInputs.left) container.current.rotation.y += ROT_SPEED;
             if (keyInputs.right) container.current.rotation.y -= ROT_SPEED;
         }
-        const localDir = new Vector3(0, 0, 0);
+        // Build a local input direction including strafing (reuse tmp vector)
+        const localDir = _tmpDir.current;
+        localDir.set(0, 0, 0);
         if (keyInputs.forward) localDir.z += 1;
         if (keyInputs.backward) localDir.z -= 1;
+        if (keyInputs.left) localDir.x += 1;
+        if (keyInputs.right) localDir.x -= 1;
+
         if (localDir.lengthSq() > 0) {
+            // If only strafing, add a small forward bias and boost lateral speed
+            if (Math.abs(localDir.z) < 1e-6 && Math.abs(localDir.x) > 0) {
+                localDir.z += STRAFE_FORWARD_BIAS;
+                localDir.x *= HORIZONTAL_BOOST;
+            }
+
             localDir.normalize();
-            if (container.current) localDir.applyAxisAngle(new Vector3(0, 1, 0), container.current.rotation.y);
-            setVelocity(
-                localDir.x * (keyInputs.run ? RUN_SPEED : WALK_SPEED),
-                rb.current?.linvel().y ?? 0,
-                localDir.z * (keyInputs.run ? RUN_SPEED : WALK_SPEED)
-            );
+            if (container.current) localDir.applyAxisAngle(_yAxis.current, container.current.rotation.y);
+
+            const speed = (keyInputs.run ? RUN_SPEED : WALK_SPEED);
+            setVelocity(localDir.x * speed, rb.current?.linvel().y ?? 0, localDir.z * speed);
         } else {
             setVelocity(0, rb.current?.linvel().y ?? 0, 0);
         }
@@ -151,7 +173,8 @@ export const CharacterController = ({ lookTarget, name = 'bob', mode = 'third-pe
         }
         const speed = keyInputs.run ? RUN_SPEED : WALK_SPEED;
         if (moveX || moveZ) {
-            const dir = new Vector3(moveX, 0, moveZ).normalize().applyAxisAngle(new Vector3(0, 1, 0), rotationTarget.current);
+            const dir = _tmpDir.current;
+            dir.set(moveX, 0, moveZ).normalize().applyAxisAngle(_yAxis.current, rotationTarget.current);
             setVelocity(dir.x * speed, rb.current?.linvel().y ?? 0, dir.z * speed);
         } else {
             setVelocity(0, rb.current?.linvel().y ?? 0, 0);
@@ -163,7 +186,8 @@ export const CharacterController = ({ lookTarget, name = 'bob', mode = 'third-pe
         if (container.current) container.current.rotation.y = 0;
         if (rb.current && (moveX || moveZ)) {
             const charRot = character.current?.rotation.y ?? lastFacingRef.current;
-            const dir = new Vector3(Math.sin(charRot), 0, Math.cos(charRot)).normalize();
+            const dir = _tmpDir.current;
+            dir.set(Math.sin(charRot), 0, Math.cos(charRot)).normalize();
             setVelocity(dir.x * speed, rb.current.linvel().y, dir.z * speed);
         } else {
             handleThirdPersonMode(keyInputs);
@@ -237,9 +261,35 @@ export const CharacterController = ({ lookTarget, name = 'bob', mode = 'third-pe
                 handleThirdPersonMode(keyInputs);
             }
         }
+        // Play footstep sounds based on animation progress when grounded
+        const grounded = checkGrounded();
+        const isWalking = animation === 'walk' || animation === 'walkLeft';
+        const isRunning = animation === 'run';
+        const stepsPerCycle = 2; // two steps per walk/run cycle
 
-        // Jump/grounded logic
-        handleJump(keyInputs.jump, checkGrounded());
+        let action: THREE.AnimationAction | null = null;
+        if (isRunning) action = runActionRef.current;
+        else if (isWalking) action = walkActionRef.current || walkLeftActionRef.current;
+
+        if (action && grounded) {
+            const clip = action.getClip ? action.getClip() : null;
+            const duration = clip ? (clip.duration || 1) : 1;
+            const t = (action.time % duration) / duration;
+            const stepIndex = Math.floor(t * stepsPerCycle);
+            if (lastStepIndexRef.current !== stepIndex) {
+                lastStepIndexRef.current = stepIndex;
+                const baseVolume = isRunning ? 1.0 : 0.45;
+                const baseStepSpeed = isRunning ? 1.06 : 0.98;
+                const rand01 = () => Math.random() * 0.25 + 0.9; // small variance
+                const volume = Math.max(0, Math.min(1, baseVolume * rand01()));
+                const stepSpeed = baseStepSpeed * rand01();
+                playSound("/sound/step.mp3", volume, stepSpeed).catch(() => { });
+            }
+        } else {
+            lastStepIndexRef.current = null;
+        }
+
+        handleJump(keyInputs.jump, grounded);
     });
 
     const checkGrounded = useMemo(() => {

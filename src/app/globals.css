@@ -55,17 +55,3 @@ body {
 .noscrollbar {
   scrollbar-width: none; /* Firefox */
 }
-
-
-.chatbox {
-  border: 24px solid;
-  border-image: url('/ui/frame.png');
-  /* transform: rotate(50deg); */
-  border-image-slice: 64;
-  box-sizing: border-box;
-  color: black;
-  font-family: 'VT323', 'Share Tech Mono', 'Courier New', Courier, monospace;
-  font-size: 2rem;
-  transform: scale(2);
-  text-shadow: #000 0px 0px 1px;
-}

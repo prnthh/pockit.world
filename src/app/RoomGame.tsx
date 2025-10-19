@@ -59,8 +59,8 @@ const NPCScene = () => {
     >
         <DialogCollider>
             {(
-                <div className="rounded chatbox ">
-                    <div className="bg-[#b9de77]">
+                <div className="rounded rounded-xl bg-[#b9de77] p-4 text-xl text-black scale-300 max-w-[400px]">
+                    <div className="">
                         <RevealTextByWord text="The office is under construction! Please come back later." speed={200} playSound={playSound} />
                     </div>
                 </div>

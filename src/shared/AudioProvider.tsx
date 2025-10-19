@@ -8,7 +8,7 @@ interface AudioProviderProps {
 
 interface AudioContextType {
     unlockAudio: () => Promise<void>;
-    playSound: (url?: string) => Promise<void>;
+    playSound: (url?: string, volume?: number, speed?: number) => Promise<void>;
     isUnlocked: boolean;
 }
 
@@ -58,7 +58,7 @@ export const AudioProvider = ({ children }: AudioProviderProps) => {
         return buffer;
     };
 
-    const playSound = async (url?: string) => {
+    const playSound = async (url?: string, volume?: number, speed?: number) => {
         const soundUrl = url ?? "/sound/ding.mp3"; // default sound
         const ctx = audioCtxRef.current;
         if (!ctx) {
@@ -75,7 +75,19 @@ export const AudioProvider = ({ children }: AudioProviderProps) => {
         const buffer = await loadBuffer(soundUrl);
         const source = ctx.createBufferSource();
         source.buffer = buffer;
-        source.connect(ctx.destination);
+        if (typeof speed === "number" && speed > 0) {
+            source.playbackRate.value = speed;
+        }
+        let finalNode: AudioNode = source;
+        if (typeof volume === "number" && volume >= 0 && volume <= 1) {
+            const gainNode = ctx.createGain();
+            gainNode.gain.value = volume;
+            source.connect(gainNode);
+            gainNode.connect(ctx.destination);
+            finalNode = gainNode;
+        } else {
+            source.connect(ctx.destination);
+        }
         source.start(0);
     };
 
