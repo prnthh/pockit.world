@@ -72,13 +72,22 @@ const Joystick = forwardRef<JoystickHandle, JoystickProps>(({ controlScheme, onM
     const activeTouchId = useRef<number | null>(null);
 
     const getDirections = (x: number, y: number) => {
-        const threshold = 0.3;
-        return {
-            forward: y < -threshold,
-            backward: y > threshold,
-            left: x < -threshold,
-            right: x > threshold,
-        };
+        const d = 0.2; // deadzone
+        const r = 1.5; // dominance ratio
+        const ax = Math.abs(x), ay = Math.abs(y);
+
+        const vActive = ay > d;
+        const hActive = ax > d;
+
+        const forward = vActive && y < -d;
+        const backward = vActive && y > d;
+
+        // Only allow horizontal if no strong vertical dominance.
+        const allowHorizontal = hActive && (!vActive || ax * r >= ay);
+        const left = allowHorizontal && x < -d;
+        const right = allowHorizontal && x > d;
+
+        return { forward, backward, left, right };
     };
 
     useEffect(() => {
