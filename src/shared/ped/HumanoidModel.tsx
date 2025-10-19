@@ -45,36 +45,36 @@ const AnimatedModel = forwardRef<THREE.Object3D, {
                     const mesh = child as THREE.Mesh;
                     mesh.castShadow = mesh.receiveShadow = true;
 
-                    if (mesh.material) mesh.material = (mesh.material as any).clone();
-                    const mat = mesh.material as any;
-                    if (mat && 'flatShading' in mat) { mat.flatShading = true; mat.needsUpdate = true; }
+                    // if (mesh.material) mesh.material = (mesh.material as any).clone();
+                    // const mat = mesh.material as any;
+                    // if (mat && 'flatShading' in mat) { mat.flatShading = true; mat.needsUpdate = true; }
 
-                    const geom = mesh.geometry as THREE.BufferGeometry | undefined;
-                    if (!geom || !geom.attributes || !geom.attributes.position) return;
+                    // const geom = mesh.geometry as THREE.BufferGeometry | undefined;
+                    // if (!geom || !geom.attributes || !geom.attributes.position) return;
 
-                    // Skip skinned/morph/indexed geometries and mark for debugging
-                    const hasSkin = !!(geom.attributes['skinIndex'] || geom.attributes['skinWeight']);
-                    const hasMorph = !!(geom.morphAttributes && Object.keys(geom.morphAttributes).length > 0);
-                    if (hasSkin || hasMorph) { mesh.userData = { ...(mesh as any).userData, simplifySkipped: true }; return; }
-                    if (geom.index) { mesh.userData = { ...(mesh as any).userData, simplifySkippedIndexed: true }; return; }
+                    // // Skip skinned/morph/indexed geometries and mark for debugging
+                    // const hasSkin = !!(geom.attributes['skinIndex'] || geom.attributes['skinWeight']);
+                    // const hasMorph = !!(geom.morphAttributes && Object.keys(geom.morphAttributes).length > 0);
+                    // if (hasSkin || hasMorph) { mesh.userData = { ...(mesh as any).userData, simplifySkipped: true }; return; }
+                    // if (geom.index) { mesh.userData = { ...(mesh as any).userData, simplifySkippedIndexed: true }; return; }
 
-                    const target = Math.max(4, Math.floor(geom.attributes.position.count * 0.875));
-                    const trySimplify = (g: THREE.BufferGeometry) => {
-                        try { return modifier.modify(g, target) as THREE.BufferGeometry; } catch { return null; }
-                    };
+                    // const target = Math.max(4, Math.floor(geom.attributes?.position.count * 0.875));
+                    // const trySimplify = (g: THREE.BufferGeometry) => {
+                    //     try { return modifier.modify(g, target) as THREE.BufferGeometry; } catch { return null; }
+                    // };
 
-                    const simplified = trySimplify(geom) ?? (() => {
-                        try {
-                            const nonIndexed = (geom as any).toNonIndexed ? (geom as any).toNonIndexed() as THREE.BufferGeometry : geom.clone() as THREE.BufferGeometry;
-                            const s = trySimplify(nonIndexed);
-                            try { nonIndexed.dispose(); } catch { }
-                            return s;
-                        } catch { return null; }
-                    })();
+                    // const simplified = trySimplify(geom) ?? (() => {
+                    //     try {
+                    //         const nonIndexed = (geom as any).toNonIndexed ? (geom as any).toNonIndexed() as THREE.BufferGeometry : geom.clone() as THREE.BufferGeometry;
+                    //         const s = trySimplify(nonIndexed);
+                    //         try { nonIndexed.dispose(); } catch { }
+                    //         return s;
+                    //     } catch { return null; }
+                    // })();
 
-                    if (!simplified) { mesh.userData = { ...(mesh as any).userData, simplifyError: true }; return; }
-                    try { geom.dispose(); } catch { }
-                    mesh.geometry = simplified;
+                    // if (!simplified) { mesh.userData = { ...(mesh as any).userData, simplifyError: true }; return; }
+                    // try { geom.dispose(); } catch { }
+                    // mesh.geometry = simplified;
                 });
                 setClonedScene(cloned);
             }

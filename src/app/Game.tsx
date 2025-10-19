@@ -89,6 +89,7 @@ const Game = () => {
     return <>
         <Viewer />
         <CharacterController
+            name="player"
             mode={scheme == "advanced" ? "third-person" : "simple"}
             forwardRef={({ rbref: rb, meshref: mesh }) => {
                 rbref.current = rb.current;

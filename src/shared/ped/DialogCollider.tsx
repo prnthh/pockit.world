@@ -20,7 +20,7 @@ export default function DialogCollider({
 
     const handleIntersectionEnter = (event: any) => {
         const name = event?.other?.name || event?.other?.rigidBodyObject?.name
-        if (name == 'bob') {
+        if (name == 'player') {
             console.log("DialogCollider: Intersection Entered with", name);
             setDialogVisible(true);
             onEnter?.();
