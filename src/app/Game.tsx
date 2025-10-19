@@ -1,7 +1,7 @@
 "use client";
 
-import { Physics, RapierRigidBody } from "@react-three/rapier";
-import { Environment, Html } from "@react-three/drei";
+import { Physics, RapierRigidBody, RigidBody } from "@react-three/rapier";
+import { Environment, } from "@react-three/drei";
 import Controls, { useControlScheme } from "@/shared/controls/ControlsProvider";
 import { ShadowLight } from "@/shared/lighting/ShadowLight";
 import { Suspense, useEffect, useRef, useState } from "react";
@@ -10,12 +10,11 @@ import { EditorModes, SceneNode, Viewer } from "@/app/editor/scene/viewer/SceneV
 import { GameEngine } from "@/app/editor/scene/editor/EditorContext";
 import { CharacterController } from "@/shared/shouldercam/CharacterController";
 import dynamic from 'next/dynamic'
-import { Group, Mesh } from "three";
+import { Group } from "three";
 import { useContext } from 'react'
 import { usePathname } from 'next/navigation';
 import tunnel from "tunnel-rat";
 import ModelAttachment from "@/shared/ped/ModelAttachment";
-import * as THREE from "three";
 import Ped from "@/shared/ped/ped";
 
 import office from "./map";
@@ -24,7 +23,7 @@ import killbox from "./milady/map";
 import test from "./test/map";
 import { ScenePortalContext } from "./ScenePortalProvider";
 import PostProcessingEffects from "@/shared/shaders/PostProcessingEffects";
-import RenderPipeline from "@/shared/shaders/PostProcessingEffects";
+import Sky from "@/shared/shaders/Sky";
 
 const ui = tunnel()
 
@@ -87,7 +86,15 @@ const Game = () => {
     }, []);
 
     return <>
-        <Viewer />
+        <Suspense fallback={<RigidBody>
+            <mesh position={[0, 0, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                <planeGeometry args={[1000, 1000]} />
+                <meshStandardMaterial color="orange" />
+            </mesh>
+        </RigidBody>}
+        >
+            <Viewer />
+        </Suspense>
         <CharacterController
             name="player"
             mode={scheme == "advanced" ? "third-person" : "simple"}
@@ -113,9 +120,8 @@ const Game = () => {
         <ShadowLight intensity={3} />
 
         <SceneEventHandler />
+        <Sky />
         <Environment preset="sunset" background={false} />
-
-        <color attach="background" args={["#000000"]} />
         {/* <PostProcessingEffects /> */}
     </>
 }
