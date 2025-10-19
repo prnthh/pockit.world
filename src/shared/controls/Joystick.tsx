@@ -27,12 +27,15 @@ const clamp = (value: number, min: number, max: number) => Math.max(min, Math.mi
 const getRelativePosition = (clientX: number, clientY: number, rect: DOMRect) => {
     const x = clientX - rect.left - radius;
     const y = clientY - rect.top - radius;
+
+    const usable = radius - knobRadius / 2;
+    const maxDist = usable * 2; // 200%
     const dist = Math.sqrt(x * x + y * y);
-    if (dist > radius - knobRadius / 2) {
+    if (dist > maxDist) {
         const angle = Math.atan2(y, x);
         return {
-            x: Math.cos(angle) * (radius - knobRadius / 2),
-            y: Math.sin(angle) * (radius - knobRadius / 2),
+            x: Math.cos(angle) * maxDist,
+            y: Math.sin(angle) * maxDist,
         };
     }
     return { x, y };
@@ -86,11 +89,12 @@ const Joystick = forwardRef<JoystickHandle, JoystickProps>(({ controlScheme, onM
             if (dirs[d] && !lastDirections.current[d]) triggerKey(d, 'keydown');
             if (!dirs[d] && lastDirections.current[d]) triggerKey(d, 'keyup');
         }
-        // Hold Shift when joystick magnitude passes 50% of the usable radius.
+        // Hold Shift only when joystick is pushed to the usable radius (100%).
         const nx = x / (radius - knobRadius / 2);
         const ny = y / (radius - knobRadius / 2);
         const magnitude = Math.sqrt(nx * nx + ny * ny);
-        const shiftThreshold = 0.5;
+        // Use 1 (100%) as the threshold. Use >= to account for floating point rounding.
+        const shiftThreshold = 1;
         if (magnitude > shiftThreshold && !shiftHeld.current) {
             // press Shift
             shiftHeld.current = true;
