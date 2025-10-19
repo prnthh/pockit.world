@@ -177,6 +177,13 @@ export default function RecursiveNode({ node, onSelect, selectedNodeId, setScene
         const pointerEventComp = node.components?.find(c => c.type === 'pointerEvent');
 
         if (movedRef.current) return;
+
+        if (playMode === EditorModes.Edit && node.id) {
+            e.stopPropagation();
+            onSelect(node.id);
+            return;
+        }
+
         if (!!pointerEventComp) {
             const mode = pointerEventComp.args?.[0] || 'event';
             if (mode === 'link') {
@@ -191,11 +198,6 @@ export default function RecursiveNode({ node, onSelect, selectedNodeId, setScene
             e.stopPropagation();
         }
         movedRef.current = false;
-
-        if (playMode === EditorModes.Edit && node.id) {
-            e.stopPropagation();
-            onSelect(node.id);
-        }
     };
 
     // Regular rendering

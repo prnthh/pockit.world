@@ -1,4 +1,4 @@
-const drive = [
+[
   {
     "id": "zwdcat6g3",
     "name": "Root",
@@ -36,6 +36,4 @@ const drive = [
     ],
     "components": []
   }
-];
-
-export default drive;
+]

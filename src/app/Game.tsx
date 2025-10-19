@@ -17,40 +17,39 @@ import tunnel from "tunnel-rat";
 import ModelAttachment from "@/shared/ped/ModelAttachment";
 import Ped from "@/shared/ped/ped";
 
-import office from "./map";
-import officeOutdoors from "./about/map";
-import killbox from "./milady/map";
-import test from "./test/map";
 import { ScenePortalContext } from "./ScenePortalProvider";
 import PostProcessingEffects from "@/shared/shaders/PostProcessingEffects";
 import Sky from "@/shared/shaders/Sky";
+import presets from "./editor/scene/presets";
 
 const ui = tunnel()
 
 const GameWrappers = () => {
     const pathname = usePathname();
-    const [scene, setScene] = useState<SceneNode[]>(office as unknown as SceneNode[]);
+    const [scene, setScene] = useState<SceneNode[]>(presets.pockit as unknown as SceneNode[]);
 
 
     useEffect(() => {
         // Load the scene based on the pathname
         console.log('Loading scene for pathname:', pathname);
         if (pathname === '/about') {
-            setScene(officeOutdoors as unknown as SceneNode[]);
+            setScene(presets.pockitOutdoors as unknown as SceneNode[]);
+        } else if (pathname === '/game1') {
+            setScene(presets.game1 as unknown as SceneNode[]);
         } else if (pathname === '/milady') {
-            setScene(killbox as unknown as SceneNode[]);
+            setScene(presets.killbox as unknown as SceneNode[]);
         } else if (pathname === '/test') {
-            setScene(test as unknown as SceneNode[]);
+            setScene(presets.test as unknown as SceneNode[]);
         } else {
             // Handle other paths or set a default scene
-            setScene(office as unknown as SceneNode[]);
+            setScene(presets.pockit as unknown as SceneNode[]);
         }
     }, [pathname]);
 
     return (
         <div className="items-center justify-items-center min-h-screen">
             <div className="w-full" style={{ height: "100vh" }}>
-                <Controls>
+                <Controls disabled={pathname === '/editor/scene'}>
                     <GameEngine mode={EditorModes.Play} sceneGraph={scene}>
                         <GameCanvas>
                             <Physics paused={false}>
@@ -89,7 +88,7 @@ const Game = () => {
         <Suspense fallback={<RigidBody>
             <mesh position={[0, 0, 0]} rotation={[-Math.PI / 2, 0, 0]}>
                 <planeGeometry args={[1000, 1000]} />
-                <meshStandardMaterial color="orange" />
+                <meshStandardMaterial color="orange" wireframe />
             </mesh>
         </RigidBody>}
         >

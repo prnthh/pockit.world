@@ -1,16 +1,16 @@
-const drive = [
+[
   {
     "id": "zwdcat6g3",
     "name": "Root",
     "children": [
       {
-        "id": "646yux2ip",
-        "name": "pockitgallery.glb",
+        "id": "vzew3aral",
+        "name": "pockitworld3.glb",
         "children": [],
         "components": [
           {
             "type": "model",
-            "filename": "pockitgallery.glb"
+            "filename": "pockitworld3.glb"
           },
           {
             "type": "physics",
@@ -23,7 +23,7 @@ const drive = [
           "position": [
             0,
             0,
-            0
+            -0.1
           ],
           "rotation": [
             0,
@@ -36,6 +36,4 @@ const drive = [
     ],
     "components": []
   }
-];
-
-export default drive;
+]

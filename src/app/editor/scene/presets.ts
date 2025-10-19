@@ -1,3 +1,9 @@
+import pockitmap from "@/app/map.json";
+import game1 from "@/app/game1/map.json";
+import killbox from "@/app/milady/map.json";
+import pockitOutdoors from "@/app/about/map.json";
+import test from "@/app/test/map.json";
+
 const presets = {
   "flat": [
     {
@@ -67,7 +73,12 @@ const presets = {
     ],
     "components": []
   }
-]
+],
+pockit: pockitmap,
+game1: game1,
+killbox: killbox,
+pockitOutdoors: pockitOutdoors,
+test: test,
 }
 
 export default presets;

@@ -30,14 +30,14 @@ export default function DialogCollider({
 
     return <>
         <CylinderCollider
-            args={[height / 2, dialogVisible ? radius * 1.2 : radius]}
+            args={[height / 2, radius]}
             position={[0, (height / 2), 0]}
             sensor
             onIntersectionEnter={handleIntersectionEnter}
             onIntersectionExit={() => { setDialogVisible(false); onExit?.() }}
         />
         {dialogVisible && <Html sprite transform position={[0, height * 1.1, 0]} scale={0.05}>
-            <div className="min-w-[250px] text-3xl text-yellow-300 text-center bg-red-800 rounded">
+            <div className="min-w-[250px] text-3xl text-yellow-300 text-center">
                 {children || "Default Dialog Text"}
             </div>
         </Html>}

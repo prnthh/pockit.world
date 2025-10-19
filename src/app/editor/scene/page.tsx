@@ -25,7 +25,7 @@ export default function EditorApp() {
 
                     <Viewer />
 
-                    <ambientLight intensity={0.5} />
+                    <ambientLight intensity={1.5} />
                     <Environment preset="sunset" background={false} />
                 </Physics>
             </GameCanvas>

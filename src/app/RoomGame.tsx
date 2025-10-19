@@ -9,17 +9,20 @@ import * as THREE from "three";
 import { useAudio } from "@/shared/AudioProvider";
 import { Stats } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
+import PortalDoor from "@/shared/physics/Door";
+import { useRouter } from "next/navigation";
 
 const RoomSpecificGame = () => {
     const { scenePortal } = useContext(ScenePortalContext);
     const { playSound } = useAudio();
+    const router = useRouter();
 
     return <>
         <scenePortal.In>
             <NPCScene />
             <NetworkThing
                 scale={new THREE.Vector3(0.03, 0.03, 0.03)}
-                position={new THREE.Vector3(1.6, 0.64, 0.4)}
+                position={new THREE.Vector3(1.6, 0.64, 3)}
                 modelUrl="/models/environment/Bell.glb"
                 id="bell"
                 onActivate={() => {
@@ -29,6 +32,36 @@ const RoomSpecificGame = () => {
                 }}
             />
             <Stats />
+
+            <PortalDoor
+                label="Exit"
+                position={[0, 0, -7.2]}
+                rotation={[0, 0, 0]}
+                onConfirm={() => {
+                    router.push(`/about`);
+                }}
+            // scale={[1, 1, 1]}
+            // doorModelUrl="/models/environment/PortalDoor.glb"
+            // targetScene="lobby"
+            >
+                Head outside
+
+            </PortalDoor>
+
+            <PortalDoor
+                label="Game 1"
+                position={[2, 0, -7.2]}
+                rotation={[0, 0, 0]}
+                onConfirm={() => {
+                    router.push(`/game1`);
+                }}
+            // scale={[1, 1, 1]}
+            // doorModelUrl="/models/environment/PortalDoor.glb"
+            // targetScene="lobby"
+            >
+                Connect your wallet to view your Gallery
+
+            </PortalDoor>
         </scenePortal.In>
     </>;
 
@@ -59,7 +92,7 @@ const NPCScene = () => {
     >
         <DialogCollider>
             {(
-                <div className="relative rounded rounded-xl bg-[#b9de77] p-4 text-xl text-black scale-300 max-w-[400px] shadow-[inset_8px_8px_6px_-6px_#ffffffaa,inset_-8px_-8px_6px_-6px_#00000066,0_4px_12px_-6px_#00000066]">
+                <div className="select-none relative rounded rounded-3xl bg-[#b9de77aa] p-4 text-xl text-black scale-300 max-w-[400px] shadow-[inset_8px_8px_6px_-6px_#ffffffaa,inset_-8px_-8px_6px_-6px_#00000066,0_4px_12px_-6px_#00000066]">
                     <div className="font-mono">
                         <RevealTextByWord text="The office is under construction! Please come back later." speed={200} playSound={playSound} />
                     </div>

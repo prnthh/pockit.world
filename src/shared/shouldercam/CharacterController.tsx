@@ -325,7 +325,7 @@ export const CharacterController = ({ lookTarget, name = 'bob', mode = 'third-pe
 
     return (
         <>
-            <RigidBody colliders={false} lockRotations ref={rb} position={[0, 4, 0]} name={name} >
+            <RigidBody colliders={false} lockRotations ref={rb} position={[0, height / 2, 0]} name={name} >
                 <group ref={container}>
                     <FollowCam
                         height={1 / height}

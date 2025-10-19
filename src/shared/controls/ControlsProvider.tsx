@@ -83,7 +83,7 @@ function isMobileDevice() {
     return /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
 }
 
-function Controls({ children }: { children: React.ReactNode }) {
+function Controls({ disabled = false, children }: { disabled?: boolean; children: React.ReactNode }) {
     const [controlScheme, setControlScheme] = useState<keyof typeof controlSchemes>('simple');
     const [isMobile, setIsMobile] = useState(false);
     const joystickRef = useRef<JoystickHandle | null>(null);
@@ -101,7 +101,7 @@ function Controls({ children }: { children: React.ReactNode }) {
             scheme: controlScheme,
             setScheme: setControlScheme
         }}>
-            <div style={{
+            {!disabled && <div style={{
                 position: 'absolute',
                 top: '10px',
                 right: '10px',
@@ -113,18 +113,19 @@ function Controls({ children }: { children: React.ReactNode }) {
             }}
                 onClick={() => setControlScheme(controlScheme === 'simple' ? 'advanced' : 'simple')}
             >{controlScheme} controls
-            </div>
+            </div>}
             <KeyboardControls map={map}>
                 {children}
-                {isMobile && controlScheme === 'advanced' && (
+                {!disabled && isMobile && controlScheme === 'advanced' && (
                     <div className='absolute bottom-10 left-10 z-50 text-white'>
                         <Joystick controlScheme={controlScheme} />
                     </div>
                 )}
 
                 {/* Fullscreen overlay + floating joystick for simple/mobile mode */}
-                {controlScheme === 'simple' && (
+                {!disabled && controlScheme === 'simple' && (
                     <div
+                        id={'floating-joystick-overlay'}
                         style={{
                             position: 'fixed',
                             left: 0,
