@@ -10,6 +10,7 @@ global.WebSocket = ws as unknown as typeof WebSocket;
 import { verifyMessage } from 'viem'
 import { privateKeyToAccount, generatePrivateKey } from 'viem/accounts'
 import * as secp from '@noble/secp256k1'
+import { initDB, insertProfile, getProfiles as getProfilesStmt, insertCheese, getCheese as getCheeseStmt, ProfileRow, CheeseRow } from './db'
 // Prevent server crash on WebSocket errors
 process.on('uncaughtException', (err: any) => {
   console.error('Uncaught Exception:', err);
@@ -40,10 +41,26 @@ const [sendChat, getChat] = room.makeAction('chat')
 
 
 // Simple storage
-var profileDB = new Map<string, any>() // wallet -> profile
 var verifiedPeers = new Map<string, string>() // peerId -> wallet
-var cheeseByWallet: Record<string, { lastClaim: number, amount: number }> = {}
 var chatLogs: Array<{ from: string, message: string, timestamp: number }> = []
+
+// Initialize database
+initDB();
+
+// Helper functions
+function getProfile(wallet: string) {
+  const row = (getProfilesStmt.all() as ProfileRow[]).find(r => r.wallet === wallet);
+  return row ? JSON.parse(row.data) : null;
+}
+
+function getCheese(wallet: string) {
+  const row = (getCheeseStmt.all() as CheeseRow[]).find(r => r.wallet === wallet);
+  return row ? { lastClaim: row.lastClaim, amount: row.amount } : { lastClaim: 0, amount: 0 };
+}
+
+function setCheese(wallet: string, record: { lastClaim: number, amount: number }) {
+  insertCheese.run(wallet, record.lastClaim, record.amount);
+}
 
 // Server identity (used to sign outbound messages)
 const SERVER_PRIVATE_KEY = (process.env.SERVER_PRIVATE_KEY as string) || generatePrivateKey()
@@ -132,7 +149,7 @@ getState((data: DataPayload, peerId) => {
       }
 
       // Passed verification - register
-      profileDB.set(walletAddress, profile)
+      insertProfile.run(walletAddress, JSON.stringify(profile))
       verifiedPeers.set(peerId, walletAddress)
 
       console.log(`User ${peerId} verified with wallet ${walletAddress}`)
@@ -148,7 +165,7 @@ getChat((message, peerId) => {
     let chatFrom = peerId; // fallback to peerId for unverified users
     if (isVerified(peerId)) {
       const wallet = getWallet(peerId)!;
-      const profile = profileDB.get(wallet);
+      const profile = getProfile(wallet);
       chatFrom = profile?.name || wallet.slice(0, 8) + '...';
     }
     
@@ -174,10 +191,10 @@ const handleCommand = (message: string, peerId: string) => {
   }
   
   const wallet = getWallet(peerId)!
-  const profile = profileDB.get(wallet)
+  const profile = getProfile(wallet)
   
   if (command === '/claim') {
-    const record = cheeseByWallet[wallet] || { lastClaim: 0, amount: 0 }
+    const record = getCheese(wallet)
     const now = Date.now()
     if (now - record.lastClaim < 3600000) {
       const mins = Math.ceil((3600000 - (now - record.lastClaim)) / 60000)
@@ -186,11 +203,11 @@ const handleCommand = (message: string, peerId: string) => {
     }
     record.lastClaim = now
     record.amount += 1
-    cheeseByWallet[wallet] = record
+    setCheese(wallet, record)
     sendChat(`Claimed! Total cheese: ${record.amount}`, peerId)
     
   } else if (command === '/cheese') {
-    const amount = cheeseByWallet[wallet]?.amount || 0
+    const amount = getCheese(wallet).amount
     sendChat(`You have ${amount} cheese.`, peerId)
     
   } else if (command === '/profile') {
@@ -205,7 +222,7 @@ const handleCommand = (message: string, peerId: string) => {
     
   } else if (command === '/users') {
     const users = Array.from(verifiedPeers.values()).map(wallet => {
-      const p = profileDB.get(wallet)
+      const p = getProfile(wallet)
       const name = p?.name || 'Anonymous'
       return `${name} (${wallet.slice(0, 6)}...)`
     }).join('\n')
@@ -217,4 +234,4 @@ const handleCommand = (message: string, peerId: string) => {
 }
 
 console.log('🚀 Pockit.world server started!')
-console.log(`Users: ${verifiedPeers.size}, Profiles: ${profileDB.size}`)
+console.log(`Users: ${verifiedPeers.size}, Profiles: ${(getProfilesStmt.all() as ProfileRow[]).length}`)
