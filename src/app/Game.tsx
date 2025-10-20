@@ -35,7 +35,7 @@ const GameWrappers = () => {
         if (pathname === '/about') {
             setScene(presets.pockitOutdoors as unknown as SceneNode[]);
         } else if (pathname === '/game1') {
-            setScene(presets.game1 as unknown as SceneNode[]);
+            setScene(presets.flat as unknown as SceneNode[]);
         } else if (pathname === '/milady') {
             setScene(presets.killbox as unknown as SceneNode[]);
         } else if (pathname === '/test') {
@@ -121,7 +121,7 @@ const Game = () => {
         <SceneEventHandler />
         <Sky />
         <Environment preset="sunset" background={false} />
-        {/* <PostProcessingEffects /> */}
+        <PostProcessingEffects />
     </>
 }
 

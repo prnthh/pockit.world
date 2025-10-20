@@ -11,8 +11,12 @@ import { verifyMessage } from 'viem'
 import { privateKeyToAccount, generatePrivateKey } from 'viem/accounts'
 import * as secp from '@noble/secp256k1'
 // Prevent server crash on WebSocket errors
-process.on('uncaughtException', (err) => {
+process.on('uncaughtException', (err: any) => {
   console.error('Uncaught Exception:', err);
+  if (err.code === 'ENOTFOUND') {
+    console.log('DNS resolution failed, exiting to retry...');
+    process.exit(1);
+  }
 });
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection:', reason);
@@ -29,7 +33,7 @@ const roomId = 'my-room-id'
 
 
 // @ts-expect-error polyfill types
-const room = joinRoom({ appId, rtcPolyfill: RTCPeerConnection }, roomId)
+const room = joinRoom({ appId, rtcPolyfill: RTCPeerConnection, relayUrls: ['wss://relay.damus.io', 'wss://nos.lol', 'wss://nostr.vulpem.com'] }, roomId)
 
 const [sendState, getState] = room.makeAction('peerState')
 const [sendChat, getChat] = room.makeAction('chat')

@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "server": "node --watch --loader ts-node/esm server2.ts",
-    "pm2": "pm2 start \"node --loader ts-node/esm server2.ts\" --name \"PockitCEO\" --watch",
+    "pm2": "pm2 start \"node --loader ts-node/esm server2.ts\" --name \"PockitCEO\"",
     "pm2boot": "pm2 startup && pm2 save",
     "buildserver": "npx tsc && node server.js",
     "build": "next build",
