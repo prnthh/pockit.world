@@ -230,11 +230,17 @@ const handleCommand = (message: string, peerId: string) => {
 }
 
 console.log('🚀 Pockit.world server started!')
-console.log(`Users: ${verifiedPeers.size}, Profiles: ${(getProfilesStmt.all() as ProfileRow[]).length}`)
-
 try {
   initDB()
   console.log('DB initialized (explicit)')
 } catch (e) {
   console.error('DB init failed', e)
+}
+
+// Now it's safe to reference prepared statements
+try {
+  const profiles = (getProfilesStmt && typeof getProfilesStmt.all === 'function') ? (getProfilesStmt.all() as ProfileRow[]) : []
+  console.log(`Users: ${verifiedPeers.size}, Profiles: ${profiles.length}`)
+} catch (e) {
+  console.error('Error reading profiles after DB init', e)
 }
