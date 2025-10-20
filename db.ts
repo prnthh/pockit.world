@@ -13,14 +13,6 @@ export interface CheeseRow {
 
 export const db = new Database('pockit.db');
 
-export const insertProfile = db.prepare('INSERT OR REPLACE INTO profiles (wallet, data) VALUES (?, ?)');
-
-export const getProfiles = db.prepare('SELECT * FROM profiles');
-
-export const insertCheese = db.prepare('INSERT OR REPLACE INTO cheese (wallet, lastClaim, amount) VALUES (?, ?, ?)');
-
-export const getCheese = db.prepare('SELECT * FROM cheese');
-
 export function initDB() {
   db.exec(`
     CREATE TABLE IF NOT EXISTS profiles (
@@ -39,3 +31,14 @@ export function initDB() {
 
   console.log('Database initialized successfully.');
 }
+
+// Initialize the database on module load
+initDB();
+
+export const insertProfile = db.prepare('INSERT OR REPLACE INTO profiles (wallet, data) VALUES (?, ?)');
+
+export const getProfiles = db.prepare('SELECT * FROM profiles');
+
+export const insertCheese = db.prepare('INSERT OR REPLACE INTO cheese (wallet, lastClaim, amount) VALUES (?, ?, ?)');
+
+export const getCheese = db.prepare('SELECT * FROM cheese');

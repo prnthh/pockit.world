@@ -39,13 +39,9 @@ const room = joinRoom({ appId, rtcPolyfill: RTCPeerConnection }, roomId)
 const [sendState, getState] = room.makeAction('peerState')
 const [sendChat, getChat] = room.makeAction('chat')
 
-
-// Simple storage
+// in-memory storage
 var verifiedPeers = new Map<string, string>() // peerId -> wallet
 var chatLogs: Array<{ from: string, message: string, timestamp: number }> = []
-
-// Initialize database
-initDB();
 
 // Helper functions
 function getProfile(wallet: string) {
