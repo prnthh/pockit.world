@@ -32,9 +32,6 @@ export function initDB() {
   console.log('Database initialized successfully.');
 }
 
-// Initialize the database on module load
-initDB();
-
 export const insertProfile = db.prepare('INSERT OR REPLACE INTO profiles (wallet, data) VALUES (?, ?)');
 
 export const getProfiles = db.prepare('SELECT * FROM profiles');

@@ -231,3 +231,10 @@ const handleCommand = (message: string, peerId: string) => {
 
 console.log('🚀 Pockit.world server started!')
 console.log(`Users: ${verifiedPeers.size}, Profiles: ${(getProfilesStmt.all() as ProfileRow[]).length}`)
+
+try {
+  initDB()
+  console.log('DB initialized (explicit)')
+} catch (e) {
+  console.error('DB init failed', e)
+}
