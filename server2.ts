@@ -10,9 +10,10 @@ global.WebSocket = ws as unknown as typeof WebSocket;
 import { verifyMessage } from 'viem'
 import { privateKeyToAccount, generatePrivateKey } from 'viem/accounts'
 import * as secp from '@noble/secp256k1'
+import ServerDB from './serverdb.js';
 // Prevent server crash on WebSocket errors
 process.on('uncaughtException', (err: any) => {
-  console.error('Uncaught Exception:', err);
+  console.error('Uncaught Exception:', JSON.stringify(err));
   if (err.code === 'ENOTFOUND') {
     console.log('DNS resolution failed, exiting to retry...');
     process.exit(1);
@@ -31,6 +32,7 @@ process.on('unhandledRejection', (reason, promise) => {
 const appId = 'pockit.world'
 const roomId = 'my-room-id'
 
+const serverDB = new ServerDB();
 
 // @ts-expect-error polyfill types
 const room = joinRoom({ appId, rtcPolyfill: RTCPeerConnection }, roomId)
@@ -40,9 +42,8 @@ const [sendChat, getChat] = room.makeAction('chat')
 
 
 // Simple storage
-var profileDB = new Map<string, any>() // wallet -> profile
+var profileDB = new Map<string, any>() // wallet -> profile (cache)
 var verifiedPeers = new Map<string, string>() // peerId -> wallet
-var cheeseByWallet: Record<string, { lastClaim: number, amount: number }> = {}
 var chatLogs: Array<{ from: string, message: string, timestamp: number }> = []
 
 // Server identity (used to sign outbound messages)
@@ -132,6 +133,19 @@ getState((data: DataPayload, peerId) => {
       }
 
       // Passed verification - register
+      // persist profile to DB (name, avatarUrl, bio are optional fields on the profile object)
+      try {
+        serverDB.saveProfile(
+          walletAddress,
+          (profile as any).name || '',
+          (profile as any).avatarUrl || '',
+          (profile as any).bio || ''
+        );
+      } catch (err) {
+        console.error('Error saving profile to DB', err)
+      }
+
+      // keep a quick in-memory cache for active users
       profileDB.set(walletAddress, profile)
       verifiedPeers.set(peerId, walletAddress)
 
@@ -177,20 +191,23 @@ const handleCommand = (message: string, peerId: string) => {
   const profile = profileDB.get(wallet)
   
   if (command === '/claim') {
-    const record = cheeseByWallet[wallet] || { lastClaim: 0, amount: 0 }
     const now = Date.now()
-    if (now - record.lastClaim < 3600000) {
-      const mins = Math.ceil((3600000 - (now - record.lastClaim)) / 60000)
+    const row = serverDB.getCheese(wallet)
+    const lastClaim = row?.lastClaim || 0
+    const amount = row?.amount || 0
+    if (now - lastClaim < 3600000) {
+      const mins = Math.ceil((3600000 - (now - lastClaim)) / 60000)
       sendChat(`Wait ${mins} more minutes to claim.`, peerId)
       return
     }
-    record.lastClaim = now
-    record.amount += 1
-    cheeseByWallet[wallet] = record
-    sendChat(`Claimed! Total cheese: ${record.amount}`, peerId)
+    // persist claim to DB
+    serverDB.claimCheese(wallet, 1)
+    const newRow = serverDB.getCheese(wallet)
+    sendChat(`Claimed! Total cheese: ${newRow?.amount || amount + 1}`, peerId)
     
   } else if (command === '/cheese') {
-    const amount = cheeseByWallet[wallet]?.amount || 0
+    const row = serverDB.getCheese(wallet)
+    const amount = row?.amount || 0
     sendChat(`You have ${amount} cheese.`, peerId)
     
   } else if (command === '/profile') {
@@ -218,3 +235,26 @@ const handleCommand = (message: string, peerId: string) => {
 
 console.log('🚀 Pockit.world server started!')
 console.log(`Users: ${verifiedPeers.size}, Profiles: ${profileDB.size}`)
+
+// Graceful shutdown: close DB when process exits
+function shutdown(code = 0) {
+  try {
+    serverDB.close();
+  } catch (err) {
+    console.error('Error during shutdown', err);
+  }
+  process.exit(code);
+}
+
+process.on('SIGINT', () => {
+  console.log('Received SIGINT, shutting down...');
+  shutdown(0);
+});
+process.on('SIGTERM', () => {
+  console.log('Received SIGTERM, shutting down...');
+  shutdown(0);
+});
+process.on('beforeExit', (code) => {
+  console.log('Process beforeExit, closing DB...');
+  try { serverDB.close(); } catch (err) { /* ignore */ }
+});
