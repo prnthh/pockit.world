@@ -10,7 +10,6 @@ global.WebSocket = ws as unknown as typeof WebSocket;
 import { verifyMessage } from 'viem'
 import { privateKeyToAccount, generatePrivateKey } from 'viem/accounts'
 import * as secp from '@noble/secp256k1'
-import { initDB, insertProfile, getProfiles as getProfilesStmt, insertCheese, getCheese as getCheeseStmt, ProfileRow, CheeseRow } from './db.ts'
 // Prevent server crash on WebSocket errors
 process.on('uncaughtException', (err: any) => {
   console.error('Uncaught Exception:', err);
@@ -39,24 +38,12 @@ const room = joinRoom({ appId, rtcPolyfill: RTCPeerConnection }, roomId)
 const [sendState, getState] = room.makeAction('peerState')
 const [sendChat, getChat] = room.makeAction('chat')
 
-// in-memory storage
+
+// Simple storage
+var profileDB = new Map<string, any>() // wallet -> profile
 var verifiedPeers = new Map<string, string>() // peerId -> wallet
+var cheeseByWallet: Record<string, { lastClaim: number, amount: number }> = {}
 var chatLogs: Array<{ from: string, message: string, timestamp: number }> = []
-
-// Helper functions
-function getProfile(wallet: string) {
-  const row = (getProfilesStmt.all() as ProfileRow[]).find(r => r.wallet === wallet);
-  return row ? JSON.parse(row.data) : null;
-}
-
-function getCheese(wallet: string) {
-  const row = (getCheeseStmt.all() as CheeseRow[]).find(r => r.wallet === wallet);
-  return row ? { lastClaim: row.lastClaim, amount: row.amount } : { lastClaim: 0, amount: 0 };
-}
-
-function setCheese(wallet: string, record: { lastClaim: number, amount: number }) {
-  insertCheese.run(wallet, record.lastClaim, record.amount);
-}
 
 // Server identity (used to sign outbound messages)
 const SERVER_PRIVATE_KEY = (process.env.SERVER_PRIVATE_KEY as string) || generatePrivateKey()
@@ -145,7 +132,7 @@ getState((data: DataPayload, peerId) => {
       }
 
       // Passed verification - register
-      insertProfile.run(walletAddress, JSON.stringify(profile))
+      profileDB.set(walletAddress, profile)
       verifiedPeers.set(peerId, walletAddress)
 
       console.log(`User ${peerId} verified with wallet ${walletAddress}`)
@@ -161,7 +148,7 @@ getChat((message, peerId) => {
     let chatFrom = peerId; // fallback to peerId for unverified users
     if (isVerified(peerId)) {
       const wallet = getWallet(peerId)!;
-      const profile = getProfile(wallet);
+      const profile = profileDB.get(wallet);
       chatFrom = profile?.name || wallet.slice(0, 8) + '...';
     }
     
@@ -187,10 +174,10 @@ const handleCommand = (message: string, peerId: string) => {
   }
   
   const wallet = getWallet(peerId)!
-  const profile = getProfile(wallet)
+  const profile = profileDB.get(wallet)
   
   if (command === '/claim') {
-    const record = getCheese(wallet)
+    const record = cheeseByWallet[wallet] || { lastClaim: 0, amount: 0 }
     const now = Date.now()
     if (now - record.lastClaim < 3600000) {
       const mins = Math.ceil((3600000 - (now - record.lastClaim)) / 60000)
@@ -199,11 +186,11 @@ const handleCommand = (message: string, peerId: string) => {
     }
     record.lastClaim = now
     record.amount += 1
-    setCheese(wallet, record)
+    cheeseByWallet[wallet] = record
     sendChat(`Claimed! Total cheese: ${record.amount}`, peerId)
     
   } else if (command === '/cheese') {
-    const amount = getCheese(wallet).amount
+    const amount = cheeseByWallet[wallet]?.amount || 0
     sendChat(`You have ${amount} cheese.`, peerId)
     
   } else if (command === '/profile') {
@@ -218,7 +205,7 @@ const handleCommand = (message: string, peerId: string) => {
     
   } else if (command === '/users') {
     const users = Array.from(verifiedPeers.values()).map(wallet => {
-      const p = getProfile(wallet)
+      const p = profileDB.get(wallet)
       const name = p?.name || 'Anonymous'
       return `${name} (${wallet.slice(0, 6)}...)`
     }).join('\n')
@@ -230,17 +217,4 @@ const handleCommand = (message: string, peerId: string) => {
 }
 
 console.log('🚀 Pockit.world server started!')
-try {
-  initDB()
-  console.log('DB initialized (explicit)')
-} catch (e) {
-  console.error('DB init failed', e)
-}
-
-// Now it's safe to reference prepared statements
-try {
-  const profiles = (getProfilesStmt && typeof getProfilesStmt.all === 'function') ? (getProfilesStmt.all() as ProfileRow[]) : []
-  console.log(`Users: ${verifiedPeers.size}, Profiles: ${profiles.length}`)
-} catch (e) {
-  console.error('Error reading profiles after DB init', e)
-}
+console.log(`Users: ${verifiedPeers.size}, Profiles: ${profileDB.size}`)

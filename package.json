@@ -14,25 +14,24 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@pixiv/three-vrm": "^3.4.3",
+    "@noble/secp256k1": "^3.0.0",
+    "@pixiv/three-vrm": "^3.4.2",
     "@react-three/drei": "^10.7.6",
-    "@react-three/fiber": "^9.4.0",
+    "@react-three/fiber": "^9.3.0",
     "@react-three/rapier": "^2.1.0",
     "@tweenjs/tween.js": "^25.0.0",
-    "@types/better-sqlite3": "^7.6.13",
     "@types/three": "^0.180.0",
-    "better-sqlite3": "^12.4.1",
     "gl-matrix": "^3.4.4",
-    "next": "15.5.6",
-    "node-datachannel": "^0.30.0",
+    "next": "15.5.4",
+    "node-datachannel": "^0.29.0",
     "r3f-perf": "^7.2.3",
-    "react": "19.2.0",
-    "react-dom": "19.2.0",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
     "three": "^0.180.0",
     "three-stdlib": "^2.36.0",
-    "trystero": "^0.22.0",
+    "trystero": "^0.21.8",
     "ts-node": "^10.9.2",
-    "viem": "^2.38.3",
+    "viem": "^2.37.8",
     "ws": "^8.18.3"
   },
   "devDependencies": {
@@ -41,9 +40,11 @@
     "@types/node": "^24",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/ws": "^8.18.1",
     "eslint": "^9",
-    "eslint-config-next": "15.5.6",
+    "eslint-config-next": "15.5.4",
     "tailwindcss": "^4",
     "typescript": "^5"
-  }
+  },
+  "packageManager": "pnpm@9.1.4+sha512.9df9cf27c91715646c7d675d1c9c8e41f6fce88246f1318c1aa6a1ed1aeb3c4f032fcdf4ba63cc69c4fe6d634279176b5358727d8f2cc1e65b65f43ce2f8bfb0"
 }
