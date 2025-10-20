@@ -33,7 +33,7 @@ const roomId = 'my-room-id'
 
 
 // @ts-expect-error polyfill types
-const room = joinRoom({ appId, rtcPolyfill: RTCPeerConnection, relayUrls: ['wss://relay.damus.io', 'wss://nos.lol', 'wss://nostr.vulpem.com'] }, roomId)
+const room = joinRoom({ appId, rtcPolyfill: RTCPeerConnection }, roomId)
 
 const [sendState, getState] = room.makeAction('peerState')
 const [sendChat, getChat] = room.makeAction('chat')
