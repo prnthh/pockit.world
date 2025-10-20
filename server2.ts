@@ -10,7 +10,7 @@ global.WebSocket = ws as unknown as typeof WebSocket;
 import { verifyMessage } from 'viem'
 import { privateKeyToAccount, generatePrivateKey } from 'viem/accounts'
 import * as secp from '@noble/secp256k1'
-import { initDB, insertProfile, getProfiles as getProfilesStmt, insertCheese, getCheese as getCheeseStmt, ProfileRow, CheeseRow } from './db'
+import { initDB, insertProfile, getProfiles as getProfilesStmt, insertCheese, getCheese as getCheeseStmt, ProfileRow, CheeseRow } from './db.ts'
 // Prevent server crash on WebSocket errors
 process.on('uncaughtException', (err: any) => {
   console.error('Uncaught Exception:', err);
