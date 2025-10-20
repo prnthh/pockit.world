@@ -9,6 +9,8 @@ import ws from 'ws';
 global.WebSocket = ws as unknown as typeof WebSocket;
 import { verifyMessage } from 'viem'
 import { privateKeyToAccount, generatePrivateKey } from 'viem/accounts'
+import fs from 'fs'
+import path from 'path'
 import * as secp from '@noble/secp256k1'
 import ServerDB from './serverdb.js';
 // Prevent server crash on WebSocket errors
@@ -42,14 +44,48 @@ const [sendChat, getChat] = room.makeAction('chat')
 
 
 // Simple storage
-var profileDB = new Map<string, any>() // wallet -> profile (cache)
 var verifiedPeers = new Map<string, string>() // peerId -> wallet
 var chatLogs: Array<{ from: string, message: string, timestamp: number }> = []
 
 // Server identity (used to sign outbound messages)
-const SERVER_PRIVATE_KEY = (process.env.SERVER_PRIVATE_KEY as string) || generatePrivateKey()
+// Priority: pockit.key file (project root) -> SERVER_PRIVATE_KEY env var -> generate new
+const KEY_FILE = path.resolve(process.cwd(), 'pockit.key')
+let SERVER_PRIVATE_KEY: string | undefined = undefined
+try {
+  if (fs.existsSync(KEY_FILE)) {
+    const raw = fs.readFileSync(KEY_FILE, 'utf8').trim()
+    // accept with or without 0x prefix
+    SERVER_PRIVATE_KEY = raw.startsWith('0x') ? raw : `0x${raw}`
+    // basic validation: 0x + 64 hex chars
+    if (!/^0x[a-fA-F0-9]{64}$/.test(SERVER_PRIVATE_KEY)) {
+      console.warn('[Server] pockit.key present but invalid; it will be replaced')
+      SERVER_PRIVATE_KEY = undefined
+    }
+  }
+} catch (err) {
+  console.error('[Server] Error reading pockit.key:', err)
+  SERVER_PRIVATE_KEY = undefined
+}
+
+if (!SERVER_PRIVATE_KEY) {
+  if (process.env.SERVER_PRIVATE_KEY) {
+    SERVER_PRIVATE_KEY = process.env.SERVER_PRIVATE_KEY as string
+  } else {
+    SERVER_PRIVATE_KEY = generatePrivateKey()
+  }
+  // persist generated/used key to file for next runs
+  try {
+    fs.writeFileSync(KEY_FILE, SERVER_PRIVATE_KEY, { mode: 0o600 })
+    console.log(`[Server] Server private key written to ${KEY_FILE}`)
+  } catch (err) {
+    console.error('[Server] Failed to write pockit.key:', err)
+  }
+}
+
 const SERVER_ACCOUNT = privateKeyToAccount(SERVER_PRIVATE_KEY as `0x${string}`)
 const SERVER_ADDRESS = SERVER_ACCOUNT.address
+
+console.log(`[Server] Server wallet address: ${SERVER_ADDRESS}`)
 // compressed public key (0x...)
 function getCompressedPublicKey(privateKeyHex: `0x${string}`): string {
   const priv = Buffer.from(privateKeyHex.slice(2), 'hex')
@@ -82,7 +118,7 @@ function getWallet(peerId: string): string | undefined {
 }
 
 room.onPeerJoin(async (peerId) => {
-  console.log(`Peer joined: ${peerId}`)
+  console.log(`[Server] Peer joined: ${peerId}`)
   // send signed server profile state to new peer
   const serverProfile = { name: 'PockitCEO', walletAddress: SERVER_ADDRESS, publicKey: SERVER_PUBLIC_KEY }
   const canonical = canonicalize(serverProfile)
@@ -99,7 +135,7 @@ room.onPeerLeave((peerId) => {
 
 getState((data: DataPayload, peerId) => {
   // Handle state updates for each peer - this is where users register
-  console.log(`State updated for ${peerId}:`, data)
+  console.log(`[Server] State updated for ${peerId}:`, data)
   if (data && typeof data === 'object' && !Array.isArray(data) && 'profile' in data) {
     const profile = (data as any).profile
     const signature = (data as any).signature
@@ -145,11 +181,10 @@ getState((data: DataPayload, peerId) => {
         console.error('Error saving profile to DB', err)
       }
 
-      // keep a quick in-memory cache for active users
-      profileDB.set(walletAddress, profile)
+      // track verified peer -> wallet mapping
       verifiedPeers.set(peerId, walletAddress)
 
-      console.log(`User ${peerId} verified with wallet ${walletAddress}`)
+      console.log(`[Server] User ${peerId} verified with wallet ${walletAddress}`)
       sendChat(`Welcome ${profile.name || 'Anonymous'}! You're verified.`, peerId)
     }
   }
@@ -162,7 +197,7 @@ getChat((message, peerId) => {
     let chatFrom = peerId; // fallback to peerId for unverified users
     if (isVerified(peerId)) {
       const wallet = getWallet(peerId)!;
-      const profile = profileDB.get(wallet);
+      const profile = serverDB.getProfile(wallet);
       chatFrom = profile?.name || wallet.slice(0, 8) + '...';
     }
     
@@ -188,7 +223,7 @@ const handleCommand = (message: string, peerId: string) => {
   }
   
   const wallet = getWallet(peerId)!
-  const profile = profileDB.get(wallet)
+  const profile = serverDB.getProfile(wallet)
   
   if (command === '/claim') {
     const now = Date.now()
@@ -222,7 +257,7 @@ const handleCommand = (message: string, peerId: string) => {
     
   } else if (command === '/users') {
     const users = Array.from(verifiedPeers.values()).map(wallet => {
-      const p = profileDB.get(wallet)
+      const p = serverDB.getProfile(wallet)
       const name = p?.name || 'Anonymous'
       return `${name} (${wallet.slice(0, 6)}...)`
     }).join('\n')
@@ -233,8 +268,8 @@ const handleCommand = (message: string, peerId: string) => {
   }
 }
 
-console.log('🚀 Pockit.world server started!')
-console.log(`Users: ${verifiedPeers.size}, Profiles: ${profileDB.size}`)
+console.log('[Server] 🚀 Pockit.world server started!')
+console.log(`[Server] Users: ${verifiedPeers.size}, Profiles: ${serverDB.getProfilesCount()}`)
 
 // Graceful shutdown: close DB when process exits
 function shutdown(code = 0) {
@@ -247,14 +282,14 @@ function shutdown(code = 0) {
 }
 
 process.on('SIGINT', () => {
-  console.log('Received SIGINT, shutting down...');
+  console.log('[Server] Received SIGINT, shutting down...');
   shutdown(0);
 });
 process.on('SIGTERM', () => {
-  console.log('Received SIGTERM, shutting down...');
+  console.log('[Server] Received SIGTERM, shutting down...');
   shutdown(0);
 });
 process.on('beforeExit', (code) => {
-  console.log('Process beforeExit, closing DB...');
+  console.log('[Server] Process beforeExit, closing DB...');
   try { serverDB.close(); } catch (err) { /* ignore */ }
 });

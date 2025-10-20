@@ -42,5 +42,8 @@ next-env.d.ts
 
 certificates
 
-# SQLite database files
+# SQLite database file
 pockit.db
+
+# Server Identity/Encryption key file
+pockit.key

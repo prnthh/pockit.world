@@ -51,6 +51,12 @@ class ServerDB {
     return stmt.get(wallet) as ProfileRow | undefined;
     }
 
+    getProfilesCount(): number {
+        const stmt = this.db.prepare('SELECT COUNT(*) as cnt FROM profiles');
+        const row = stmt.get() as { cnt: number } | undefined;
+        return row ? row.cnt : 0;
+    }
+
     saveProfile(wallet: string, name: string, avatarUrl: string, bio: string) {
         const stmt = this.db.prepare(`
             INSERT INTO profiles (wallet, name, avatarUrl, bio, createdAt)
