@@ -19,7 +19,7 @@ const RoomSpecificGame = () => {
 
     return <>
         <scenePortal.In>
-            <NPCScene />
+            <World />
             <NetworkThing
                 scale={new THREE.Vector3(0.03, 0.03, 0.03)}
                 position={new THREE.Vector3(1.6, 0.64, 3)}
@@ -67,7 +67,14 @@ const RoomSpecificGame = () => {
 
 }
 
-const NPCScene = () => {
+const World = () => {
+    return <>
+        <TalkativeNPC name="PockitCEO" position={[1, 0, -4]} />
+        <TalkativeNPC name="PockitEmployee" position={[-1, 0, -4]} />
+    </>;
+}
+
+const TalkativeNPC = ({ name, position }: { name: string, position: [number, number, number] }) => {
     const [playerRef, setPlayerRef] = useState<THREE.Object3D | null>(null);
     const { scene } = useThree();
     const { playSound } = useAudio();
@@ -84,25 +91,27 @@ const NPCScene = () => {
     if (!scene) return null;
 
     return <><Ped
-        key={'np21'}
+        key={name}
         basePath={"/models/human/onimilio/"}
         modelUrl={"rigged.glb"}
-        position={[1, 0, -4]} height={1.5}
+        position={position} height={1.5}
         lookTarget={{ current: playerRef }}
     >
         <DialogCollider>
-            {(
-                <div className="select-none relative rounded rounded-3xl bg-[#b9de77aa] p-4 text-xl text-black scale-300 max-w-[400px] shadow-[inset_8px_8px_6px_-6px_#ffffffaa,inset_-8px_-8px_6px_-6px_#00000066,0_4px_12px_-6px_#00000066]">
-                    <div className="font-mono">
-                        <RevealTextByWord text="The office is under construction! Please come back later." speed={200} playSound={playSound} />
-                    </div>
-                    <div className="absolute -top-5 left-4 bg-[#b9de77] rounded px-2 border text-lg italic">
-                        PockitCEO
-                    </div>
-                </div>
-            )}
+            <DialogBox playSound={playSound} title={name} text={"The office is under construction. Please check back later!"} />
         </DialogCollider>
     </Ped></>;
+}
+
+const DialogBox = ({ text, title, playSound }: { text: string, title?: string, playSound: (url: string) => void }) => {
+    return <div className="select-none relative rounded rounded-3xl bg-[#b9de77aa] p-4 text-xl text-black scale-300 max-w-[400px] shadow-[inset_8px_8px_6px_-6px_#ffffffaa,inset_-8px_-8px_6px_-6px_#00000066,0_4px_12px_-6px_#00000066]">
+        <div className="font-mono">
+            <RevealTextByWord text={text} speed={200} playSound={playSound} />
+        </div>
+        {title && <div className="absolute -top-5 left-4 bg-[#b9de77] rounded px-2 border text-lg italic">
+            {title}
+        </div>}
+    </div>
 }
 
 export default RoomSpecificGame;
