@@ -2,7 +2,7 @@
 
 import DialogCollider, { RevealTextByWord } from "@/shared/ped/DialogCollider";
 import Ped from "@/shared/ped/ped";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState, useRef } from "react";
 import { ScenePortalContext } from "./ScenePortalProvider";
 import NetworkThing from "./NetworkThing";
 import * as THREE from "three";
@@ -11,6 +11,7 @@ import { Stats } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import PortalDoor from "@/shared/physics/Door";
 import { useRouter } from "next/navigation";
+import useGameStore, { allEntityIDsByType, useEntityById } from "./stores/GameStore";
 
 const RoomSpecificGame = () => {
     const { scenePortal } = useContext(ScenePortalContext);
@@ -68,13 +69,30 @@ const RoomSpecificGame = () => {
 }
 
 const World = () => {
+    const { addEntity } = useGameStore();
+
+    const npcEntities = allEntityIDsByType('NPC');
+    const initialized = useRef(false);
+
+    useEffect(() => {
+        if (initialized.current || npcEntities.length > 0) return;
+        console.log('Adding NPC entities');
+        addEntity({ name: 'PockitCEO', type: 'NPC', position: [1, 0, -4] });
+        addEntity({ name: 'Employee', type: 'NPC', position: [-1, 0, -4] });
+        initialized.current = true;
+    }, [addEntity, npcEntities.length]);
+
     return <>
-        <TalkativeNPC name="PockitCEO" position={[1, 0, -4]} />
-        <TalkativeNPC name="PockitEmployee" position={[-1, 0, -4]} />
+        {npcEntities.map((id) => <TalkativeNPC key={id} id={id} />)}
     </>;
 }
 
-const TalkativeNPC = ({ name, position }: { name: string, position: [number, number, number] }) => {
+const TalkativeNPC = ({ id }: { id: string }) => {
+    const entity = useEntityById(id);
+    if (!entity) return null;
+
+    const { name, position } = entity;
+
     const [playerRef, setPlayerRef] = useState<THREE.Object3D | null>(null);
     const { scene } = useThree();
     const { playSound } = useAudio();
