@@ -1,6 +1,6 @@
 "use client";
 
-import DialogCollider, { RevealTextByWord } from "@/shared/ped/DialogCollider";
+import DialogCollider, { DialogBox, RevealTextByWord } from "@/shared/ped/DialogCollider";
 import Ped from "@/shared/ped/ped";
 import { ScenePortalContext } from "../ScenePortalProvider";
 import { Suspense, useContext, useState } from "react";
@@ -24,15 +24,7 @@ const RoomSpecificGame = () => {
                 position={[1, 0, -1]} height={1.5}
             >
                 <DialogCollider>
-                    {(
-                        <div className="rounded chatbox ">
-                            <div className="bg-[#b9de77]">
-
-                                <RevealTextByWord text="The gallery is under construction! Please dont touch anything." speed={200} playSound={playSound} />
-                            </div>
-
-                        </div>
-                    )}
+                    <DialogBox playSound={playSound} title={"Tour Guide"} text="The gallery is under construction! Please dont touch anything." />
                 </DialogCollider>
             </Ped>
             <RigidBody position={[0, 0, 0]}>

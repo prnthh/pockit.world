@@ -54,14 +54,7 @@ const GameWrappers = () => {
                         <GameCanvas>
                             <Physics paused={false}>
                                 {/* remove the pathname key to persist the world between pages */}
-                                <RigidBody>
-                                    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
-                                        <planeGeometry args={[100, 100]} />
-                                        <meshStandardMaterial color="lightblue" />
-                                    </mesh>
-                                </RigidBody>
                                 <Game key={pathname} />
-
                             </Physics>
                             {/* <RenderPipeline /> */}
                         </GameCanvas>

@@ -1,6 +1,6 @@
 "use client";
 
-import DialogCollider, { RevealTextByWord } from "@/shared/ped/DialogCollider";
+import DialogCollider, { DialogBox, RevealTextByWord } from "@/shared/ped/DialogCollider";
 import Ped from "@/shared/ped/ped";
 import { useContext, useEffect, useState, useRef } from "react";
 import { ScenePortalContext } from "./ScenePortalProvider";
@@ -77,7 +77,7 @@ const World = () => {
     useEffect(() => {
         if (initialized.current || npcEntities.length > 0) return;
         console.log('Adding NPC entities');
-        addEntity({ name: 'PockitCEO', type: 'NPC', position: [1, 0, -4] });
+        addEntity({ name: 'PockitCEO', type: 'NPC', position: [1, 0, -4], basePath: "/models/human/boss/", modelUrl: "model.glb" });
         addEntity({ name: 'Employee', type: 'NPC', position: [-1, 0, -4] });
         initialized.current = true;
     }, [addEntity, npcEntities.length]);
@@ -110,8 +110,8 @@ const TalkativeNPC = ({ id }: { id: string }) => {
 
     return <><Ped
         key={name}
-        basePath={"/models/human/onimilio/"}
-        modelUrl={"rigged.glb"}
+        basePath={entity.basePath || "/models/human/onimilio/"}
+        modelUrl={entity.modelUrl || "rigged.glb"}
         position={position} height={1.5}
         lookTarget={{ current: playerRef }}
     >
@@ -121,15 +121,6 @@ const TalkativeNPC = ({ id }: { id: string }) => {
     </Ped></>;
 }
 
-const DialogBox = ({ text, title, playSound }: { text: string, title?: string, playSound: (url: string) => void }) => {
-    return <div className="select-none relative rounded rounded-3xl bg-[#b9de77aa] p-4 text-xl text-black scale-300 max-w-[400px] shadow-[inset_8px_8px_6px_-6px_#ffffffaa,inset_-8px_-8px_6px_-6px_#00000066,0_4px_12px_-6px_#00000066]">
-        <div className="font-mono">
-            <RevealTextByWord text={text} speed={200} playSound={playSound} />
-        </div>
-        {title && <div className="absolute -top-5 left-4 bg-[#b9de77] rounded px-2 border text-lg italic">
-            {title}
-        </div>}
-    </div>
-}
+
 
 export default RoomSpecificGame;

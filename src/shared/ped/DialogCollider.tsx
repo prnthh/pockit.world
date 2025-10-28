@@ -45,7 +45,7 @@ export default function DialogCollider({
 }
 
 
-const RevealTextByWord = ({ text, speed = 100, playSound }: { text: string, speed?: number, playSound?: (url: string) => void }) => {
+export const RevealTextByWord = ({ text, speed = 100, playSound }: { text: string, speed?: number, playSound?: (url: string) => void }) => {
     const words = text.split(" ");
     const [wordCount, setWordCount] = useState(0);
 
@@ -90,4 +90,13 @@ const RevealTextByWord = ({ text, speed = 100, playSound }: { text: string, spee
     );
 }
 
-export { RevealTextByWord };
+export const DialogBox = ({ text, title, playSound }: { text: string, title?: string, playSound: (url: string) => void }) => {
+    return <div className="select-none relative rounded rounded-3xl bg-[#b9de77aa] p-4 text-xl text-black scale-300 max-w-[400px] shadow-[inset_8px_8px_6px_-6px_#ffffffaa,inset_-8px_-8px_6px_-6px_#00000066,0_4px_12px_-6px_#00000066]">
+        <div className="font-mono">
+            <RevealTextByWord text={text} speed={200} playSound={playSound} />
+        </div>
+        {title && <div className="absolute -top-5 left-4 bg-[#b9de77] rounded px-2 border text-lg italic">
+            {title}
+        </div>}
+    </div>
+}

@@ -2,6 +2,8 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+The goal is to build an [ECS driven game engine](https://bevy.org/).
+
 First, run the development server:
 
 ```bash

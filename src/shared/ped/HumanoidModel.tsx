@@ -1,12 +1,19 @@
-import { useGLTF, useAnimations, Box } from "@react-three/drei";
-import { useFrame, useLoader } from "@react-three/fiber";
+import { useGLTF } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
 import { forwardRef, RefObject, useEffect, useRef, useState, useImperativeHandle } from "react";
 import * as THREE from "three";
 import { SimplifyModifier, SkeletonUtils } from "three-stdlib";
-import { GLTFLoader } from 'three/examples/jsm/Addons.js';
 import useAnimationState from "./useAnimationStateBasic";
 import useLookAtTarget from "./useLookAtTarget";
 import BoneCollider from "../BoneCollider";
+
+// steps to go from AI generated model to animated model:
+// 1. Generate .glb model from AI tool (eg. https://www.meshy.ai/)
+// 2. Convert to .glb to .fbx with https://imagetostl.com/convert/file/glb/to/fbx
+// 3. Import .fbx model into Mixamo and rig, export rigged skin without animations as .fbx
+// 4. Export animations from mixamo as separate .fbx files (idle.fbx, walk.fbx, etc.) without skin
+// 5. Convert mixamo rigged .fbx (3) to .glb using Blender to preserve bones, fix rotations etc.
+// 6. This module loads the rigged .glb (5) and applies Mixamo animation .fbx (4) as needed
 
 const AnimatedModel = forwardRef<THREE.Object3D, {
     name?: string,
@@ -112,11 +119,9 @@ const AnimatedModel = forwardRef<THREE.Object3D, {
                     }
                 }}
             >
-                {debug && <Box args={[0.3, scale, 0.3]} position={[0, 1 / 2 * scale, 0]}>
-                    <meshBasicMaterial wireframe color="red" />
-                </Box>}
-                <mesh position={[0, height / 2, 0]} material={new THREE.MeshBasicMaterial({ opacity: 0, transparent: true })}>
+                <mesh position={[0, height / 2, 0]} >
                     <boxGeometry args={[0.6, 2, 0.6]} />
+                    <meshBasicMaterial color={debug ? "red" : undefined} transparent={!debug} opacity={debug ? 1 : 0} wireframe={debug} />
                 </mesh>
                 <group position={modelOffset}>
                     {clonedScene && <primitive name={name} scale={scale / height} rotation={rotation} object={clonedScene} ref={modelRef} />}
@@ -132,7 +137,7 @@ const AnimatedModel = forwardRef<THREE.Object3D, {
     }
 );
 
-// Preload common models here
+// Syntax to preload a model synchronously
 // useGLTF.preload('/rigga.glb');
 
 export default AnimatedModel;
