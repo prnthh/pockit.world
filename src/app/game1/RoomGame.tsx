@@ -6,6 +6,8 @@ import { ScenePortalContext } from "../ScenePortalProvider";
 import { useContext } from "react";
 import { useAudio } from "@/shared/AudioProvider";
 import InteractiveSphere from "@/shared/shaders/InteractiveSphere";
+import { RigidBody } from "@react-three/rapier";
+import CrawlerApp from "@/shared/ik/CrawlerPed";
 
 const RoomSpecificGame = () => {
     const { scenePortal } = useContext(ScenePortalContext);
@@ -30,6 +32,16 @@ const RoomSpecificGame = () => {
                 </DialogCollider>
             </Ped>
             <InteractiveSphere />
+
+            {/* terrain  */}
+            <RigidBody>
+                <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
+                    <planeGeometry args={[100, 100]} />
+                    <meshStandardMaterial color="lightblue" />
+                </mesh>
+            </RigidBody>
+
+            <CrawlerApp spawn={[0, 4, 10]} />
         </scenePortal.In>
     </>;
 

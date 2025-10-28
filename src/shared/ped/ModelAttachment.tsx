@@ -1,6 +1,5 @@
+import React, { useEffect, useRef, useState } from "react";
 import { useGLTF } from "@react-three/drei";
-import { useThree } from "@react-three/fiber";
-import { useEffect, useRef, useState } from "react";
 import { Object3D, Vector3 } from "three";
 import { SkeletonUtils } from "three/examples/jsm/Addons.js";
 
@@ -22,7 +21,7 @@ type ModelAttachmentProps = {
     name?: string;
 };
 
-export default function ModelAttachment({
+function ModelAttachment({
     model,
     attachpoint,
     offset,
@@ -78,3 +77,4 @@ export default function ModelAttachment({
         <primitive ref={objectRef} object={clonedScene} />
     ) : null;
 }
+export default React.memo(ModelAttachment);

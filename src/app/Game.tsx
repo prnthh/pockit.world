@@ -54,7 +54,14 @@ const GameWrappers = () => {
                         <GameCanvas>
                             <Physics paused={false}>
                                 {/* remove the pathname key to persist the world between pages */}
+                                <RigidBody>
+                                    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
+                                        <planeGeometry args={[100, 100]} />
+                                        <meshStandardMaterial color="lightblue" />
+                                    </mesh>
+                                </RigidBody>
                                 <Game key={pathname} />
+
                             </Physics>
                             {/* <RenderPipeline /> */}
                         </GameCanvas>
@@ -86,6 +93,8 @@ const Game = () => {
 
     return <>
         <Viewer />
+        <scenePortal.Out />
+
         <CharacterController
             name="player"
             mode={scheme == "advanced" ? "third-person" : "simple"}
@@ -103,17 +112,16 @@ const Game = () => {
             />} */}
         </CharacterController>
 
-        <scenePortal.Out />
-
         {/* <MPStuff /> */}
+
+
+        <SceneEventHandler />
 
         <ambientLight intensity={0.5} />
         <ShadowLight intensity={3} />
-
-        <SceneEventHandler />
         <Sky />
         <Environment preset="sunset" background={false} />
-        <PostProcessingEffects />
+        {/* <PostProcessingEffects /> */}
     </>
 }
 

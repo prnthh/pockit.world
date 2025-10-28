@@ -5,8 +5,6 @@ import Ped from "@/shared/ped/ped";
 import { ScenePortalContext } from "../ScenePortalProvider";
 import { useContext, useEffect, useState } from "react";
 import { useAudio } from "@/shared/AudioProvider";
-import CrawlerApp from "@/shared/ik/CrawlerPed";
-import { ShinyFloor } from "@/shared/shaders/ShinyFloor";
 
 const RoomSpecificGame = () => {
     const { scenePortal } = useContext(ScenePortalContext);
@@ -30,8 +28,6 @@ const RoomSpecificGame = () => {
                     )}
                 </DialogCollider>
             </Ped>
-            <CrawlerApp spawn={[0, -1, -8]} />
-
         </scenePortal.In>
     </>;
 }
