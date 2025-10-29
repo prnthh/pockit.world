@@ -6,6 +6,7 @@ import { SimplifyModifier, SkeletonUtils } from "three-stdlib";
 import useAnimationState from "./useAnimationStateBasic";
 import useLookAtTarget from "./useLookAtTarget";
 import BoneCollider from "../BoneCollider";
+import { MeshToonNodeMaterial } from "three/webgpu";
 
 // steps to go from AI generated model to animated model:
 // 1. Generate .glb model from AI tool (eg. https://www.meshy.ai/)
@@ -52,8 +53,14 @@ const AnimatedModel = forwardRef<THREE.Object3D, {
                     const mesh = child as THREE.Mesh;
                     mesh.castShadow = mesh.receiveShadow = true;
 
+                    // TOON SHADING
                     // if (mesh.material) mesh.material = (mesh.material as any).clone();
-                    // const mat = mesh.material as any;
+                    // const mat = new MeshToonNodeMaterial({
+                    //     map: (mesh.material as any).map || null,
+                    //     color: (mesh.material as any).color || new THREE.Color(0xffffff),
+                    // })
+                    // mesh.material = mat;
+
                     // if (mat && 'flatShading' in mat) { mat.flatShading = true; mat.needsUpdate = true; }
 
                     // const geom = mesh.geometry as THREE.BufferGeometry | undefined;

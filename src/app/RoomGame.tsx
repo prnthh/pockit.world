@@ -50,18 +50,14 @@ const RoomSpecificGame = () => {
             </PortalDoor>
 
             <PortalDoor
-                label="Game 1"
+                label="Nickelodeon"
                 position={[2, 0, -7.2]}
                 rotation={[0, 0, 0]}
                 onConfirm={() => {
                     router.push(`/game1`);
                 }}
-            // scale={[1, 1, 1]}
-            // doorModelUrl="/models/environment/PortalDoor.glb"
-            // targetScene="lobby"
             >
                 Connect your wallet to view your Gallery
-
             </PortalDoor>
         </scenePortal.In>
     </>;
@@ -70,20 +66,20 @@ const RoomSpecificGame = () => {
 
 const World = () => {
     const { addEntity } = useGameStore();
-
-    const npcEntities = allEntityIDsByType('NPC');
     const initialized = useRef(false);
 
     useEffect(() => {
-        if (initialized.current || npcEntities.length > 0) return;
+        if (initialized.current) return;
         console.log('Adding NPC entities');
         addEntity({ name: 'PockitCEO', type: 'NPC', position: [1, 0, -4], basePath: "/models/human/boss/", modelUrl: "model.glb" });
         addEntity({ name: 'Employee', type: 'NPC', position: [-1, 0, -4] });
+        addEntity({ name: 'Employee', type: 'pickupable', position: [2, 0, 2] });
         initialized.current = true;
-    }, [addEntity, npcEntities.length]);
+    }, [addEntity]);
 
     return <>
-        {npcEntities.map((id) => <TalkativeNPC key={id} id={id} />)}
+        {allEntityIDsByType('NPC').map((id) => <TalkativeNPC key={id} id={id} />)}
+        {allEntityIDsByType('pickupable').map((id) => <Pickupable key={id} id={id} />)}
     </>;
 }
 
@@ -96,6 +92,8 @@ const TalkativeNPC = ({ id }: { id: string }) => {
     const [playerRef, setPlayerRef] = useState<THREE.Object3D | null>(null);
     const { scene } = useThree();
     const { playSound } = useAudio();
+
+    const [isTalking, setIsTalking] = useState(false);
 
     useEffect(() => {
         const player = scene.getObjectByName('player');
@@ -115,10 +113,35 @@ const TalkativeNPC = ({ id }: { id: string }) => {
         position={position} height={1.5}
         lookTarget={{ current: playerRef }}
     >
-        <DialogCollider>
-            <DialogBox playSound={playSound} title={name} text={"The office is under construction. Please check back later!"} />
+        <DialogCollider onExit={() => { setIsTalking(false) }}>
+            {!isTalking && <ActivationToggle onActivate={() => {
+                setIsTalking(true);
+            }} />}
+            {isTalking && <DialogBox playSound={playSound} title={name} text={"The office is under construction. Please check back later!"} />}
         </DialogCollider>
     </Ped></>;
+}
+
+const ActivationToggle = ({ onActivate }: { onActivate: () => void }) => {
+    return <div className="flex max-w-[200px] justify-center">
+        <div className="bg-black/80 rounded-md scale-200 p-2 cursor-pointer" onClick={onActivate}>talk?</div>
+    </div>;
+}
+
+const Pickupable = ({ id }: { id: string }) => {
+    const entity = useEntityById(id);
+    const { removeEntity } = useGameStore();
+    if (!entity) return null;
+    return <mesh position={entity.position}>
+        <boxGeometry args={[0.2, 0.2, 0.2]} />
+        <meshStandardMaterial color="orange" />
+        <DialogCollider radius={0.2} onEnter={() => {
+            console.log('Picked up item:', id);
+            setTimeout(() => {
+                removeEntity(id);
+            }, 0);
+        }} />
+    </mesh>;
 }
 
 
