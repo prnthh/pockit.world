@@ -24,6 +24,13 @@ import presets from "./editor/scene/presets";
 
 const ui = tunnel()
 
+const paths = {
+    '/about': presets.pockitOutdoors,
+    '/game1': presets.flat,
+    '/milady': presets.killbox,
+    '/test': presets.test,
+};
+
 const GameWrappers = () => {
     const pathname = usePathname();
     const [scene, setScene] = useState<SceneNode[]>(presets.pockit as unknown as SceneNode[]);
@@ -32,19 +39,17 @@ const GameWrappers = () => {
     useEffect(() => {
         // Load the scene based on the pathname
         console.log('Loading scene for pathname:', pathname);
-        if (pathname === '/about') {
-            setScene(presets.pockitOutdoors as unknown as SceneNode[]);
-        } else if (pathname === '/game1') {
-            setScene(presets.flat as unknown as SceneNode[]);
-        } else if (pathname === '/milady') {
-            setScene(presets.killbox as unknown as SceneNode[]);
-        } else if (pathname === '/test') {
-            setScene(presets.test as unknown as SceneNode[]);
+        if (pathname in paths) {
+            setScene(paths[pathname as keyof typeof paths] as unknown as SceneNode[]);
         } else {
             // Handle other paths or set a default scene
             setScene(presets.pockit as unknown as SceneNode[]);
         }
     }, [pathname]);
+
+    if (pathname === '/editor/scene') {
+        return null; // Editor handles its own rendering
+    }
 
     return (
         <div className="items-center justify-items-center min-h-screen">
@@ -95,6 +100,7 @@ const Game = () => {
                 rbref.current = rb.current;
                 meshref.current = mesh.current;
             }}
+            position={[0, 5, 0]}
         >
             {/* {<ModelAttachment
                 model="/models/environment/Katana.glb"

@@ -37,6 +37,14 @@ const useGameStore = create(
                         state.entities = state.entities.filter((e: Entity) => e.id !== entityId)
                     })
                 },
+                updateEntity: (id: string, updates: Partial<Entity>) => {
+                    set((state) => {
+                        const entity = state.entities.find((e) => e.id === id)
+                        if (entity) {
+                            Object.assign(entity, updates)
+                        }
+                    })
+                },
             }
         },
     )  ),

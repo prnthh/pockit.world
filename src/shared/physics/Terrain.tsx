@@ -2,7 +2,7 @@ import { useRapier } from "@react-three/rapier";
 import { useEffect, useState } from "react";
 import { PlaneGeometry } from "three";
 
-const Heightfield = ({ heightFieldWidth = 50, heightFieldDepth = 50 }) => {
+const Heightfield = ({ heightFieldWidth = 200, heightFieldDepth = 200 }) => {
     const { world, rapier } = useRapier();
     const [heightFieldGeometry, setHeightFieldGeometry] = useState<PlaneGeometry>(new PlaneGeometry());
 
@@ -12,7 +12,8 @@ const Heightfield = ({ heightFieldWidth = 50, heightFieldDepth = 50 }) => {
         const heightFieldArray = Array.from({
             length: heightFieldDepth * heightFieldWidth,
         }).map((_, index) => {
-            return Math.random();
+            return 0;
+            // return Math.random();
         });
         const heightField = new Float32Array(heightFieldArray);
 

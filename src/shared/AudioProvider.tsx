@@ -14,6 +14,23 @@ interface AudioContextType {
 
 const AudioCtx = createContext<AudioContextType | undefined>(undefined);
 
+export const playSound = (src: string, toneShift: number) => {
+    const audio = new Audio(src);
+    // make sure playbackRate changes also affect pitch on browsers that preserve pitch by default
+    try {
+        (audio as any).preservesPitch = false;
+        (audio as any).mozPreservesPitch = false;
+        (audio as any).webkitPreservesPitch = false;
+    } catch (e) {
+        // ignore if properties are unsupported
+    }
+    // shift by n semitones (playbackRate < 1 lowers pitch)
+    audio.preload = 'auto';
+    audio.playbackRate = 2 ** (toneShift / 12);
+    audio.currentTime = 0;
+    void audio.play().catch(() => { /* swallow play errors (e.g. autoplay restrictions) */ });
+}
+
 export function useAudio() {
     const ctx = useContext(AudioCtx);
     if (!ctx) throw new Error("useAudio must be used within AudioProvider");

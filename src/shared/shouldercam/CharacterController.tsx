@@ -17,10 +17,11 @@ import AnimatedModel from "../ped/HumanoidModel";
 import { useAudio } from "../AudioProvider";
 
 
-export const CharacterController = ({ lookTarget, name = 'bob', mode = 'third-person', children, forwardRef }: {
+export const CharacterController = ({ lookTarget, name = 'bob', mode = 'third-person', position = [0, 0, 0], children, forwardRef }: {
     lookTarget?: RefObject<THREE.Object3D | null>
     name?: string,
     mode?: "simple" | "side-scroll" | "third-person",
+    position?: [number, number, number],
     children?: React.ReactNode,
     forwardRef?: (refs: { rbref: RefObject<RapierRigidBody | null>, meshref: RefObject<Group | null> }) => void
 }) => {
@@ -278,7 +279,7 @@ export const CharacterController = ({ lookTarget, name = 'bob', mode = 'third-pe
             const stepIndex = Math.floor(t * stepsPerCycle);
             if (lastStepIndexRef.current !== stepIndex) {
                 lastStepIndexRef.current = stepIndex;
-                const baseVolume = isRunning ? 1.0 : 0.45;
+                const baseVolume = isRunning ? 0.2 : 0.1;
                 const baseStepSpeed = isRunning ? 1.06 : 0.98;
                 const rand01 = () => Math.random() * 0.25 + 0.9; // small variance
                 const volume = Math.max(0, Math.min(1, baseVolume * rand01()));
@@ -325,7 +326,7 @@ export const CharacterController = ({ lookTarget, name = 'bob', mode = 'third-pe
 
     return (
         <>
-            <RigidBody colliders={false} lockRotations ref={rb} position={[0, height / 2, 0]} name={name} >
+            <RigidBody colliders={false} lockRotations ref={rb} position={[position[0], position[1] + (height / 2), position[2]]} name={name} >
                 <group ref={container}>
                     <FollowCam
                         height={1 / height}

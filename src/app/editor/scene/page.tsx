@@ -7,6 +7,8 @@ import { EditorModes, SceneNode, Viewer } from "./viewer/SceneViewer";
 import presets from "./presets";
 import { GameEngine } from "./editor/EditorContext";
 import GameCanvas from "@/shared/GameCanvas";
+import { CharacterController } from "@/shared/shouldercam/CharacterController";
+import Controls from "@/shared/controls/ControlsProvider";
 
 export default function EditorApp() {
     const [editorMode, setEditorMode] = useState<EditorModes>(EditorModes.Edit);
@@ -18,17 +20,20 @@ export default function EditorApp() {
         </div>
 
         <GameEngine mode={editorMode} sceneGraph={presets.drive as any[]}>
-            <GameCanvas>
-                <Physics paused={editorMode !== EditorModes.Play}>
-                    {editorMode === EditorModes.Play ? <>
-                    </> : null}
+            <Controls disabled={editorMode !== EditorModes.Play}>
+                <GameCanvas>
+                    <Physics debug={editorMode !== EditorModes.Play} paused={editorMode !== EditorModes.Play}>
+                        {editorMode === EditorModes.Play ? <>
+                            <CharacterController />
+                        </> : null}
 
-                    <Viewer />
+                        <Viewer />
 
-                    <ambientLight intensity={1.5} />
-                    <Environment preset="sunset" background={false} />
-                </Physics>
-            </GameCanvas>
+                        <ambientLight intensity={1.5} />
+                        <Environment preset="sunset" background={false} />
+                    </Physics>
+                </GameCanvas>
+            </Controls>
         </GameEngine>
     </>
 }

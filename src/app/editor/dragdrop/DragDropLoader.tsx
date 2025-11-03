@@ -1,44 +1,9 @@
 // DragDropLoader.tsx
 import { useEffect, ChangeEvent } from "react";
-import { DRACOLoader, FBXLoader, GLTFLoader } from "three/examples/jsm/Addons.js";
+import { loadModelsFromFiles } from "../shared/modelLoader";
 
 interface DragDropLoaderProps {
     onModelLoaded: (model: any, filename: string) => void;
-}
-
-// Shared file handling logic
-function handleFiles(files: File[], onModelLoaded: (model: any, filename: string) => void) {
-    files.forEach((file) => {
-        if (file.name.endsWith(".glb") || file.name.endsWith(".gltf")) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const arrayBuffer = event.target?.result;
-                if (arrayBuffer) {
-                    const loader = new GLTFLoader();
-                    const dracoLoader = new DRACOLoader();
-                    dracoLoader.setDecoderPath("https://www.gstatic.com/draco/v1/decoders/");
-                    loader.setDRACOLoader(dracoLoader);
-                    loader.parse(arrayBuffer as ArrayBuffer, "", (gltf) => {
-                        onModelLoaded(gltf.scene, file.name);
-                    }, (error) => {
-                        console.error("GLTFLoader parse error", error);
-                    });
-                }
-            };
-            reader.readAsArrayBuffer(file);
-        } else if (file.name.endsWith(".fbx")) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const arrayBuffer = event.target?.result;
-                if (arrayBuffer) {
-                    const loader = new FBXLoader();
-                    const model = loader.parse(arrayBuffer as ArrayBuffer, "");
-                    onModelLoaded(model, file.name);
-                }
-            };
-            reader.readAsArrayBuffer(file);
-        }
-    });
 }
 
 export function DragDropLoader({ onModelLoaded }: DragDropLoaderProps) {
@@ -47,7 +12,7 @@ export function DragDropLoader({ onModelLoaded }: DragDropLoaderProps) {
             e.preventDefault();
             e.stopPropagation();
             const files = e.dataTransfer?.files ? Array.from(e.dataTransfer.files) : [];
-            handleFiles(files, onModelLoaded);
+            loadModelsFromFiles(files, onModelLoaded);
         }
         function handleDragOver(e: DragEvent) {
             e.preventDefault();
@@ -71,7 +36,7 @@ interface FilePickerProps {
 export function FilePicker({ onModelLoaded }: FilePickerProps) {
     function onChange(e: ChangeEvent<HTMLInputElement>) {
         const files = e.target.files ? Array.from(e.target.files) : [];
-        handleFiles(files, onModelLoaded);
+        loadModelsFromFiles(files, onModelLoaded);
     }
     // Ref for the hidden input
     const inputId = "file-picker-input";

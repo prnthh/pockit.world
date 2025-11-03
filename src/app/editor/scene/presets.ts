@@ -42,43 +42,49 @@ const presets = {
     }
   ],
   drive: [
-  {
-    "id": "zwdcat6g3",
-    "name": "Root",
-    "children": [
-      {
-        "id": "rpbjk31xk",
-        "name": "cathedral.glb",
-        "children": [],
-        "components": [
-          {
-            "type": "model",
-            "filename": "cathedral.glb"
+    {
+      "id": "zwdcat6g3",
+      "name": "Root",
+      "children": [
+        {
+          "id": "rpbjk31xk",
+          "name": "cathedral.glb",
+          "children": [],
+          "components": [
+            {
+              "type": "model",
+              "filename": "cathedral.glb"
+            },
+            {
+              "type": "physics",
+              "props": {
+                "type": "fixed"
+              }
+            }
+          ],
+          "transform": {
+            "position": [
+              0,
+              0,
+              0
+            ],
+            "rotation": [
+              0,
+              0,
+              0
+            ],
+            "scale": 1
           }
-        ],
-        "transform": {
-          "position": [
-            0,
-            0,
-            0
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ],
-          "scale": 1
         }
-      }
-    ],
-    "components": []
-  }
-],
-pockit: pockitmap,
-game1: game1,
-killbox: killbox,
-pockitOutdoors: pockitOutdoors,
-test: test,
+      ],
+      "components": []
+    }
+  ],
+  pockit: pockitmap,
+  game1: game1,
+  killbox: killbox,
+  pockitOutdoors: pockitOutdoors,
+  test: test,
 }
 
 export default presets;
