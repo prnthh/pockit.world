@@ -67,7 +67,7 @@ const Ped = memo(({ name = 'alice', debug, basePath, modelUrl, position, lookTar
                     lookTarget={lookTarget}
                     animationOverrides={{
                         walk: 'anim/walk.fbx',
-                        // run: 'anim/run.fbx',
+                        run: 'anim/run.fbx',
                         ...animationOverrides,
                     }}
                     onClick={() => {

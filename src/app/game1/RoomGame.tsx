@@ -11,6 +11,7 @@ import Terrain from "@/shared/physics/Terrain";
 import useGameStore, { allEntityIDsByType, useEntityById } from "../stores/GameStore";
 import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
+import { useEditorContext } from "../editor/scene/editor/EditorContext";
 
 const RoomSpecificGame = () => {
     const { scenePortal } = useContext(ScenePortalContext);
@@ -31,11 +32,34 @@ const RoomSpecificGame = () => {
 
 
 const World = () => {
+    const { sceneGraph, addNodeToRoot } = useEditorContext();
     const { addEntity } = useGameStore();
     const initialized = useRef(false);
 
     useEffect(() => {
         if (initialized.current) return;
+        addNodeToRoot({
+            id: 'box1',
+            name: 'Box 1',
+            transform: {
+                position: [0, 2, 2],
+                rotation: [0, 0, 0],
+                scale: 1,
+            },
+            components: [
+                {
+                    type: 'boxGeometry', meshType: 'box', args: [1, 1, 1],
+                },
+                {
+                    type: 'meshStandardMaterial', materialType: 'meshStandardMaterial', args: [{ color: 'blue' }],
+                },
+                {
+                    type: 'physics', props: { type: 'dynamic' },
+                }
+            ],
+            children: [],
+        });
+
         console.log('Adding NPC entities');
         addEntity({ name: 'PockitCEO', type: 'NPC', position: [1, 0, -4], basePath: "/models/human/boss/", modelUrl: "model.glb", goal: 'follow' });
         addEntity({ name: 'Employee', type: 'NPC', position: [-1, 0, -4], goal: 'hunt' });
