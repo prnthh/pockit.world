@@ -1,5 +1,5 @@
 import { BallCollider, CapsuleCollider, CuboidCollider, RapierRigidBody, RigidBody } from "@react-three/rapier";
-import React, { memo, useRef, useState, Suspense, useEffect } from "react";
+import React, { memo, useRef, useState, Suspense, useEffect, RefObject } from "react";
 import usePhysicsRecover from "./usePhysicsRecover";
 import * as THREE from "three"
 import { Html } from "@react-three/drei";
@@ -19,7 +19,7 @@ export type PedPropsType = {
     roundHeight?: number,
     steeringType?: SteeringType,
     unstable?: boolean,
-    onDestinationReached?: () => void,
+    onDestinationReached?: RefObject<() => void>,
     animationOverrides?: { [key: string]: string },
     children?: React.ReactNode,
 };

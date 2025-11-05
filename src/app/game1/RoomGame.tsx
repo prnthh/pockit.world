@@ -3,12 +3,12 @@
 import DialogCollider, { DialogBox, RevealTextByWord } from "@/shared/ped/DialogCollider";
 import Ped from "@/shared/ped/ped";
 import { ScenePortalContext } from "../ScenePortalProvider";
-import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useContext, useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useAudio } from "@/shared/AudioProvider";
 import InteractiveSphere from "@/shared/shaders/InteractiveSphere";
 import CrawlerApp from "@/shared/ik/CrawlerPed";
 import Terrain from "@/shared/physics/Terrain";
-import useGameStore, { allEntityIDsByType, useEntityById } from "../stores/GameStore";
+import useGameStore, { allEntityIDsByType, useEntityById, getEntitiesByType, getEntityById } from "../stores/GameStore";
 import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
 import { useEditorContext } from "../editor/scene/editor/EditorContext";
@@ -42,11 +42,12 @@ const World = () => {
         insertSceneWithOffset([cube], { x: 20, y: 0, z: 0 });
 
         console.log('Adding NPC entities');
-        addEntity({ name: 'PockitCEO', type: 'NPC', position: [1, 0, -4], basePath: "/models/human/boss/", modelUrl: "model.glb", goal: 'follow' });
-        addEntity({ name: 'Employee', type: 'NPC', position: [-1, 0, -4], goal: 'hunt' });
         addEntity({ type: 'pickupable', position: [2, 0, 2] });
         addEntity({ type: 'pickupable', position: [5, 0, 2] });
         addEntity({ type: 'pickupable', position: [8, 0, 2] });
+        addEntity({ name: 'PockitCEO', type: 'NPC', position: [1, 0, -4], basePath: "/models/human/boss/", modelUrl: "model.glb", goal: 'follow' });
+        addEntity({ name: 'Employee', type: 'NPC', position: [-1, 0, -4], goal: 'hunt' });
+
         initialized.current = true;
     }, [addEntity]);
 
@@ -57,13 +58,13 @@ const World = () => {
 }
 
 const TalkativeNPC = ({ id }: { id: string }) => {
-    const { updateEntity } = useGameStore();
+    const { updateEntity, removeEntity } = useGameStore();
     const entity = useEntityById(id);
     if (!entity) return null;
 
     const { name, position } = entity;
 
-    const [moveTargetRef, setMoveTargetRef] = useState<THREE.Object3D | null>(null);
+    const [playerRef, setPlayerRef] = useState<THREE.Object3D | null>(null);
     const { scene } = useThree();
     const { playSound } = useAudio();
 
@@ -88,11 +89,54 @@ const TalkativeNPC = ({ id }: { id: string }) => {
         updateEntity(id, { position: position });
     };
 
+
     useEffect(() => {
-        if (entity.goal == 'follow') {
-            walkToPlayer();
+        switch (entity.goal) {
+            case 'follow':
+                walkToPlayer();
+                reachedDestinationHandler.current = () => {
+                    updateEntity(id, { goal: 'idle' });
+                    setTimeout(() => {
+                        updateEntity(id, { goal: 'follow' });
+                    }, 2000);
+                };
+                break;
+            case 'hunt':
+                const cheese = getEntitiesByType('pickupable');
+                if (cheese.length > 0) {
+                    const cheeseEntity = cheese[0];
+                    if (cheeseEntity && cheeseEntity.position) {
+                        walkTo(cheeseEntity.position as [number, number, number]);
+                        reachedDestinationHandler.current = () => {
+                            removeEntity(cheeseEntity.id);
+                            updateEntity(id, { goal: 'idle' });
+                            setTimeout(() => {
+                                updateEntity(id, { goal: 'hunt' });
+                            }, 2000);
+                        };
+                    }
+                } else {
+                    // No cheese left, go idle
+                    updateEntity(id, { goal: 'idle' });
+                }
+                break;
+            default:
+                break;
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [entity.goal]);
+
+    useEffect(() => {
+        const player = scene.getObjectByName('player');
+        if (player) {
+            setPlayerRef(player as THREE.Object3D);
+        } else {
+            console.warn('Player object not found in scene');
+        }
+    }, [scene]);
+
+    const reachedDestinationHandler = useRef<() => void>(() => { });
+
 
     if (!scene) return null;
 
@@ -101,8 +145,8 @@ const TalkativeNPC = ({ id }: { id: string }) => {
         basePath={entity.basePath || "/models/human/onimilio/"}
         modelUrl={entity.modelUrl || "rigged.glb"}
         position={position} height={1.5}
-        lookTarget={{ current: moveTargetRef }}
-        onDestinationReached={() => { updateEntity(id, { goal: 'idle' }); }}
+        lookTarget={{ current: playerRef }}
+        onDestinationReached={reachedDestinationHandler}
     >
         <Html center position={[0, 2, 0]} zIndexRange={[5, 10]}>
             <pre className="text-xs bg-gray-800/70 w-[300px] rounded overflow-auto text-wrap">

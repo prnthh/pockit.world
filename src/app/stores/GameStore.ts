@@ -58,4 +58,13 @@ export const useEntityById = (id: string) => {
     return useGameStore(useShallow((state) => state.entities.find((e) => e.id === id)))
 }
 
+// Non-hook function to get entities directly from store
+export const getEntitiesByType = (type: string) => {
+    return useGameStore.getState().entities.filter((e) => e.type === type)
+}
+
+export const getEntityById = (id: string) => {
+    return useGameStore.getState().entities.find((e) => e.id === id)
+}
+
 export default useGameStore

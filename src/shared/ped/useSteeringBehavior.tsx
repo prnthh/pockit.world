@@ -21,7 +21,7 @@ const useSteeringBehavior = (
     setAnimation: any,
     position: [number, number, number] | undefined,
     paused: boolean = false,
-    onDestinationReached?: () => void
+    onDestinationReached?: RefObject<() => void>,
 ) => {
     const target = useRef<THREE.Vector3 | undefined>(undefined);
     const targetReached = useRef(false);
@@ -71,9 +71,9 @@ const useSteeringBehavior = (
         // Check if already at destination
         if (distance <= IDLE_THRESHOLD) {
             stopMovement();
-            onDestinationReached?.();
+            onDestinationReached?.current?.();
         }
-    }, [position, rigidBodyRef, onDestinationReached]);
+    }, [position, rigidBodyRef.current]);
 
     useEffect(() => {
         if (paused) setAnimation("idle");
@@ -91,7 +91,7 @@ const useSteeringBehavior = (
 
         if (distance <= IDLE_THRESHOLD) {
             stopMovement();
-            onDestinationReached?.();
+            onDestinationReached?.current?.();
             return;
         }
 
