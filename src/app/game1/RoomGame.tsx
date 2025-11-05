@@ -32,6 +32,12 @@ const RoomSpecificGame = () => {
 
 }
 
+const randomPickupable = () => {
+    const x = Math.random() * 10 - 5;
+    const z = Math.random() * 10 - 5;
+    return { type: 'pickupable', position: [x, 0, z] };
+}
+
 const World = () => {
     const { sceneGraph, insertSceneWithOffset } = useEditorContext();
     const { addEntity } = useGameStore();
@@ -41,10 +47,10 @@ const World = () => {
         if (initialized.current) return;
         insertSceneWithOffset([cube], { x: 20, y: 0, z: 0 });
 
-        console.log('Adding NPC entities');
-        addEntity({ type: 'pickupable', position: [2, 0, 2] });
-        addEntity({ type: 'pickupable', position: [5, 0, 2] });
-        addEntity({ type: 'pickupable', position: [8, 0, 2] });
+        addEntity(randomPickupable());
+        addEntity(randomPickupable());
+        addEntity(randomPickupable());
+
         addEntity({ name: 'PockitCEO', type: 'NPC', position: [1, 0, -4], basePath: "/models/human/boss/", modelUrl: "model.glb", goal: 'follow' });
         addEntity({ name: 'Employee', type: 'NPC', position: [-1, 0, -4], goal: 'hunt' });
 
@@ -58,7 +64,7 @@ const World = () => {
 }
 
 const TalkativeNPC = ({ id }: { id: string }) => {
-    const { updateEntity, removeEntity } = useGameStore();
+    const { updateEntity, addEntity, removeEntity } = useGameStore();
     const entity = useEntityById(id);
     if (!entity) return null;
 
@@ -89,41 +95,56 @@ const TalkativeNPC = ({ id }: { id: string }) => {
         updateEntity(id, { position: position });
     };
 
-
-    useEffect(() => {
-        switch (entity.goal) {
-            case 'follow':
+    const behaviors = {
+        "follow": {
+            enter: () => {
                 walkToPlayer();
-                reachedDestinationHandler.current = () => {
-                    updateEntity(id, { goal: 'idle' });
-                    setTimeout(() => {
-                        updateEntity(id, { goal: 'follow' });
-                    }, 2000);
-                };
-                break;
-            case 'hunt':
+            },
+            complete: () => {
+                updateEntity(id, { goal: 'idle' });
+                setTimeout(() => {
+                    updateEntity(id, { goal: 'follow' });
+                }, 100);
+            }
+        },
+        "hunt": {
+            enter: () => {
                 const cheese = getEntitiesByType('pickupable');
                 if (cheese.length > 0) {
                     const cheeseEntity = cheese[0];
                     if (cheeseEntity && cheeseEntity.position) {
+                        actionState.current = { type: 'hunt', target: cheeseEntity.id };
                         walkTo(cheeseEntity.position as [number, number, number]);
-                        reachedDestinationHandler.current = () => {
-                            removeEntity(cheeseEntity.id);
-                            updateEntity(id, { goal: 'idle' });
-                            setTimeout(() => {
-                                updateEntity(id, { goal: 'hunt' });
-                            }, 2000);
-                        };
                     }
                 } else {
                     // No cheese left, go idle
                     updateEntity(id, { goal: 'idle' });
                 }
-                break;
-            default:
-                break;
+            },
+            complete: () => {
+                if (actionState.current && actionState.current.type === 'hunt') {
+                    removeEntity(actionState.current.target);
+                }
+                updateEntity(id, { goal: 'idle' });
+                setTimeout(() => {
+                    updateEntity(id, { goal: 'hunt' });
+                }, 2000);
+            }
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }
+
+    const actionState = useRef<any | null>(null);
+
+    useEffect(() => {
+        if (entity.goal in behaviors) {
+            behaviors[entity.goal as keyof typeof behaviors].enter();
+            reachedDestinationHandler.current = () => {
+                behaviors[entity.goal as keyof typeof behaviors].complete();
+                actionState.current = null;
+            }
+        } else {
+            reachedDestinationHandler.current = () => { };
+        }
     }, [entity.goal]);
 
     useEffect(() => {

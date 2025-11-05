@@ -1,5 +1,5 @@
 import { useFrame } from "@react-three/fiber";
-import { RapierRigidBody } from "@react-three/rapier";
+import { BallCollider, RapierRigidBody } from "@react-three/rapier";
 import { RefObject, useEffect, useRef } from "react";
 import * as THREE from "three";
 
@@ -15,18 +15,29 @@ export enum SteeringType {
     DRIVE,
 }
 
-const useSteeringBehavior = (
-    type: SteeringType,
-    rigidBodyRef: RefObject<RapierRigidBody | null>,
-    setAnimation: any,
-    position: [number, number, number] | undefined,
-    paused: boolean = false,
-    onDestinationReached?: RefObject<() => void>,
+const SteeringBehavior = (
+    {
+        type,
+        rigidBodyRef,
+        setAnimation,
+        position,
+        paused = false,
+        onDestinationReached,
+    }: {
+        type: SteeringType,
+        rigidBodyRef: RefObject<RapierRigidBody | null>,
+        setAnimation: any,
+        position: [number, number, number] | undefined,
+        paused: boolean,
+        onDestinationReached?: RefObject<() => void>,
+    }
 ) => {
     const target = useRef<THREE.Vector3 | undefined>(undefined);
     const targetReached = useRef(false);
     const targetPos = useRef<THREE.Vector3>(new THREE.Vector3());
     const groundNormal = useRef<THREE.Vector3>(new THREE.Vector3(0, 1, 0));
+
+    const centerWhisker = useRef<boolean>(false);
 
     // Pre-allocated objects to avoid GC in useFrame
     const cache = useRef({
@@ -105,34 +116,46 @@ const useSteeringBehavior = (
         const { projectedDir, lookAtTarget, tempMatrix, targetQuat, rotatedQuat, velocity } = cache.current;
         projectedDir.copy(directionToTarget).projectOnPlane(groundNormal.current).normalize();
 
-        lookAtTarget.copy(currentPos).sub(projectedDir);
-        tempMatrix.lookAt(currentPos, lookAtTarget, groundNormal.current);
+        // Calculate target rotation - the character should face the direction they're moving
+        lookAtTarget.copy(currentPos).add(projectedDir);
+        tempMatrix.lookAt(lookAtTarget, currentPos, groundNormal.current);
         targetQuat.setFromRotationMatrix(tempMatrix);
 
-        const rotSpeed = type === SteeringType.DRIVE ? ROTATION_SPEED * 0.5 * delta : ROTATION_SPEED * delta;
+        // Rotate toward target
+        const rotSpeed = (type === SteeringType.DRIVE ? ROTATION_SPEED * 0.5 : ROTATION_SPEED) * delta;
         rotatedQuat.copy(currentQuat).slerp(targetQuat, rotSpeed);
         rigidBody.setRotation(rotatedQuat, true);
 
         if (type === SteeringType.DRIVE) {
+            // DRIVE mode: move in facing direction
             velocity.set(0, 0, 1).applyQuaternion(currentQuat);
             velocity.y = 0;
             velocity.normalize().multiplyScalar(speed);
             rigidBody.setLinvel({ x: velocity.x, y: rigidBody.linvel().y, z: velocity.z }, true);
             setAnimation(speed === RUN_SPEED ? "run" : "walk");
-        } else if (currentQuat.angleTo(targetQuat) < cache.current.angleThreshold) {
+        } else {
+            // WALK/RUN mode: move toward target
             const walkSpeed = type === SteeringType.RUN && distance > RUN_DISTANCE ? RUN_SPEED : WALK_SPEED;
             velocity.copy(projectedDir).multiplyScalar(walkSpeed);
             rigidBody.setLinvel({ x: velocity.x, y: rigidBody.linvel().y, z: velocity.z }, true);
             setAnimation(walkSpeed === RUN_SPEED ? "run" : "walk");
-        } else {
-            rigidBody.setLinvel({ x: 0, y: rigidBody.linvel().y, z: 0 }, true);
         }
     });
 
-    return {
-        isMoving: !!target.current && !targetReached.current,
-        targetReached: targetReached.current,
-    };
-};
+    const isMoving = !!target.current && !targetReached.current && !paused;
 
-export default useSteeringBehavior;
+    return <>
+        {isMoving && <>
+            {/* Center whisker - detects obstacles directly ahead */}
+            <BallCollider
+                sensor
+                args={[0.15]}
+                position={[0, 0.5, 0.6]}
+                onIntersectionEnter={(e) => { !e.other.collider.isSensor() && (centerWhisker.current = true); }}
+                onIntersectionExit={() => { centerWhisker.current = false; }}
+            />
+        </>}
+    </>
+}
+
+export default SteeringBehavior;
