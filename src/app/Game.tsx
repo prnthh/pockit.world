@@ -14,19 +14,19 @@ import { Group } from "three";
 import { useContext } from 'react'
 import { usePathname } from 'next/navigation';
 import tunnel from "tunnel-rat";
-import ModelAttachment from "@/shared/ped/ModelAttachment";
-import Ped from "@/shared/ped/ped";
 
 import { ScenePortalContext } from "./ScenePortalProvider";
 import PostProcessingEffects from "@/shared/shaders/PostProcessingEffects";
 import Sky from "@/shared/shaders/Sky";
 import presets from "./editor/scene/presets";
 
+import testmap from "./game1/map.json"
+
 const ui = tunnel()
 
 const paths = {
     '/about': presets.pockitOutdoors,
-    '/game1': presets.flat,
+    '/game1': testmap,
     '/milady': presets.killbox,
     '/test': presets.test,
 };
@@ -57,7 +57,7 @@ const GameWrappers = () => {
                 <Controls disabled={pathname === '/editor/scene'}>
                     <GameEngine mode={EditorModes.Play} sceneGraph={scene}>
                         <GameCanvas>
-                            <Physics paused={false}>
+                            <Physics debug paused={false}>
                                 {/* remove the pathname key to persist the world between pages */}
                                 <Game key={pathname} />
                             </Physics>

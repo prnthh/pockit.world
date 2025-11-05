@@ -4,13 +4,23 @@
     "name": "Root",
     "children": [
       {
-        "id": "vzew3aral",
-        "name": "pockitworld2.glb",
+        "id": "kdq9whzkx",
+        "name": "floor",
         "children": [],
         "components": [
           {
-            "type": "model",
-            "filename": "pockitworld2.glb"
+            "type": "boxGeometry",
+            "args": [
+              200,
+              0.01,
+              200
+            ]
+          },
+          {
+            "type": "meshStandardMaterial",
+            "props": {
+              "color": "#b5b5b5"
+            }
           },
           {
             "type": "physics",
@@ -18,20 +28,7 @@
               "type": "fixed"
             }
           }
-        ],
-        "transform": {
-          "position": [
-            0,
-            0,
-            -0.1
-          ],
-          "rotation": [
-            0,
-            0,
-            0
-          ],
-          "scale": 1
-        }
+        ]
       }
     ],
     "components": []

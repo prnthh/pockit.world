@@ -20,6 +20,7 @@ interface EditorContextType {
     // Modular scene graph operations
     addNodeToRoot: (node: SceneNode) => void;
     addNodesToRoot: (nodes: SceneNode[]) => void;
+    insertSceneWithOffset: (newScene: SceneNode[], offset?: { x: number, y: number, z: number }) => void;
     updateRootChildren: (updater: (children: SceneNode[]) => SceneNode[]) => void;
     getRoot: () => SceneNode;
 }
@@ -229,6 +230,7 @@ export function GameEngine({ resourcePath = "", mode = EditorModes.Play, sceneGr
             sceneRef,
             addNodeToRoot,
             addNodesToRoot,
+            insertSceneWithOffset,
             updateRootChildren,
             getRoot
         }), [sceneGraph, models, playMode, selectedNodeId])}>
