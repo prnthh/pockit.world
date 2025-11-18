@@ -1,20 +1,16 @@
 import { useLoader } from '@react-three/fiber'
-import TWEEN, { type Tween } from '@tweenjs/tween.js'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
     type AnimationAction,
+    AnimationClip,
     AnimationMixer,
-    type Euler,
     LoopRepeat,
-    Mesh,
     type Object3D,
-    type Object3DEventMap,
-    Vector3,
+    Object3DEventMap,
 } from 'three'
-import * as THREE from 'three'
 import { FBXLoader } from 'three/examples/jsm/Addons.js'
 
-function filterNeckAnimations(animation: THREE.AnimationClip): THREE.AnimationClip {
+function filterNeckAnimations(animation: AnimationClip): AnimationClip {
     const filteredAnimation = animation.clone()
     filteredAnimation.tracks = animation.tracks.filter((track) => {
         // Filter out any tracks that target the neck bone
@@ -98,13 +94,14 @@ export default function useAnimationState(
         }
 
         if (mixer && actions && animationKey && actions[animationKey]) {
-            if (lastKeyRef.current !== animationKey) {
-                const action = actions[animationKey] || actions.idle;
+            const action = actions[animationKey] || actions.idle;
+
+            if (lastKeyRef.current !== animationKey || !action.isRunning()) {
                 let loops = 1;
 
                 if (true) {
-                    loops = 100;
-                } else if (animationKey === 'eating') loops = 4;
+                    loops = 1000;
+                }
                 action.clampWhenFinished = true;
 
                 if (prevActionRef.current && prevActionRef.current !== action) {

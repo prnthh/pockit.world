@@ -5,9 +5,10 @@
  * file in the root directory of this source tree.
  */
 
-import React, { useMemo, createContext, useState, useContext, useEffect, useRef } from 'react';
+import React, { useMemo, createContext, useState, useContext, useEffect } from 'react';
 import { KeyboardControls, KeyboardControlsEntry } from '@react-three/drei';
-import Joystick, { JoystickHandle } from './Joystick';
+import Joystick from './Joystick';
+import ControllerJoystick from './ControllerJoystick';
 
 export enum WalkControls {
     forward = 'forward',
@@ -83,12 +84,9 @@ function isMobileDevice() {
     return /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(navigator.userAgent);
 }
 
-function Controls({ disabled = false, children }: { disabled?: boolean; children: React.ReactNode }) {
+function Controls({ children }: { children: React.ReactNode }) {
     const [controlScheme, setControlScheme] = useState<keyof typeof controlSchemes>('simple');
     const [isMobile, setIsMobile] = useState(false);
-    const joystickRef = useRef<JoystickHandle | null>(null);
-    const [floatingPos, setFloatingPos] = useState<{ left: number; top: number } | null>(null);
-    const activePointerId = useRef<number | null>(null);
 
     useEffect(() => {
         setIsMobile(isMobileDevice());
@@ -101,7 +99,7 @@ function Controls({ disabled = false, children }: { disabled?: boolean; children
             scheme: controlScheme,
             setScheme: setControlScheme
         }}>
-            {!disabled && <div style={{
+            <div style={{
                 position: 'absolute',
                 top: '10px',
                 right: '10px',
@@ -113,78 +111,18 @@ function Controls({ disabled = false, children }: { disabled?: boolean; children
             }}
                 onClick={() => setControlScheme(controlScheme === 'simple' ? 'advanced' : 'simple')}
             >{controlScheme} controls
-            </div>}
+            </div>
             <KeyboardControls map={map}>
                 {children}
-                {!disabled && isMobile && controlScheme === 'advanced' && (
-                    <div className='absolute bottom-10 left-10 z-50 text-white'>
-                        <Joystick controlScheme={controlScheme} />
-                    </div>
-                )}
-
-                {/* Fullscreen overlay + floating joystick for simple/mobile mode */}
-                {!disabled && controlScheme === 'simple' && (
-                    <div
-                        id={'floating-joystick-overlay'}
-                        style={{
-                            position: 'fixed',
-                            left: 0,
-                            top: 0,
-                            right: 0,
-                            bottom: 0,
-                            zIndex: 2,
-                            touchAction: 'none',
-                        }}
-                        onPointerDown={(e) => {
-                            // start floating joystick at pointer location
-                            // only start for primary pointers
-                            if ((e as React.PointerEvent).button && (e as React.PointerEvent).button !== 0) return;
-                            const pe = e as React.PointerEvent<HTMLDivElement>;
-                            activePointerId.current = pe.pointerId;
-                            const left = pe.clientX;
-                            const top = pe.clientY;
-                            setFloatingPos({ left, top });
-                            // capture pointer so we continue receiving events
-                            try {
-                                (pe.currentTarget as Element).setPointerCapture(pe.pointerId);
-                            } catch (err) { }
-                            requestAnimationFrame(() => {
-                                joystickRef.current?.startFrom(left, top, pe.pointerType === 'touch', pe.pointerId);
-                            });
-                        }}
-                        onPointerMove={(e) => {
-                            const pe = e as React.PointerEvent<HTMLDivElement>;
-                            if (activePointerId.current !== pe.pointerId) return;
-                            joystickRef.current?.moveTo(pe.clientX, pe.clientY);
-                        }}
-                        onPointerUp={(e) => {
-                            const pe = e as React.PointerEvent<HTMLDivElement>;
-                            if (activePointerId.current !== pe.pointerId) return;
-                            try {
-                                (pe.currentTarget as Element).releasePointerCapture(pe.pointerId);
-                            } catch (err) { }
-                            joystickRef.current?.end();
-                            setFloatingPos(null);
-                            activePointerId.current = null;
-                        }}
-                        onPointerCancel={(e) => {
-                            const pe = e as React.PointerEvent<HTMLDivElement>;
-                            if (activePointerId.current !== pe.pointerId) return;
-                            joystickRef.current?.end();
-                            setFloatingPos(null);
-                            activePointerId.current = null;
-                        }}
-                    >
-                        {floatingPos && (
-                            <Joystick
-                                ref={joystickRef}
-                                controlScheme={controlScheme}
-                                floating
-                                left={floatingPos.left}
-                                top={floatingPos.top}
-                            />
-                        )}
-                    </div>
+                {isMobile && (
+                    <>
+                        <div className='absolute bottom-10 left-10 z-50 text-white select-none'>
+                            <ControllerJoystick horizontalAxis='horizontal' verticalAxis='vertical' />
+                        </div>
+                        <div className='absolute bottom-10 right-10 z-50 text-white select-none'>
+                            <ControllerJoystick horizontalAxis='lookHorizontal' verticalAxis='lookVertical' />
+                        </div>
+                    </>
                 )}
             </KeyboardControls>
         </ControlSchemeContext.Provider>

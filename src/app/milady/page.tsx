@@ -3,11 +3,9 @@ import Link from "next/link";
 import DropDownPage from "../ui/DropDownPage";
 
 import type { Metadata } from "next";
-import RoomSpecificGame from "./RoomGame";
 import dynamic from "next/dynamic";
 import { Suspense } from "react";
 
-const DynamicCryptoUser = dynamic(() => import("./CryptoProvider").then((mod) => mod.CryptoUser));
 
 export const metadata: Metadata = {
     title: "Pockit Milady | 3D Interactive NFTs",
@@ -58,11 +56,7 @@ export default function Home() {
                         Exo Cam lets you view Pockit Milady in AR and make animated sequences!
                     </a>
                 </div>
-                <RoomSpecificGame />
             </DropDownPage>
-            <Suspense>
-                <DynamicCryptoUser />
-            </Suspense>
             <div id='crosshair' className="select-none z-[10] top-1/2 left-1/2 absolute -translate-1/2 text-red-500">
                 +
             </div>

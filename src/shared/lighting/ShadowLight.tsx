@@ -1,66 +1,79 @@
-import React, { useEffect } from "react";
-import { useFrame, useThree } from "@react-three/fiber";
-import * as THREE from "three";
+import { Box, Helper } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { useEffect, useRef } from "react";
+import { CameraHelper, DirectionalLight, MeshBasicMaterial } from "three";
+import { Vector3 } from "three";
 
-export const ShadowLight = ({
+
+export function ShadowLight({
+    followCamera = true,
+    debug = false,
     intensity = 1.5,
-    offset = [20, 40, 20] as [number, number, number]
-}: {
-    intensity?: number;
-    offset?: [number, number, number];
-} = {}) => {
-    const lightRef = React.useRef<THREE.DirectionalLight>(null);
-    const targetRef = React.useRef<THREE.Object3D>(null);
-    const { scene } = useThree();
+    color = "white",
+    offset = [2, -6, 2], // Adjust the target offset as needed
+    camOffset = new Vector3(-5, 60, -5) }:
+    {
+        followCamera?: boolean,
+        debug?: boolean,
+        intensity?: number,
+        color?: string,
+        offset?: [number, number, number],
+        camOffset?: Vector3
+    }
+) {
+    const directionalLight = useRef<DirectionalLight>(null);
+    const lastUpdate = useRef(0);
 
-    // Create target object once
-    const targetObject = React.useMemo(() => new THREE.Object3D(), []);
+    useFrame((state) => {
+        const t = state.clock.getElapsedTime();
+        if (t - lastUpdate.current < 0.5) return; // Only update every 1 second
+        lastUpdate.current = t;
 
-    // Add target to scene on mount
-    useEffect(() => {
-        scene.add(targetObject);
-        return () => {
-            scene.remove(targetObject);
-        };
-    }, [scene, targetObject]);
 
-    // Update light and target positions based on player position
-    useFrame(({ camera }) => {
-        let targetPos = new THREE.Vector3(0, 0, 0);
-
-        const cameraPos = camera.position;
-        targetPos.set(cameraPos.x, cameraPos.y, cameraPos.z);
-
-        // Update light position (offset from target)
-        if (lightRef.current) {
-            lightRef.current.position.set(
-                targetPos.x + offset[0],
-                targetPos.y + offset[1],
-                targetPos.z + offset[2]
-            );
+        if (!directionalLight.current) {
+            return;
         }
+        const camPosition = followCamera ? new Vector3().copy(state.camera.position) : new Vector3(0, 0, 0);
+        camPosition.add(camOffset); // Adjust the offset as needed
 
-        // Update target position (where light points to)
-        if (targetObject) {
-            targetObject.position.copy(targetPos);
-        }
+        // snap to grid
+        camPosition.x = Math.round(camPosition.x);
+        camPosition.z = Math.round(camPosition.z);
+        camPosition.y = Math.round(camPosition.y);
+
+        directionalLight.current?.position.copy(camPosition);
+        camPosition.add(new Vector3(offset[0], offset[1], offset[2])); // Adjust the offset as needed
+        directionalLight.current?.target.position.copy(camPosition);
+        directionalLight.current?.target.updateMatrixWorld();
     });
 
-    return <>
-        <directionalLight
-            ref={lightRef}
-            target={targetObject}
-            intensity={intensity}
-            castShadow
-            shadow-mapSize-height={1024}
-            shadow-mapSize-width={1024}
-            shadow-camera-near={0.1}
-            shadow-camera-far={100}
-            shadow-camera-left={-20}
-            shadow-camera-right={20}
-            shadow-camera-top={30}
-            shadow-camera-bottom={-20}
-            shadow-bias={-0.001}
-        />
-    </>
+
+    return (
+        <>
+            <directionalLight
+                castShadow
+                ref={directionalLight}
+                intensity={intensity}
+                color={color}
+                shadow-mapSize={[4096, 4096]}
+                shadow-bias={-0.0001}
+            >
+                <orthographicCamera
+                    attach="shadow-camera"
+                    near={0.1}
+                    far={100}
+                    top={30}
+                    bottom={-30}
+                    left={-30}
+                    right={30}
+                >
+                    {debug && <Helper type={CameraHelper} />}
+                    {debug && <mesh position={[0, 0, 0]} scale={[40, 40, 40]} rotation={[-Math.PI / 2, 0, 0]}>
+                        <boxGeometry args={[1, 1, 1]} />
+                        <meshBasicMaterial color="red" />
+                    </mesh>}
+                </orthographicCamera>
+            </directionalLight>
+        </>
+    );
 }

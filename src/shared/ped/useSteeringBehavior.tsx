@@ -6,7 +6,7 @@ import * as THREE from "three";
 const WALK_SPEED = 1.0;
 const RUN_SPEED = 2.0;
 const IDLE_THRESHOLD = 0.51;
-const RUN_DISTANCE = 5.0;
+const RUN_DISTANCE = 1.0;
 const ROTATION_SPEED = 2.5;
 
 export enum SteeringType {

@@ -9,12 +9,10 @@ import { RefObject } from "react";
 import { Vector3 } from "three";
 import { useRapier } from "@react-three/rapier";
 import * as THREE from "three";
-import { useAudio } from "@/shared/AudioProvider";
 
 export function useWeapon() {
     const { camera, scene } = useThree();
     const { rapier, world } = useRapier();
-    const { playSound } = useAudio();
 
     function addSensorBullet({ position }: { position: Vector3 }) {
         const size = 0.01;
@@ -46,7 +44,7 @@ export function useWeapon() {
     }
 
     const weaponHandler = () => {
-        playSound("/sound/pistol.mp3");
+        // playSound("/sound/pistol.mp3");
         // raycast from camera to target
         // place a decal on the mesh that is hit
         if (camera) {

@@ -1,9 +1,15 @@
 import { useGLTF } from "@react-three/drei";
+import type { MathProps, ReactProps, EventHandlers, InstanceProps, } from '@react-three/fiber';
 import { useEffect, useState } from "react";
-import { Object3D } from "three";
+import { Object3D, Object3DEventMap, Group } from "three";
 import { SkeletonUtils } from "three-stdlib";
 
-const SimpleModel = ({ modelUrl, children }: { modelUrl: string, children?: React.ReactNode }) => {
+type SimpleModelProps = {
+    modelUrl: string;
+    children?: React.ReactNode;
+} & Partial<MathProps<Group<Object3DEventMap>>>;
+
+const SimpleModel: React.FC<SimpleModelProps> = ({ modelUrl, children, ...props }) => {
     const { scene } = useGLTF(modelUrl);
     const [clone, setClone] = useState<Object3D | undefined>(undefined);
 
@@ -27,7 +33,7 @@ const SimpleModel = ({ modelUrl, children }: { modelUrl: string, children?: Reac
     if (!clone) return null;
 
     return (
-        <group>
+        <group {...props}>
             <primitive object={clone}>
                 {children}
             </primitive>

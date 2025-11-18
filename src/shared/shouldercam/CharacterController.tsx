@@ -4,52 +4,51 @@
  * This source code is licensed under the GPL-3.0 license
  */
 
-import { useKeyboardControls } from "@react-three/drei";
+import { Box } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { CapsuleCollider, RapierRigidBody, RigidBody, useRapier } from "@react-three/rapier";
 import { useEffect, useRef, useState, useMemo, useCallback, RefObject } from "react";
-import { Vector3, Group } from "three";
+import { MathUtils, Vector3, Group, Quaternion } from "three";
 import * as THREE from "three";
-import { usePointerLockControls } from "./usePointerLockControls";
-import { FollowCam } from "@/shared/FollowCam";
+import { FollowCam } from "@/shared/cameras/FollowCam";
+import TSLLine from "./TSLLine";
 import { useWeapon } from "./useWeapon";
 import AnimatedModel from "../ped/HumanoidModel";
-import { useAudio } from "../AudioProvider";
+import { useInputStore } from "@/shared/providers/InputStore";
+import { KeyboardInput } from "@/shared/firstperson/KeyboardInput";
+import PointerLockControls from "@/shared/controls/PointerLockControls";
+
+const tempQuat = new Quaternion();
+const tempYawQuat = new Quaternion();
+const tempForward = new Vector3();
+const tempRight = new Vector3();
+const tempDirection = new Vector3();
+
+const MOUSE_SENSITIVITY = 0.002;
+const JOYSTICK_SENSITIVITY = 2.5;
+const PITCH_LIMIT = Math.PI / 2;
 
 
-export const CharacterController = ({ lookTarget, name = 'bob', mode = 'third-person', position = [0, 0, 0], children, forwardRef }: {
+export const CharacterController = ({ position = [0, 2, 0], lookTarget, name = 'bob', children, forwardRef }: {
+    position?: [number, number, number],
     lookTarget?: RefObject<THREE.Object3D | null>
     name?: string,
-    mode?: "simple" | "side-scroll" | "third-person",
-    position?: [number, number, number],
     children?: React.ReactNode,
-    forwardRef?: (refs: { rbref: RefObject<RapierRigidBody | null>, meshref: RefObject<Group | null> }) => void
+    forwardRef?: (refs: { rbref: RefObject<RapierRigidBody | null>, meshref: RefObject<Group | null>, cameraRigRef: RefObject<Group | null> }) => void
 }) => {
-    const { playSound } = useAudio();
-
     // --- Constants & refs ---
-    const lastFacingRef = useRef<number>(0);
-    const savedFacingRef = useRef<number | null>(null);
     const WALK_SPEED = 1.2, RUN_SPEED = 3, JUMP_FORCE = 1;
     const height = 1.2, roundHeight = 0.25;
-    // Tunables for simple-mode strafing behavior
-    const STRAFE_FORWARD_BIAS = 0.6; // forward push when strafing-only
-    const HORIZONTAL_BOOST = 1.15; // lateral multiplier so strafing feels equally fast
-
-    // Reusable temp vectors to avoid per-frame allocations
-    const _tmpDir = useRef(new Vector3());
-    const _yAxis = useRef(new Vector3(0, 1, 0));
     const { rapier, world } = useRapier();
     const rb = useRef<RapierRigidBody | null>(null);
     const container = useRef<Group>(null);
     const character = useRef<Group>(null);
+    const cameraRig = useRef<Group>(null);
     const velocityRef = useRef<Vector3>(new Vector3(0, 0, 0));
     const walkActionRef = useRef<THREE.AnimationAction | null>(null);
     const walkLeftActionRef = useRef<THREE.AnimationAction | null>(null);
     const runActionRef = useRef<THREE.AnimationAction | null>(null);
 
-    // Track last step index to avoid duplicate triggers
-    const lastStepIndexRef = useRef<number | null>(null);
     // --- Jump state ---
     const jumping = useRef(false);
     const jumpReleased = useRef(true);
@@ -65,232 +64,169 @@ export const CharacterController = ({ lookTarget, name = 'bob', mode = 'third-pe
             jumpReleased.current = false;
         }
     }, [rb, JUMP_FORCE]);
-    const [, get] = useKeyboardControls();
+
+    // Input state from store
+    const horizontal = useInputStore(state => state.horizontal);
+    const vertical = useInputStore(state => state.vertical);
+    const sprint = useInputStore(state => state.sprint);
+    const jump = useInputStore(state => state.jump);
+    const use = useInputStore(state => state.use);
+    const altUse = useInputStore(state => state.altUse);
+    const verticalRotation = useRef(0);
+
     const [animation, setAnimation] = useState<"idle" | "walk" | "run" | "jump" | "walkLeft" | "lpunch" | "rpunch" | string[]>("idle");
 
     const shoulderCamModeRef = useRef(false);
     const { weaponHandler } = useWeapon();
-
-    // --- Camera & controls ---
-    const pointerLockControls = usePointerLockControls({
-        enabled: mode == "third-person", onClick: () => shoulderCamModeRef.current && weaponHandler()
-    });
-    const rotationTarget = mode !== "simple" ? pointerLockControls.rotationTarget : undefined;
-    const verticalRotation = mode !== "simple" ? pointerLockControls.verticalRotation : undefined;
-    const shoulderCamMode = mode !== "simple" ? pointerLockControls.shoulderCamMode : undefined;
-    const setShoulderCamMode = mode !== "simple" ? pointerLockControls.setShoulderCamMode : undefined;
+    const [shoulderCamMode, setShoulderCamMode] = useState(false);
 
     // Keep ref updated with latest value
     useEffect(() => {
         shoulderCamModeRef.current = !!shoulderCamMode;
     }, [shoulderCamMode]);
 
-    // Initialize third-person rotation when switching modes
-    useEffect(() => {
-        if (mode !== "third-person" || !rotationTarget || !character.current || !container.current) return;
-        // Save current facing so we can restore it when returning to side-scroll
-        savedFacingRef.current = normalizeAngle(lastFacingRef.current);
-        const composedRaw = container.current.rotation.y + character.current.rotation.y;
-        const composed = normalizeAngle(composedRaw);
-        rotationTarget.current = composed;
-        container.current.rotation.y = composed;
-        character.current.rotation.y = 0;
-        lastFacingRef.current = 0;
-    }, [mode, rotationTarget]);
+    // Shared look logic - processes movement deltas directly
+    const applyLookDelta = useCallback((dx: number, dy: number) => {
+        if (!rb.current) return;
 
-    // Restore facing when switching back to side-scroll from third-person
-    useEffect(() => {
-        if (mode !== "side-scroll" || !character.current || !container.current) return;
-        const restored = normalizeAngle(savedFacingRef.current ?? lastFacingRef.current);
-        character.current.rotation.y = restored;
-        container.current.rotation.y = 0;
-        if (rotationTarget && rotationTarget.current !== undefined) rotationTarget.current = container.current.rotation.y;
-    }, [mode, rotationTarget]);
+        const yawDelta = -dx * MOUSE_SENSITIVITY;
+        const rot = rb.current.rotation();
+        tempQuat.set(rot.x, rot.y, rot.z, rot.w);
+        tempYawQuat.setFromAxisAngle({ x: 0, y: 1, z: 0 }, yawDelta);
+        tempQuat.premultiply(tempYawQuat);
+        rb.current.setRotation(tempQuat, true);
+
+        verticalRotation.current = THREE.MathUtils.clamp(
+            verticalRotation.current + dy * MOUSE_SENSITIVITY,
+            -PITCH_LIMIT,
+            PITCH_LIMIT
+        );
+    }, []);
 
     // --- Forward refs ---
     useEffect(() => {
         if (typeof forwardRef === 'function') {
-            forwardRef({ rbref: rb, meshref: container });
+            // Create a fake cameraRig that exposes the vertical rotation
+            const fakeCameraRig: any = {
+                current: {
+                    rotation: {
+                        get x() { return verticalRotation.current; }
+                    }
+                }
+            };
+            forwardRef({ rbref: rb, meshref: container, cameraRigRef: fakeCameraRig });
         }
     }, [forwardRef]);
 
     // --- Movement helpers ---
-    // Normalize an angle to the range [-PI, PI]
-    const normalizeAngle = useCallback((a: number) => {
-        return Math.atan2(Math.sin(a), Math.cos(a));
-    }, []);
     const setVelocity = useCallback((x: number, y: number, z: number) => {
         if (!rb.current) return;
         velocityRef.current.set(x, y, z);
         rb.current.setLinvel(velocityRef.current, true);
     }, []);
 
-    const handleSimpleMode = useCallback((keyInputs: any) => {
-        if (container.current) {
-            // Reduce rotation speed for a gentler left/right camera turn in simple mode
-            const ROT_SPEED = 0.02; // was 0.04
-            if (keyInputs.left) container.current.rotation.y += ROT_SPEED;
-            if (keyInputs.right) container.current.rotation.y -= ROT_SPEED;
-        }
-        // Build a local input direction including strafing (reuse tmp vector)
-        const localDir = _tmpDir.current;
-        localDir.set(0, 0, 0);
-        if (keyInputs.forward) localDir.z += 1;
-        if (keyInputs.backward) localDir.z -= 1;
-        if (keyInputs.left) localDir.x += 1;
-        if (keyInputs.right) localDir.x -= 1;
+    const handleMovement = useCallback((moveX: number, moveZ: number, isRunning: boolean) => {
+        if (!rb.current) return;
 
-        if (localDir.lengthSq() > 0) {
-            // If only strafing, add a small forward bias and boost lateral speed
-            if (Math.abs(localDir.z) < 1e-6 && Math.abs(localDir.x) > 0) {
-                localDir.z += STRAFE_FORWARD_BIAS;
-                localDir.x *= HORIZONTAL_BOOST;
+        const speed = isRunning ? RUN_SPEED : WALK_SPEED;
+
+        if (moveX || moveZ) {
+            // Get the current rotation of the rigid body
+            const rot = rb.current.rotation();
+            tempQuat.set(rot.x, rot.y, rot.z, rot.w);
+
+            // Calculate forward and right directions based on capsule rotation
+            tempForward.set(0, 0, -1).applyQuaternion(tempQuat).setY(0).normalize();
+            tempRight.set(1, 0, 0).applyQuaternion(tempQuat).setY(0).normalize();
+
+            // Combine forward and strafe movement
+            tempDirection.set(0, 0, 0)
+                .addScaledVector(tempForward, moveZ)
+                .addScaledVector(tempRight, moveX);
+
+            const inputMagnitude = tempDirection.length();
+            if (inputMagnitude > 0) {
+                tempDirection.multiplyScalar(speed / inputMagnitude);
             }
 
-            localDir.normalize();
-            if (container.current) localDir.applyAxisAngle(_yAxis.current, container.current.rotation.y);
-
-            const speed = (keyInputs.run ? RUN_SPEED : WALK_SPEED);
-            setVelocity(localDir.x * speed, rb.current?.linvel().y ?? 0, localDir.z * speed);
+            setVelocity(tempDirection.x, rb.current.linvel().y, tempDirection.z);
         } else {
-            setVelocity(0, rb.current?.linvel().y ?? 0, 0);
+            setVelocity(0, rb.current.linvel().y, 0);
         }
-        if (container.current && rotationTarget?.current !== undefined) {
-            rotationTarget.current = container.current.rotation.y;
-        }
-    }, [setVelocity, rotationTarget]);
-
-    const handleThirdPersonMode = useCallback((keyInputs: any) => {
-        if (!rotationTarget) return;
-        if (container.current) container.current.rotation.y = rotationTarget.current;
-        let moveX = 0, moveZ = 0;
-        if (keyInputs.forward) moveZ += 1;
-        if (keyInputs.backward) moveZ -= 1;
-        if (keyInputs.left) moveX += 1;
-        if (keyInputs.right) moveX -= 1;
-        if (mode === "side-scroll") {
-            moveX = -moveX;
-            moveZ = -moveZ;
-        }
-        const speed = keyInputs.run ? RUN_SPEED : WALK_SPEED;
-        if (moveX || moveZ) {
-            const dir = _tmpDir.current;
-            dir.set(moveX, 0, moveZ).normalize().applyAxisAngle(_yAxis.current, rotationTarget.current);
-            setVelocity(dir.x * speed, rb.current?.linvel().y ?? 0, dir.z * speed);
-        } else {
-            setVelocity(0, rb.current?.linvel().y ?? 0, 0);
-        }
-    }, [setVelocity, rotationTarget, mode]);
-
-    const handleSideScrollMode = useCallback((keyInputs: any, moveX: number, moveZ: number, speed: number) => {
-        if (verticalRotation?.current !== undefined) verticalRotation.current = 0;
-        if (container.current) container.current.rotation.y = 0;
-        if (rb.current && (moveX || moveZ)) {
-            const charRot = character.current?.rotation.y ?? lastFacingRef.current;
-            const dir = _tmpDir.current;
-            dir.set(Math.sin(charRot), 0, Math.cos(charRot)).normalize();
-            setVelocity(dir.x * speed, rb.current.linvel().y, dir.z * speed);
-        } else {
-            handleThirdPersonMode(keyInputs);
-        }
-    }, [setVelocity, verticalRotation, handleThirdPersonMode]);
+    }, [setVelocity, RUN_SPEED, WALK_SPEED]);
 
     // --- Animation helpers ---
-    const updateAnimation = useCallback((keyInputs: any, moveX: number, moveZ: number, speed: number) => {
+    const updateAnimation = useCallback((isUse: boolean, isAltUse: boolean, moveX: number, moveZ: number, speed: number) => {
         let nextAnimation: typeof animation | string[] = "idle";
-        let targetFacing = lastFacingRef.current;
-        if (keyInputs.use) {
+
+        if (isUse) {
             nextAnimation = "rpunch";
-        } else if (keyInputs.altUse) {
+        } else if (isAltUse) {
             nextAnimation = "lpunch";
         } else if (jumping.current) {
             nextAnimation = "jump";
         } else if ((moveX || moveZ)) {
-            if (mode === "third-person") {
-                if (moveX && !moveZ) {
-                    nextAnimation = "walkLeft";
-                    if (walkLeftActionRef.current) walkLeftActionRef.current.timeScale = moveX;
-                } else {
-                    nextAnimation = (speed === RUN_SPEED ? "run" : "walk");
-                    if (walkActionRef.current) walkActionRef.current.timeScale = moveZ;
-                    if (runActionRef.current) runActionRef.current.timeScale = moveZ;
-                }
-            } else if (mode === "simple" || mode === "side-scroll") {
-                if (moveX !== 0 || moveZ !== 0) {
-                    targetFacing = Math.atan2(moveX, moveZ);
-                }
-                lastFacingRef.current = targetFacing;
+            // Check if horizontal movement is dominant (for strafe animation)
+            const absX = Math.abs(moveX);
+            const absZ = Math.abs(moveZ);
+
+            if (absX > 0.3 && absX > absZ * 1.5) {
+                // Strafe left/right is dominant
+                nextAnimation = "walkLeft";
+                if (walkLeftActionRef.current) walkLeftActionRef.current.timeScale = -moveX;
+            } else {
                 nextAnimation = (speed === RUN_SPEED ? "run" : "walk");
-                if (walkActionRef.current) walkActionRef.current.timeScale = 1;
-                if (runActionRef.current) runActionRef.current.timeScale = 1;
+                if (walkActionRef.current) walkActionRef.current.timeScale = moveZ;
+                if (runActionRef.current) runActionRef.current.timeScale = moveZ;
             }
         }
-        // Smoothly rotate character to targetFacing in simple/side-scroll using normalized shortest delta
-        if ((mode === "simple" || mode === "side-scroll") && character.current) {
-            let facing = targetFacing;
-            if (mode === "side-scroll") facing += Math.PI;
-            facing = normalizeAngle(facing);
-            const currentY = normalizeAngle(character.current.rotation.y);
-            // shortest delta between angles in [-PI, PI]
-            let delta = normalizeAngle(facing - currentY);
-            character.current.rotation.y = normalizeAngle(currentY + delta * 0.2);
-        }
+
         setAnimation(nextAnimation);
-    }, [mode, animation]);
+    }, [animation, RUN_SPEED]);
 
     // --- Main frame loop ---
-    useFrame(() => {
+    useFrame((_, delta) => {
         if (!rb.current) return;
-        const keyInputs = get();
-        let moveX = 0, moveZ = 0;
-        if (keyInputs.forward) moveZ += 1;
-        if (keyInputs.backward) moveZ -= 1;
-        if (keyInputs.left) moveX += 1;
-        if (keyInputs.right) moveX -= 1;
-        const speed = keyInputs.run ? RUN_SPEED : WALK_SPEED;
 
-        updateAnimation(keyInputs, moveX, moveZ, speed);
+        // Get input values from store
+        const moveX = horizontal;
+        const moveZ = vertical;
+        const speed = sprint ? RUN_SPEED : WALK_SPEED;
 
-        if (keyInputs.use || keyInputs.altUse) {
+        updateAnimation(use, altUse, moveX, moveZ, speed);
+
+        if (use || altUse) {
             setVelocity(0, rb.current.linvel().y, 0);
         } else {
-            if (mode === "simple") {
-                handleSimpleMode(keyInputs);
-            } else if (mode === "side-scroll") {
-                handleSideScrollMode(keyInputs, moveX, moveZ, speed);
-            } else {
-                handleThirdPersonMode(keyInputs);
-            }
-        }
-        // Play footstep sounds based on animation progress when grounded
-        const grounded = checkGrounded();
-        const isWalking = animation === 'walk' || animation === 'walkLeft';
-        const isRunning = animation === 'run';
-        const stepsPerCycle = 2; // two steps per walk/run cycle
-
-        let action: THREE.AnimationAction | null = null;
-        if (isRunning) action = runActionRef.current;
-        else if (isWalking) action = walkActionRef.current || walkLeftActionRef.current;
-
-        if (action && grounded) {
-            const clip = action.getClip ? action.getClip() : null;
-            const duration = clip ? (clip.duration || 1) : 1;
-            const t = (action.time % duration) / duration;
-            const stepIndex = Math.floor(t * stepsPerCycle);
-            if (lastStepIndexRef.current !== stepIndex) {
-                lastStepIndexRef.current = stepIndex;
-                const baseVolume = isRunning ? 0.2 : 0.1;
-                const baseStepSpeed = isRunning ? 1.06 : 0.98;
-                const rand01 = () => Math.random() * 0.25 + 0.9; // small variance
-                const volume = Math.max(0, Math.min(1, baseVolume * rand01()));
-                const stepSpeed = baseStepSpeed * rand01();
-                playSound("/sound/step.mp3", volume, stepSpeed).catch(() => { });
-            }
-        } else {
-            lastStepIndexRef.current = null;
+            handleMovement(moveX, moveZ, sprint);
         }
 
-        handleJump(keyInputs.jump, grounded);
+        // Jump/grounded logic
+        handleJump(jump, checkGrounded());
+
+        // Joystick look system - only processes joystick input from store
+        const lookHorizontal = useInputStore.getState().lookHorizontal;
+        const lookVertical = useInputStore.getState().lookVertical;
+
+        const absHorizontal = Math.abs(lookHorizontal);
+        const absVertical = Math.abs(lookVertical);
+
+        if (absHorizontal > 0.01) {
+            const yawDelta = -lookHorizontal * JOYSTICK_SENSITIVITY * delta;
+            const rot = rb.current.rotation();
+            tempQuat.set(rot.x, rot.y, rot.z, rot.w);
+            tempYawQuat.setFromAxisAngle({ x: 0, y: 1, z: 0 }, yawDelta);
+            tempQuat.premultiply(tempYawQuat);
+            rb.current.setRotation(tempQuat, true);
+        }
+
+        if (absVertical > 0.01) {
+            verticalRotation.current = THREE.MathUtils.clamp(
+                verticalRotation.current - lookVertical * JOYSTICK_SENSITIVITY * delta,
+                -PITCH_LIMIT,
+                PITCH_LIMIT
+            );
+        }
     });
 
     const checkGrounded = useMemo(() => {
@@ -320,33 +256,56 @@ export const CharacterController = ({ lookTarget, name = 'bob', mode = 'third-pe
                 playerCollider // filterExcludeCollider - exclude the player's collider
             );
 
-            return !!hit && hit.timeOfImpact < 0.1 && Math.abs(rb.current.linvel().y) < 0.1;
+            const isGrounded = !!hit && hit.timeOfImpact < 0.1 && Math.abs(rb.current.linvel().y) < 0.1;
+
+            // Add ground velocity if standing on a moving object
+            if (hit && isGrounded) {
+                const groundCollider = hit.collider;
+                const groundRigidBody = groundCollider.parent();
+                if (groundRigidBody && !groundRigidBody.isFixed()) {
+                    const groundLinvel = groundRigidBody.linvel();
+                    const speed = Math.sqrt(groundLinvel.x ** 2 + groundLinvel.y ** 2 + groundLinvel.z ** 2);
+                    if (speed > 0.01) {
+                        const currentVel = rb.current.linvel();
+                        rb.current.setLinvel({
+                            x: currentVel.x + groundLinvel.x,
+                            y: currentVel.y,
+                            z: currentVel.z + groundLinvel.z
+                        }, true);
+                    }
+                }
+            }
+
+            return isGrounded;
         };
     }, [rb, rapier, world, height, roundHeight]);
 
     return (
         <>
-            <RigidBody colliders={false} lockRotations ref={rb} position={[position[0], position[1] + (height / 2), position[2]]} name={name} >
+            <RigidBody
+                colliders={false}
+                enabledRotations={[false, false, false]}
+                ref={rb}
+                position={position}
+                name={name}
+                angularDamping={1}
+            >
                 <group ref={container}>
                     <FollowCam
                         height={1 / height}
                         verticalRotation={verticalRotation}
                         cameraOffset={
-                            mode === "side-scroll"
-                                ? new Vector3(0, 1, 2) // Camera in front, lower
-                                : (shoulderCamMode
-                                    ? new Vector3(-0.5, 0.5, -0.5)
-                                    : new Vector3(0, 1.5, -3.5))
+                            shoulderCamMode
+                                ? [-0.5, 0.5, 0.5]
+                                : [0, 0.5, 1.5]
                         }
                         targetOffset={
-                            mode === "side-scroll"
-                                ? new Vector3(0, 1, 0) // Target at character center
-                                : (shoulderCamMode
-                                    ? new Vector3(0, 0.5, 1.5)
-                                    : new Vector3(0, 0.5, 1.5))
+                            shoulderCamMode
+                                ? [0, 0.5, -1.5]
+                                : [0, 0.5, -1.5]
                         }
                     />
-                    <group ref={character}>
+                    <group ref={character} rotation={[0, Math.PI, 0]}>
                         {/* {shoulderCamMode && <TSLLine container={character} />} */}
                         <AnimatedModel
                             name={name}
@@ -375,6 +334,12 @@ export const CharacterController = ({ lookTarget, name = 'bob', mode = 'third-pe
                 </group>
                 <CapsuleCollider args={[(height - (roundHeight * 1.9)) / 2, roundHeight]} position={[0, (height / 2), 0]} />
             </RigidBody>
+            <PointerLockControls
+                onLook={applyLookDelta}
+                onClick={() => shoulderCamModeRef.current && weaponHandler()}
+                onShoulderCamModeChange={setShoulderCamMode}
+            />
+            <KeyboardInput />
         </>
     );
 };

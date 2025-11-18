@@ -1,16 +1,19 @@
 import { CylinderCollider } from "@react-three/rapier";
 import React, { useRef, useState, useEffect, DOMElement } from "react";
+import { Geist, Geist_Mono } from "next/font/google";
 
 import { Html } from "@react-three/drei";
 
 export default function DialogCollider({
     children,
+    sceneChildren,
     height = 1.4,
     radius = 1.5,
     onEnter,
     onExit
 }: {
     children?: React.ReactNode,
+    sceneChildren?: React.ReactNode,
     height?: number,
     radius?: number,
     onEnter?: () => void,
@@ -20,7 +23,7 @@ export default function DialogCollider({
 
     const handleIntersectionEnter = (event: any) => {
         const name = event?.other?.name || event?.other?.rigidBodyObject?.name
-        if (name == 'player') {
+        if (name == 'bob') {
             console.log("DialogCollider: Intersection Entered with", name);
             setDialogVisible(true);
             onEnter?.();
@@ -36,8 +39,9 @@ export default function DialogCollider({
             onIntersectionEnter={handleIntersectionEnter}
             onIntersectionExit={() => { setDialogVisible(false); onExit?.() }}
         />
-        {dialogVisible && <Html sprite transform position={[0, height * 1.1, 0]} scale={0.05}>
-            <div className="min-w-[250px] text-3xl text-yellow-300 text-center">
+        {dialogVisible && sceneChildren}
+        {dialogVisible && <Html sprite transform position={[0, height * 1.1, 0]} scale={0.4}>
+            <div className="select-none max-w-[250px] hover:text-yellow-500 font-serif p-1 text text-yellow-300 text-center bg-black-800/20 rounded">
                 {children || "Default Dialog Text"}
             </div>
         </Html>}
@@ -45,7 +49,7 @@ export default function DialogCollider({
 }
 
 
-export const RevealTextByWord = ({ text, speed = 100, playSound }: { text: string, speed?: number, playSound?: (url: string) => void }) => {
+const RevealTextByWord = ({ text, speed = 100, playSound }: { text: string, speed?: number, playSound?: (url: string) => void }) => {
     const words = text.split(" ");
     const [wordCount, setWordCount] = useState(0);
 
@@ -90,13 +94,4 @@ export const RevealTextByWord = ({ text, speed = 100, playSound }: { text: strin
     );
 }
 
-export const DialogBox = ({ text, title, playSound }: { text: string, title?: string, playSound: (url: string) => void }) => {
-    return <div className="select-none relative rounded rounded-3xl bg-[#b9de77aa] p-4 text-xl text-black scale-300 max-w-[400px] shadow-[inset_8px_8px_6px_-6px_#ffffffaa,inset_-8px_-8px_6px_-6px_#00000066,0_4px_12px_-6px_#00000066]">
-        <div className="font-mono">
-            <RevealTextByWord text={text} speed={200} playSound={playSound} />
-        </div>
-        {title && <div className="absolute -top-5 left-4 bg-[#b9de77] rounded px-2 border text-lg italic">
-            {title}
-        </div>}
-    </div>
-}
+export { RevealTextByWord };

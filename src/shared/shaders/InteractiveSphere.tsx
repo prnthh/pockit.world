@@ -8,9 +8,7 @@ import { MeshPhongNodeMaterial } from "three/webgpu";
 
 // Basic component showing how to add smooth hover interactivity with TSL
 
-const InteractiveSphere = ({ position = [0, 0, 0] }: {
-    position?: [number, number, number];
-}) => {
+const InteractiveSphere: FC = () => {
     const [isPointerOver, setIsPointerOver] = useState(false);
 
     const { key, colorNode, positionNode, uHovered } = useMemo(() => {
@@ -54,7 +52,7 @@ const InteractiveSphere = ({ position = [0, 0, 0] }: {
 
     return (
         <Sphere
-            position={position}
+            position={[0, 0, 0]}
             args={[1.5, 40, 40]}
             onPointerEnter={() => {
                 document.body.style.cursor = "pointer";

@@ -2,7 +2,6 @@
 import DropDownPage from "../ui/DropDownPage";
 
 import type { Metadata } from "next";
-import RoomSpecificGame from "./RoomGame";
 import PockitLogo from "../ui/PockitLogo";
 
 export const metadata: Metadata = {
@@ -55,7 +54,6 @@ export default function Home() {
                 <br />
             </div>
 
-            <RoomSpecificGame />
         </DropDownPage>
     );
 }

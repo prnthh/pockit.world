@@ -28,7 +28,7 @@ const PortalDoor = ({ position, rotation, label, children, onConfirm }:
         if (open) {
             if (doorRef.current && doorRef.current.rotation) {
                 tweenRef.current = new Tween(doorRef.current.rotation)
-                    .to({ y: -Math.PI / 1.3 }, 200)
+                    .to({ y: -Math.PI / 2 }, 200)
                     .start();
             }
         } else {

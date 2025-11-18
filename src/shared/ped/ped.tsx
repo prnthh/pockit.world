@@ -25,7 +25,7 @@ export type PedPropsType = {
     forwardRef?: (refs: { rbref: RefObject<RapierRigidBody | null>, meshref: RefObject<THREE.Group | null> }) => void
 };
 
-const Ped = memo(({ name = 'alice', debug, basePath, modelUrl, position, lookTarget, height = 0.95, scale, modelOffset, roundHeight = 0.25, steeringType = SteeringType.WALK, unstable, onDestinationReached, animationOverrides = {}, children, forwardRef }: PedPropsType) => {
+const Ped = memo(({ name = 'alice', debug, basePath, modelUrl, position, lookTarget, height = 0.95, scale, modelOffset, roundHeight = 0.25, steeringType = SteeringType.RUN, unstable, onDestinationReached, animationOverrides = {}, children, forwardRef }: PedPropsType) => {
     const [initialPosition,] = useState<[number, number, number] | undefined>(position);
 
     const rigidBodyRef = useRef<RapierRigidBody>(null);

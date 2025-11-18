@@ -1,13 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Suspense, memo } from "react";
 import dynamic from "next/dynamic";
-import tunnel from "tunnel-rat";
-import { ScenePortalWrapper } from "./ScenePortalProvider";
-import { AudioProvider } from "@/shared/AudioProvider";
-import SaveBlobProvider from "@/shared/SaveBlobProvider";
-import PockitConsole from "@/shared/PockitConsole";
-const Game = dynamic(() => import("./Game"), { ssr: true });
+const BackgroundScene = dynamic(() => import("./BackgroundScene"), { ssr: true, loading: () => logo });
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,8 +14,6 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
-
-const scenePortal = tunnel();
 
 export const metadata: Metadata = {
   title: "Pockit Game Corp",
@@ -48,6 +42,8 @@ export const viewport: Viewport = {
   userScalable: false,
 }
 
+const logo = <img src='/ui/pockitlogo2.png' className="absolute w-64 h-64 top-1/2 left-1/2 -translate-1/2 animate-pulse" />;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -58,15 +54,8 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AudioProvider>
-          <SaveBlobProvider>
-            <ScenePortalWrapper>
-              {children}
-              <Game />
-              <PockitConsole />
-            </ScenePortalWrapper>
-          </SaveBlobProvider>
-        </AudioProvider>
+        <BackgroundScene key="background-scene" />
+        {children}
       </body>
     </html>
   );

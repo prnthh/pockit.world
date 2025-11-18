@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
 import { useGLTF } from "@react-three/drei";
+import { useThree } from "@react-three/fiber";
+import { useEffect, useRef, useState } from "react";
 import { Object3D, Vector3 } from "three";
 import { SkeletonUtils } from "three/examples/jsm/Addons.js";
 
@@ -15,13 +16,13 @@ function findBoneByName(object: Object3D, name: string): Object3D | null {
 type ModelAttachmentProps = {
     model: string;
     attachpoint: string;
-    offset?: Vector3;
-    scale?: Vector3;
-    rotation?: Vector3;
+    offset?: [number, number, number];
+    scale?: [number, number, number];
+    rotation?: [number, number, number];
     name?: string;
 };
 
-function ModelAttachment({
+export default function ModelAttachment({
     model,
     attachpoint,
     offset,
@@ -39,9 +40,9 @@ function ModelAttachment({
         if (scene) {
             const clone = SkeletonUtils.clone(scene);
             clone.name = `attachment-${attachpoint}-${name}`;
-            clone.position.set(offset?.x || 0, offset?.y || 0, offset?.z || 0);
-            clone.scale.set(scale?.x || 1, scale?.y || 1, scale?.z || 1);
-            clone.rotation.set(rotation?.x || 0, rotation?.y || 0, rotation?.z || 0);
+            clone.position.set(offset?.[0] || 0, offset?.[1] || 0, offset?.[2] || 0);
+            clone.scale.set(scale?.[0] || 1, scale?.[1] || 1, scale?.[2] || 1);
+            clone.rotation.set(rotation?.[0] || 0, rotation?.[1] || 0, rotation?.[2] || 0);
             clonedSceneRef.current = clone;
             setClonedScene(clone);
         }
@@ -77,4 +78,3 @@ function ModelAttachment({
         <primitive ref={objectRef} object={clonedScene} />
     ) : null;
 }
-export default React.memo(ModelAttachment);

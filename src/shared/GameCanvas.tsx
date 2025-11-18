@@ -1,36 +1,31 @@
 import { Canvas, extend } from "@react-three/fiber";
-import * as THREE from "three/webgpu";
+import { WebGPURenderer, MeshBasicNodeMaterial, MeshStandardNodeMaterial, PCFShadowMap } from "three/webgpu";
 import { Suspense, useState } from "react";
+import { WebGPURendererParameters } from "three/src/renderers/webgpu/WebGPURenderer.Nodes.js";
+import { Loader } from "@react-three/drei";
 
 // generic version
 // extend(THREE as any)
 
 extend({
-    MeshBasicNodeMaterial: THREE.MeshBasicNodeMaterial,
-    MeshStandardNodeMaterial: THREE.MeshStandardNodeMaterial,
+    MeshBasicNodeMaterial: MeshBasicNodeMaterial,
+    MeshStandardNodeMaterial: MeshStandardNodeMaterial,
 });
 
 
-export default function GameCanvas({ children, ...props }: { children: React.ReactNode, props?: any }) {
+export default function GameCanvas({ loader = false, children, ...props }: { loader?: boolean, children: React.ReactNode, props?: WebGPURendererParameters }) {
     const [frameloop, setFrameloop] = useState<"never" | "always">("never");
-    const [loading, setLoading] = useState(true);
 
     return <>
-        {loading && <Loading />}
-
         <Canvas
-            shadows={{ type: THREE.PCFSoftShadowMap }}
+            shadows={{ type: PCFShadowMap, }}
             frameloop={frameloop}
             gl={async ({ canvas }) => {
-                const renderer = new THREE.WebGPURenderer({
-                    // ...props as any,
+                const renderer = new WebGPURenderer({
                     canvas: canvas as HTMLCanvasElement,
-                    antialias: true,
-                    stencil: false,
-                    // powerPreference: "high-performance",
-                    // alpha: false, // makes background opaque
                     // @ts-expect-error futuristic
                     shadowMap: true,
+                    ...props,
                 });
                 await renderer.init().then(() => {
                     setFrameloop("always");
@@ -38,31 +33,13 @@ export default function GameCanvas({ children, ...props }: { children: React.Rea
                 return renderer
             }}
             camera={{
-                position: [0, 2, 5],
-                fov: 50, near: 0.25,
-                far: 50
+                position: [0, 0, 5],
             }}
         >
             <Suspense>
                 {children}
-                <DelayedLoadingScreen onLoad={() => setLoading(false)} />
             </Suspense>
         </Canvas>
+        {loader ? <Loader /> : null}
     </>;
 }
-
-
-const Loading = () => {
-    return (
-        <div className="absolute flex items-center justify-center w-screen h-screen z-5 backdrop-blur-md text-white font-black">
-            Loading...
-        </div>
-    );
-}
-
-const DelayedLoadingScreen = ({ onLoad }: { onLoad: () => void }) => {
-    setTimeout(() => {
-        onLoad();
-    }, 100);
-    return null;
-};
