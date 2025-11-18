@@ -7,8 +7,7 @@ const ScrollerUI = () => {
                     "Pockit is a weekly online gala.",
                     "Pockit is an on-chain game console.",
                     "Pockit is an automatic movie maker.",
-                    "Pockit is a metagame.",
-                    "Pockit is a runescape port.",
+                    "Pockit is an agentic workspace simulation.",
                     "Pockit is a programming language.",
                     "Pockit is the final metaverse.",
                     "Pockit is a proof-of-concept kit."
