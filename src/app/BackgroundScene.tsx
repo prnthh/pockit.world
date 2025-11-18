@@ -2,19 +2,16 @@
 import GameCanvas from "@/shared/GameCanvas";
 import { useGLTF } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
-import { Suspense, useRef } from "react";
+import { useRef } from "react";
 import { Group } from "three";
 
 export default function BackgroundScene() {
     return (
         <div className="absolute w-screen h-screen">
             <GameCanvas>
-                <ambientLight intensity={1} />
-                <directionalLight position={[0, 10, 5]} intensity={1} />
-                <pointLight position={[-10, -10, -10]} intensity={0.5} />
-                <Suspense fallback={null}>
-                    <PockitLogo />
-                </Suspense>
+                <ambientLight intensity={0.5} />
+                <pointLight position={[0, -2, 2]} intensity={50} />
+                <PockitLogo />
             </GameCanvas>
         </div>
     );
@@ -26,7 +23,8 @@ const PockitLogo = () => {
 
     useFrame(() => {
         if (ref.current) {
-            ref.current.rotation.z += 0.01;
+            const next = ref.current.rotation.z + 0.01;
+            ref.current.rotation.z = next >= Math.PI / 2 && next < (3 * Math.PI) / 2 ? (3 * Math.PI) / 2 : next >= 2 * Math.PI ? 0 : next;
         }
     });
 

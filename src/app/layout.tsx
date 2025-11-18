@@ -54,7 +54,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <BackgroundScene key="background-scene" />
+        <Suspense fallback={logo}>
+          <BackgroundScene key="background-scene" />
+        </Suspense>
+
         {children}
       </body>
     </html>
