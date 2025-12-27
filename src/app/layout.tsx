@@ -1,9 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Suspense, memo } from "react";
 import dynamic from "next/dynamic";
-const BackgroundScene = dynamic(() => import("./BackgroundScene"), { ssr: true, loading: () => logo });
+import PockitLogo from "./ui/PockitLogo";
+import ScrollerUI from "./ui/Scroller";
+import Link from "next/link";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -52,11 +53,21 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col items-center pt-40 !bg-white dark:!bg-slate-700`}
       >
-        <Suspense fallback={logo}>
-          <BackgroundScene key="background-scene" />
-        </Suspense>
+        <div className="absolute top-0 bg-red-500 w-screen flex flex-col select-none">
+          <div className="w-full">
+            <ScrollerUI />
+          </div>
+          <div className="bg-blue-600 w-full text-black relative h-8 px-2 flex items-center gap-4 uppercase text-white font-mono font-medium">
+            <div className="fixed top-0 left-1/2 -translate-x-1/2 h-0">
+              <PockitLogo />
+            </div>
+            <Link href="/" className="hover:text-yellow-300 hover:font-black cursor-pointer">Home</Link>
+            <Link href="/about" className="hover:text-yellow-300 hover:font-black cursor-pointer">About</Link>
+            {/* <Link href="/games" className="hover:text-yellow-300 hover:font-black cursor-pointer">Games</Link> */}
+          </div>
+        </div>
 
         {children}
       </body>

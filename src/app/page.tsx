@@ -1,35 +1,27 @@
-"use client";
 
 import Link from "next/link";
-import DropDownPage from "./ui/DropDownPage";
-import PockitLogo from "./ui/PockitLogo";
 
 export default function Home() {
-  return (
-    <DropDownPage>
-      <PockitLogo />
-      <div className="flex flex-col items-center gap-4 mb-6 mx-auto">
-        <Link href="/about" className="group">
-          <NavButton color="from-yellow-300/50 via-yellow-400/50 to-yellow-500/50 group-hover:shadow-yellow-900/50 border-yellow-600">
-            <span className="relative z-10 drop-shadow-md">About Us</span>
-            <span className="relative z-10 text-xs block mt-1 opacity-80 drop-shadow">Independent Game Studio</span>
-          </NavButton>
-        </Link>
-        <Link href="/milady" className="group">
-          <NavButton color="from-green-200/50 via-green-300/50 to-green-400/50 group-hover:shadow-green-900/50 border-green-800">
-            <span className="relative z-10 drop-shadow-md">Pockit Milady</span>
-            <span className="relative z-10 text-xs block mt-1 opacity-80 drop-shadow">Interactive 3D models inspired by Milady Maker</span>
-          </NavButton>
-        </Link>
-        <Link href="https://draw.pockit.world" target="_blank" className="group">
-          <NavButton color="from-blue-300/50 via-blue-400/50 to-blue-500/50 group-hover:shadow-blue-900/50 border-blue-600">
-            <span className="relative z-10 drop-shadow-md">Draw It</span>
-            <span className="relative z-10 text-xs block mt-1 opacity-80 drop-shadow">PvP Drawing with an AI judge on Sanko Chain</span>
-          </NavButton>
-        </Link>
-      </div>
-    </DropDownPage>
-  );
+  return <div className="flex flex-col items-center gap-4 mb-6 mx-auto min-h-screen">
+    <Link href="/about" className="group">
+      <NavButton color="from-yellow-300/50 via-yellow-400/50 to-yellow-500/50 group-hover:shadow-yellow-900/50 border-yellow-600">
+        <span className="relative z-10 drop-shadow-md">About Us</span>
+        <span className="relative z-10 text-xs block mt-1 opacity-80 drop-shadow">Independent Game Studio</span>
+      </NavButton>
+    </Link>
+    <Link href="/milady" className="group">
+      <NavButton color="from-green-200/50 via-green-300/50 to-green-400/50 group-hover:shadow-green-900/50 border-green-800">
+        <span className="relative z-10 drop-shadow-md">Pockit Milady</span>
+        <span className="relative z-10 text-xs block mt-1 opacity-80 drop-shadow">Interactive 3D models inspired by Milady Maker</span>
+      </NavButton>
+    </Link>
+    <Link href="https://draw.pockit.world" target="_blank" className="group">
+      <NavButton color="from-blue-300/50 via-blue-400/50 to-blue-500/50 group-hover:shadow-blue-900/50 border-blue-600">
+        <span className="relative z-10 drop-shadow-md">Draw It</span>
+        <span className="relative z-10 text-xs block mt-1 opacity-80 drop-shadow">PvP Drawing with an AI judge on Sanko Chain</span>
+      </NavButton>
+    </Link>
+  </div>;
 }
 
 const NavButton = ({ children, color = "from-blue-300/50 via-blue-400/50 to-blue-500/50 group-hover:shadow-blue-900/50 border-blue-600" }: { children: React.ReactNode; color?: string }) => {

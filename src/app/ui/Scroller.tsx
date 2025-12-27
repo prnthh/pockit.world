@@ -1,5 +1,5 @@
 const ScrollerUI = () => {
-    return <div className="cursor-pointer select-none relative w-full max-w-[360px] h-10 overflow-hidden border-2 border-green-400 rounded bg-black/90 shadow-lg">
+    return <div className="relative w-full h-10 overflow-hidden border-2 border-green-400 rounded bg-black/90 shadow-lg">
         <div className="animate-scroll flex items-center px-2 min-w-max">
             {(() => {
                 const messages = [

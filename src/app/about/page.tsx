@@ -1,8 +1,5 @@
 
-import DropDownPage from "../ui/DropDownPage";
-
 import type { Metadata } from "next";
-import PockitLogo from "../ui/PockitLogo";
 
 export const metadata: Metadata = {
     title: "About | Pockit Game Corp",
@@ -24,25 +21,18 @@ export const metadata: Metadata = {
 };
 
 export default function Home() {
-    return (
-        <DropDownPage>
-            <PockitLogo />
+    return <div className="text-left max-w-[320px] px-2 mb-6">
+        <div className="italic text-center w-full">
+            eternal pursuit of digital <a href="https://goldenlight.mirror.xyz/c4YPJ6Y0KMvhKlJDNmhmjNeMa-9BZc8VwelJeS0_51s" target="_blank">moe</a>
+        </div>
+        <br />
 
-            <div className="text-left max-w-[320px] px-2 mb-6">
-                <div className="italic text-center w-full">
-                    eternal pursuit of digital <a href="https://goldenlight.mirror.xyz/c4YPJ6Y0KMvhKlJDNmhmjNeMa-9BZc8VwelJeS0_51s" target="_blank">moe</a>
-                </div>
-                <br />
+        Pockit Game Corp is an independent game studio building interactive experiences for the web. <br /><br />
 
-                Pockit Game Corp is an independent game studio building interactive experiences for the web. <br /><br />
-
-                <a href="https://x.com/pockitmilady" target="_blank">
-                    Follow us on X for updates and announcements
-                </a>.
-                <br />
-            </div>
-
-        </DropDownPage>
-    );
+        <a href="https://x.com/pockitmilady" target="_blank">
+            Follow us on X for updates and announcements
+        </a>.
+        <br />
+    </div>;
 }
 
