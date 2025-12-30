@@ -18,11 +18,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Pockit Game Corp",
-  description: "Independent game studio building games using AI and blockchain technology.",
+  description: "Independent game studio building perpetual games using blockchain technology.",
   openGraph: {
     type: 'website',
     title: 'Pockit Game Corp',
-    description: 'Independent game studio building games using AI and blockchain technology.',
+    description: 'Independent game studio building perpetual games using blockchain technology.',
     url: 'https://pockit.world',
     images: 'https://pockit.world/ui/pockitlogo.png',
   },
@@ -53,7 +53,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col items-center pt-40 !bg-white dark:!bg-slate-700`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col items-center pt-40 !bg-[#f0f0f0] dark:!bg-[#1a1a1a] min-h-screen`}
       >
         <div className="absolute top-0 bg-red-500 w-screen flex flex-col select-none">
           <div className="w-full">
