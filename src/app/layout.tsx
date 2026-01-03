@@ -69,11 +69,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${vt323.variable} ${shareTechMono.variable} antialiased flex flex-col items-center pt-40 !bg-[#e4e7ed] !text-black min-h-screen`}
+        className={`${geistSans.variable} ${geistMono.variable} ${vt323.variable} ${shareTechMono.variable} antialiased !bg-[#e4e7ed] !text-black`}
       >
-        {children}
+        <div className="flex flex-col items-center pt-40 h-screen overflow-y-scroll noscrollbar">
+          {children}
+        </div>
 
-        <div className="absolute top-0 bg-red-500 w-screen flex flex-col select-none">
+        <div className="absolute top-0 bg-red-500 w-full flex flex-col items-center select-none">
           <div className="w-full">
             <ScrollerUI />
           </div>
