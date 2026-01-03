@@ -38,8 +38,10 @@ export default function Home() {
 
                 You can buy a Pockit Milady on <a href="https://opensea.io/collection/pockit-milady" target="_blank">OpenSea</a> or <a href="https://sudoswap.xyz/#/browse/buy/0x3c9eab7168443e4c962a2bcfa983501b8894547e" target="_blank">SudoSwap</a>. <br /><br />
 
-                <div>
-                    <iframe src="https://prnth.com/Pockit/web/5.html" className="w-full h-[300px] rounded-lg mb-4" title="Pockit Milady"></iframe>
+                <div className="relative h-[300px] mb-4">
+                    <div className="absolute">
+                        <iframe src="https://prnth.com/Pockit/web/5.html" className="w-full h-[300px] rounded-lg mb-4" title="Pockit Milady"></iframe>
+                    </div>
                 </div>
                 The asset library is available <a target="_blank" href="https://github.com/prnthh/moviemaker/tree/main/generation">here</a> under Viral Public License. <br /><br />
 
