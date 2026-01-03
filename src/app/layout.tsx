@@ -69,7 +69,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${vt323.variable} ${shareTechMono.variable} antialiased flex flex-col items-center pt-40 !bg-[#e4e7ed] min-h-screen`}
+        className={`${geistSans.variable} ${geistMono.variable} ${vt323.variable} ${shareTechMono.variable} antialiased flex flex-col items-center pt-40 !bg-[#e4e7ed] !text-black min-h-screen`}
       >
         {children}
 
