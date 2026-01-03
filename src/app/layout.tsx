@@ -71,6 +71,8 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${vt323.variable} ${shareTechMono.variable} antialiased flex flex-col items-center pt-40 !bg-[#f0f0f0] dark:!bg-[#1a1a1a] min-h-screen`}
       >
+        {children}
+
         <div className="absolute top-0 bg-red-500 w-screen flex flex-col select-none">
           <div className="w-full">
             <ScrollerUI />
@@ -84,8 +86,6 @@ export default function RootLayout({
             {/* <Link href="/games" className="hover:text-yellow-300 hover:font-black cursor-pointer">Games</Link> */}
           </div>
         </div>
-
-        {children}
       </body>
     </html>
   );
