@@ -7,38 +7,9 @@ const nextConfig: NextConfig = {
   eslint: { ignoreDuringBuilds: true }, // Disables ESLint during build
   typescript: { ignoreBuildErrors: true },
 
-  // Add headers for better caching
-  async headers() {
-    return [
-      {
-        source: '/:all*(svg|jpg|jpeg|png|gif|ico|webp)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
-      {
-        source: '/_next/static/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
-      {
-        source: '/ui/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
-    ];
-  },
+  // Enable asset prefix with hashes for cache busting
+  // Next.js automatically adds content hashes to _next/static files
+  assetPrefix: undefined,
 };
 
 export default nextConfig;
