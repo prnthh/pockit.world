@@ -68,7 +68,7 @@ const NavButton = ({ children, color = "from-blue-300/50 via-blue-400/50 to-blue
   return (
     <div
       ref={cardRef}
-      className={`retro-btn bg-gradient-to-b ${color} text-black font-sans font-semibold rounded-3xl shadow-[0_4px_4px_rgba(0,0,0,0.1)] px-4 py-4 transition-all ease-in relative overflow-hidden backdrop-blur-xl border border-gray-500/50 hover:scale-[1.03] active:scale-95`}
+      className={`retro-btn bg-gradient-to-b ${color} text-black font-sans font-semibold rounded-3xl shadow-[0_4px_4px_rgba(0,0,0,0.1)] px-4 py-4 transition-all ease-out relative overflow-hidden backdrop-blur-xl border-2 border-gray-500/50 hover:scale-[1.03] active:scale-95`}
       style={{
         width: "320px",
         height: "180px",
