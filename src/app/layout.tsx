@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, VT323, Share_Tech_Mono } from "next/font/google";
 import "./globals.css";
 import dynamic from "next/dynamic";
 import PockitLogo from "./ui/PockitLogo";
@@ -9,11 +9,27 @@ import Link from "next/link";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
+});
+
+const vt323 = VT323({
+  weight: "400",
+  variable: "--font-vt323",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const shareTechMono = Share_Tech_Mono({
+  weight: "400",
+  variable: "--font-share-tech-mono",
+  subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -53,7 +69,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col items-center pt-40 !bg-[#f0f0f0] dark:!bg-[#1a1a1a] min-h-screen`}
+        className={`${geistSans.variable} ${geistMono.variable} ${vt323.variable} ${shareTechMono.variable} antialiased flex flex-col items-center pt-40 !bg-[#f0f0f0] dark:!bg-[#1a1a1a] min-h-screen`}
       >
         <div className="absolute top-0 bg-red-500 w-screen flex flex-col select-none">
           <div className="w-full">
