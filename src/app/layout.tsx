@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, VT323, Share_Tech_Mono } from "next/font/google";
 import "./globals.css";
-import dynamic from "next/dynamic";
 import PockitLogo from "./ui/PockitLogo";
 import ScrollerUI from "./ui/Scroller";
 import Link from "next/link";
