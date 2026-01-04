@@ -4,18 +4,18 @@ import { NavButton } from "./NavButton";
 
 export const metadata: Metadata = {
   title: "Pockit Game Corp",
-  description: "Homepage of Pockit Game Corp, an independent game studio founded by veterans from Zynga and Rockstar Games.",
+  description: "Independent game studio building perpetual games using blockchain technology.",
   openGraph: {
     type: 'website',
     title: 'Pockit Game Corp',
-    description: 'Homepage of Pockit Game Corp, an independent game studio founded by veterans from Zynga and Rockstar Games.',
+    description: 'Independent game studio building perpetual games using blockchain technology.',
     url: 'https://pockit.world',
     images: 'https://pockit.world/ui/pockitlogo.png',
   },
   twitter: {
-    card: 'summary',
+    card: 'player',
     title: 'Pockit Game Corp',
-    description: 'Homepage of Pockit Game Corp, an independent game studio founded by veterans from Zynga and Rockstar Games.',
+    description: 'Independent game studio on Ethereum.',
     creator: '@pockitmilady',
     images: ["https://pockit.world/ui/pockitlogo.png"],
   }
