@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, VT323, Share_Tech_Mono } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import PockitLogo from "./ui/PockitLogo";
 import ScrollerUI from "./ui/Scroller";
@@ -8,27 +8,15 @@ import Link from "next/link";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
-  display: "swap",
+  display: "optional",
+  preload: true,
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
-  display: "swap",
-});
-
-const vt323 = VT323({
-  weight: "400",
-  variable: "--font-vt323",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const shareTechMono = Share_Tech_Mono({
-  weight: "400",
-  variable: "--font-share-tech-mono",
-  subsets: ["latin"],
-  display: "swap",
+  display: "optional",
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -68,7 +56,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${vt323.variable} ${shareTechMono.variable} antialiased !bg-[#e4e7ed] !text-black`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased !bg-[#e4e7ed] !text-black`}
       >
         <div className="flex flex-col items-center pt-40 h-screen overflow-y-scroll noscrollbar">
           {children}

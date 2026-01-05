@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 
-export const NavButton = ({ children, color = "from-blue-300/50 via-blue-400/50 to-blue-500/50 group-hover:shadow-blue-900/50 border-blue-600" }: { children: React.ReactNode; color?: string }) => {
+export const NavButton3D = ({ children }: { children: React.ReactNode }) => {
     const cardRef = useRef<HTMLDivElement>(null);
     const shineRef = useRef<HTMLDivElement>(null);
 
@@ -38,10 +38,8 @@ export const NavButton = ({ children, color = "from-blue-300/50 via-blue-400/50 
     return (
         <div
             ref={cardRef}
-            className={`retro-btn bg-gradient-to-b ${color} text-black font-sans font-semibold rounded-3xl shadow-[0_4px_4px_rgba(0,0,0,0.1)] px-4 py-4 transition-all ease-out relative overflow-hidden backdrop-blur-xl border-2 border-gray-500/50 hover:scale-[1.03] active:scale-95`}
+            className="absolute inset-0"
             style={{
-                width: "320px",
-                height: "180px",
                 transformStyle: 'preserve-3d',
                 transform: 'perspective(1200px) rotateX(0deg) rotateY(0deg)',
             }}
@@ -54,7 +52,7 @@ export const NavButton = ({ children, color = "from-blue-300/50 via-blue-400/50 
                 className="absolute inset-0 pointer-events-none rounded-xl transition-opacity duration-300"
                 style={{ opacity: 0 }}
             />
-            <div className="relative flex flex-col justify-between h-full z-10 text-xl">{children}</div>
+            {children}
         </div>
     );
 };

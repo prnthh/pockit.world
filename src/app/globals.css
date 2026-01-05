@@ -41,7 +41,7 @@ body {
 }
 .scroll-item {
   font-size: 1.15rem;
-  font-family: var(--font-vt323), var(--font-share-tech-mono), 'Courier New', Courier, monospace;
+  font-family: var(--font-geist-mono), 'Courier New', Courier, monospace;
   font-weight: 400;
   letter-spacing: 0.12em;
   color: #39ff14;
