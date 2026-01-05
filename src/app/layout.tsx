@@ -67,7 +67,7 @@ export default function RootLayout({
             <ScrollerUI />
           </div>
           <div className="bg-blue-600 w-full text-black relative h-8 px-2 flex items-center gap-4 uppercase text-white font-mono font-medium">
-            <div className="fixed top-0 left-1/2 -translate-x-1/2 h-0">
+            <div className="fixed top-2 left-1/2 -translate-x-1/2 h-0">
               <PockitLogo />
             </div>
             <Link href="/" className="hover:text-yellow-300 hover:font-black cursor-pointer">Home</Link>

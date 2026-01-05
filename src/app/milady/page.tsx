@@ -1,5 +1,8 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { NavButton3D } from "../NavButton3D";
+import Minigame from "./minigame";
+import { ToyFrame } from "./ToyFrame";
 
 export const metadata: Metadata = {
     title: "Pockit Milady | 3D Interactive NFTs",
@@ -22,28 +25,41 @@ export const metadata: Metadata = {
 
 export default function Home() {
     return (
-        <><Link href="/" className="group">
-            <h1 className="text-2xl font-bold mt-6 mb-4">
-                Pockit Milady
-            </h1>
-        </Link>
+        <>
+            <img src="/pockit.gif" alt="Pockit Milady" className="w-[300px]" />
 
-            <div className="text-left max-w-[320px] px-2 mb-6">
+            <Link href="/" className="group">
+                <h1 className="text-2xl font-bold mt-6 mb-4">
+                    Pockit Milady
+                </h1>
+            </Link>
+            {/* <img src="/ui/pockitlogo.png" alt="Pockit Milady Logo" className="w-32" /> */}
 
-                Pockit Milady is a collection of 1111 3D Interactive NFTs inspired by <a href="https://miladymaker.net/">Milady Maker</a>. <br /><br />
+            <div className="text-left w-[420px] px-2 mb-6 flex flex-col items-center">
 
-                <img src="/pockit.gif" alt="Pockit Milady" className="w-full rounded-lg mb-4" />
+                <div>
+                    Pockit Milady is a collection of 1111 3D Interactive NFTs inspired by <a className="underline" href="https://miladymaker.net/">Milady Maker</a>. <br /><br />
+                </div>
+
 
                 Inspired by Tamagotchi, Gameboy and other retro portable consoles, Pockit is a console in your Ethereum wallet. <br /><br />
 
-                You can buy a Pockit Milady on <a href="https://opensea.io/collection/pockit-milady" target="_blank">OpenSea</a> or <a href="https://sudoswap.xyz/#/browse/buy/0x3c9eab7168443e4c962a2bcfa983501b8894547e" target="_blank">SudoSwap</a>. <br /><br />
+                <div>
+                    You can buy a Pockit Milady on <a className="text-blue-600" href="https://opensea.io/collection/pockit-milady" target="_blank">OpenSea</a> or <a className="text-purple-700" href="https://sudoswap.xyz/#/browse/buy/0x3c9eab7168443e4c962a2bcfa983501b8894547e" target="_blank">SudoSwap</a>. <br /><br />
 
-                <div className="relative h-[300px] mb-4">
-                    <div className="absolute">
-                        <iframe src="https://prnth.com/Pockit/web/5.html" className="w-full h-[300px] rounded-lg mb-4" title="Pockit Milady"></iframe>
-                    </div>
                 </div>
-                The asset library is available <a target="_blank" href="https://github.com/prnthh/moviemaker/tree/main/generation">here</a> under Viral Public License. <br /><br />
+
+                <div className="mb-4">
+                    <ToyFrame>
+                        <iframe src="https://prnth.com/Pockit/web/5.html" className="w-[400px] h-[380px] rounded-lg shadow-[0_0_2px_rgb(0,0,0)]" title="Pockit Milady"></iframe>
+                    </ToyFrame>
+                </div>
+
+                <Minigame />
+
+                <div className="mt-4">
+                    The asset library is available <a className="underline" target="_blank" href="https://github.com/prnthh/moviemaker/tree/main/generation">here</a> under Viral Public License. <br /><br />
+                </div>
 
                 <a href="https://exo.cam/" target="_blank">
                     <img src="/ui/exocam-miladypockit.gif" alt="Pockit Milady" className="w-full rounded-lg mb-4" />
@@ -53,4 +69,5 @@ export default function Home() {
         </>
     );
 }
+
 

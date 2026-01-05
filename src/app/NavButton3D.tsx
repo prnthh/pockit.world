@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 
-export const NavButton3D = ({ children }: { children: React.ReactNode }) => {
+export const NavButton3D = ({ children, className, style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) => {
     const cardRef = useRef<HTMLDivElement>(null);
     const shineRef = useRef<HTMLDivElement>(null);
 
@@ -35,16 +35,23 @@ export const NavButton3D = ({ children }: { children: React.ReactNode }) => {
         shineRef.current.style.opacity = '0';
     };
 
+    const playSound = (url: string) => {
+        const audio = new Audio(url);
+        audio.play().catch(() => { });
+    };
+
     return (
         <div
             ref={cardRef}
-            className="absolute inset-0"
+            className={className}
             style={{
+                ...style,
                 transformStyle: 'preserve-3d',
                 transform: 'perspective(1200px) rotateX(0deg) rotateY(0deg)',
             }}
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
+            onClick={() => playSound('/sound/click2.mp3')}
         >
             {/* Shine effect overlay */}
             <div
