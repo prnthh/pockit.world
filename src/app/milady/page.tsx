@@ -58,14 +58,14 @@ export default function Home() {
 
                 <hr className="w-full border-t-2 border-gray-300 my-4" />
 
-                <a href="https://exo.cam/" target="_blank">
+                <a href="https://exo.cam/studio?utm_source=pockit.world&utm_medium=referral" target="_blank">
                     <img src="/ui/exocam-miladypockit.gif" alt="Pockit Milady" className="w-full rounded-lg mb-4" />
                     Exo Cam lets you view Pockit Milady in AR and make animated sequences!
                 </a>
 
                 <hr className="w-full border-t-2 border-gray-300 my-4" />
 
-                <a href="https://milady.ai/" target="_blank" className="flex flex-col items-center">
+                <a href="https://milady.ai/?utm_source=pockit.world&utm_medium=referral" target="_blank" className="flex flex-col items-center">
                     <img src="/ui/miladyai.jpeg" alt="Milady AI" className="w-full rounded-lg mb-2" />
                     <span className="mt-1">Milady AI features Pockit Milady as your cute personal AI assistant — runs on your machine, always on, always yours.</span>
                 </a>
