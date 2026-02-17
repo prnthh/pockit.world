@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { NavButton3D } from "../NavButton3D";
 import Minigame from "./minigame";
-import { ToyFrame } from "./ToyFrame";
+import { PockitViewer } from "./PockitViewer";
 
 export const metadata: Metadata = {
     title: "Pockit Milady | 3D Interactive NFTs",
@@ -49,11 +49,7 @@ export default function Home() {
 
                 </div>
 
-                <div className="mb-4">
-                    <ToyFrame>
-                        <iframe src="https://prnth.com/Pockit/web/5.html" className="w-[400px] h-[380px] rounded-lg shadow-[0_0_2px_rgb(0,0,0)]" title="Pockit Milady"></iframe>
-                    </ToyFrame>
-                </div>
+                <PockitViewer />
 
                 <Minigame />
 
@@ -61,9 +57,18 @@ export default function Home() {
                     The asset library is available <a className="underline" target="_blank" href="https://github.com/prnthh/moviemaker/tree/main/generation">here</a> under Viral Public License. <br /><br />
                 </div>
 
+                <hr className="w-full border-t-2 border-gray-300 my-4" />
+
                 <a href="https://exo.cam/" target="_blank">
                     <img src="/ui/exocam-miladypockit.gif" alt="Pockit Milady" className="w-full rounded-lg mb-4" />
                     Exo Cam lets you view Pockit Milady in AR and make animated sequences!
+                </a>
+
+                <hr className="w-full border-t-2 border-gray-300 my-4" />
+
+                <a href="https://milady.ai/" target="_blank" className="flex flex-col items-center">
+                    <img src="/ui/miladyai.jpeg" alt="Milady AI" className="w-full rounded-lg mb-2" />
+                    <span className="mt-1">Milady AI uses Pockit Miladies as your cute personal AI assistant — runs on your machine, always on, always yours.</span>
                 </a>
             </div>
         </>
