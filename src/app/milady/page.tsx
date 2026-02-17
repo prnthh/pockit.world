@@ -51,7 +51,6 @@ export default function Home() {
 
                 <PockitViewer />
 
-                <Minigame />
 
                 <div className="mt-4">
                     The asset library is available <a className="underline" target="_blank" href="https://github.com/prnthh/moviemaker/tree/main/generation">here</a> under Viral Public License. <br /><br />
@@ -70,6 +69,11 @@ export default function Home() {
                     <img src="/ui/miladyai.jpeg" alt="Milady AI" className="w-full rounded-lg mb-2" />
                     <span className="mt-1">Milady AI features Pockit Milady as your cute personal AI assistant — runs on your machine, always on, always yours.</span>
                 </a>
+
+                <hr className="w-full border-t-2 border-gray-300 my-4" />
+
+                <Minigame />
+
             </div>
         </>
     );
