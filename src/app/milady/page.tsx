@@ -68,7 +68,7 @@ export default function Home() {
 
                 <a href="https://milady.ai/" target="_blank" className="flex flex-col items-center">
                     <img src="/ui/miladyai.jpeg" alt="Milady AI" className="w-full rounded-lg mb-2" />
-                    <span className="mt-1">Milady AI uses Pockit Miladies as your cute personal AI assistant — runs on your machine, always on, always yours.</span>
+                    <span className="mt-1">Milady AI features Pockit Milady as your cute personal AI assistant — runs on your machine, always on, always yours.</span>
                 </a>
             </div>
         </>
