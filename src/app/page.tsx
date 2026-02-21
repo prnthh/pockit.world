@@ -43,7 +43,7 @@ export default function Home() {
       <NavButton3D className="retro-btn bg-gradient-to-b from-blue-200/80 to-white group-hover:shadow-blue-900/70 text-black font-sans font-semibold rounded-3xl shadow-[0_4px_4px_rgba(0,0,0,0.1)] px-4 py-4 transition-all ease-out relative overflow-hidden backdrop-blur-xl border-2 border-gray-500/50 hover:scale-[1.03] active:scale-95" style={{ width: "320px", height: "180px" }}>
         <div className="relative flex flex-col justify-between h-full z-10 text-xl">
           <span className="relative z-10">Draw It</span>
-          <span className="relative z-10 text-sm block mt-1 opacity-80">PvP Drawing with an AI judge <br />on Sanko Chain</span>
+          <span className="relative z-10 text-sm block mt-1 opacity-80">PvP Drawing with an AI judge <br />on Ethereum</span>
         </div>
       </NavButton3D>
     </Link>
