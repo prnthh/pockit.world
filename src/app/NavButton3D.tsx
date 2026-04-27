@@ -49,9 +49,10 @@ export const NavButton3D = ({ children, className, style }: { children: React.Re
                 transformStyle: 'preserve-3d',
                 transform: 'perspective(1200px) rotateX(0deg) rotateY(0deg)',
             }}
+            onMouseEnter={() => playSound('/sound/hover.mp3')}
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
-            onClick={() => playSound('/sound/click2.mp3')}
+            onClick={() => playSound('/sound/select2.mp3')}
         >
             {/* Shine effect overlay */}
             <div

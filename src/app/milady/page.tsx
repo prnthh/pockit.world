@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { NavButton3D } from "../NavButton3D";
-import Minigame from "./minigame";
 import { PockitViewer } from "./PockitViewer";
 
 export const metadata: Metadata = {
@@ -72,7 +71,6 @@ export default function Home() {
 
                 <hr className="w-full border-t-2 border-gray-300 my-4" />
 
-                <Minigame />
 
             </div>
         </>
