@@ -1,0 +1,200 @@
+@import url("https://cdn.jsdelivr.net/npm/@fontsource/silkscreen@5/index.min.css");
+
+  /* Beetleboy-style console chrome: molded-plastic modules, embossed
+     buttons, inset LCD readouts (see remilia.net / wiki.remilia.org) */
+  .pockit-milady-studio {
+    --shell1: #cfb2ec; --shell2: #a985d1; --shell-edge: #7e5ba6; --shell-hi: #eadcf9;
+    --ink: #41295e;
+    --tray1: #98a394; --tray2: #79857a; --tray-edge: #59645c;
+    --grn1: #b5c99b; --grn2: #94ab77; --grn-ink: #3f4d28;
+    --tan1: #d2bd94; --tan2: #b39c73; --tan-ink: #584a2c;
+    --lcd1: #9fae92; --lcd2: #a9b79b; --lcd-ink: #2f3d26;
+  }
+  .pockit-milady-studio { position: fixed; inset: 0; z-index: 50; margin: 0; padding: 0; overflow: hidden; background: transparent; overscroll-behavior: none; }
+  /* the avatar canvas owns its touch gestures: pinch = camera zoom, never page zoom */
+  .pockit-milady-studio > canvas { position: absolute; inset: 0; touch-action: none; }
+  .pockit-milady-studio.green { background: #00ff00; }
+  .pockit-milady-studio.magenta { background: #ff00ff; }
+  .pockit-milady-studio.white { background: #ffffff; }
+  .pockit-milady-studio.black { background: #000000; }
+  .pockit-milady-studio.bgimg { background-size: cover; background-position: center; background-repeat: no-repeat; }
+  /* transparent-mode indicator: grey checker grid, like an image editor.
+     Only shown when controls are visible — ?ui=0 (OBS browser sources)
+     stays truly transparent, and recordings never composite it. */
+  .pockit-milady-studio.checker {
+    background: conic-gradient(#d9d9d9 25%, #f1f1f1 0 50%, #d9d9d9 0 75%, #f1f1f1 0) 0 0 / 18px 18px;
+  }
+  #ui, #bigbar, #peek, button, input, select {
+    font-family: 'Silkscreen', 'Courier New', monospace;
+    touch-action: manipulation; /* no double-tap zoom on the controls */
+  }
+  /* --vv*: set from the visualViewport API so fixed chrome hugs the VISIBLE
+     screen even when the URL bar, keyboard, or residual zoom shrinks it */
+  #ui {
+    position: fixed; z-index: 10; width: 232px;
+    top: calc(10px + var(--vvt, 0px) + env(safe-area-inset-top, 0px));
+    left: calc(10px + var(--vvl, 0px) + env(safe-area-inset-left, 0px));
+    max-width: calc(100vw - 20px);
+    max-height: calc(100vh - 20px); max-height: calc(100dvh - 20px);
+    overflow-y: auto; box-sizing: border-box;
+    padding: 36px 12px 10px;
+    background: linear-gradient(180deg, var(--shell1), var(--shell2));
+    border: 2px solid var(--shell-edge); border-radius: 16px;
+    box-shadow: inset 0 2px 0 var(--shell-hi), inset 0 -3px 0 rgba(0,0,0,.18), 0 4px 14px rgba(0,0,0,.35);
+    color: var(--ink); font-size: 10px; line-height: 2.1; user-select: none;
+  }
+  #ui::before {
+    content: 'MILADY TRACKER';
+    position: absolute; top: 7px; left: 10px; right: 10px; height: 22px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8px; letter-spacing: 2px; color: var(--ink);
+    background:
+      radial-gradient(circle, rgba(65,41,94,.16) 1.2px, transparent 1.7px) 0 0 / 7px 7px repeat,
+      linear-gradient(180deg, #bb9adf, #a583cd);
+    border-radius: 8px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,.28), inset 0 -1px 0 rgba(255,255,255,.25);
+  }
+  /* #ui #uiClose: outweigh "#ui button"'s margins, which otherwise shove the
+     ✕ out of the header's corner */
+  #ui #uiClose {
+    position: absolute; top: 8px; right: 12px; margin: 0; z-index: 1;
+    width: 20px; height: 20px; padding: 0; border-radius: 7px;
+    font-size: 9px; line-height: 1;
+  }
+  #ui label { display: block; cursor: pointer; }
+  #ui .fxrow label { display: inline; margin-right: 6px; }
+  #ui button { margin: 4px 4px 0 0; }
+  #ui input[type=checkbox] { accent-color: var(--shell-edge); }
+  #ui input[type=text], #ui select {
+    background: #eee6f7; border: 1px solid var(--shell-edge); border-radius: 6px;
+    padding: 1px 5px; font-size: 10px; color: var(--ink);
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.2);
+  }
+  #status {
+    background: linear-gradient(180deg, var(--lcd1), var(--lcd2));
+    color: var(--lcd-ink); border-radius: 6px; padding: 4px 7px; margin-bottom: 6px;
+    box-shadow: inset 0 2px 3px rgba(0,0,0,.35), inset 0 -1px 0 rgba(255,255,255,.35);
+    font-size: 9px; line-height: 1.6; min-height: 14px;
+  }
+  #ui.hidden { display: none; }
+  button {
+    cursor: pointer; color: var(--grn-ink);
+    background: linear-gradient(180deg, var(--grn1), var(--grn2));
+    border: 2px solid rgba(0,0,0,.28); border-radius: 9px;
+    box-shadow: inset 0 2px 0 rgba(255,255,255,.45), inset 0 -3px 0 rgba(0,0,0,.18), 0 2px 3px rgba(0,0,0,.25);
+    padding: 2px 10px; font-size: 9px; text-transform: uppercase; letter-spacing: .5px;
+  }
+  button:hover { filter: brightness(1.06); }
+  button:active { box-shadow: inset 0 2px 4px rgba(0,0,0,.35); transform: translateY(1px); }
+  #rezero { background: linear-gradient(180deg, var(--tan1), var(--tan2)); color: var(--tan-ink); }
+  #bigbar {
+    position: fixed; bottom: calc(14px + var(--vvb, 0px)); left: 50%; transform: translateX(-50%);
+    display: flex; flex-wrap: wrap; justify-content: center;
+    width: max-content; /* left:50% halves shrink-to-fit width — size to content instead */
+    max-width: calc(100vw - 16px); box-sizing: border-box;
+    user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+    gap: 10px; z-index: 20; padding: 12px 14px;
+    background: linear-gradient(180deg, var(--tray1), var(--tray2));
+    border: 2px solid var(--tray-edge); border-radius: 18px;
+    box-shadow: inset 0 2px 0 rgba(255,255,255,.35), inset 0 -4px 0 rgba(0,0,0,.22), 0 6px 16px rgba(0,0,0,.4);
+    transition: opacity .5s;
+  }
+  #bigbar button {
+    font-size: 13px; padding: 14px 14px; border-radius: 12px; min-width: 92px;
+  }
+  #bigbar button.on {
+    background: linear-gradient(180deg, #cde6a8, #a8c87e);
+    box-shadow: inset 0 3px 5px rgba(0,0,0,.3);
+  }
+  #bigbar [data-act=milady] { background: linear-gradient(180deg, var(--shell1), var(--shell2)); color: var(--ink); }
+  #bigbar [data-act=rezero] { background: linear-gradient(180deg, var(--tan1), var(--tan2)); color: var(--tan-ink); }
+  #bigbar [data-act=fx] { background: linear-gradient(180deg, #eab0cd, #d18cb0); color: #5e2846; }
+  #bigbar [data-act=fx].on { background: linear-gradient(180deg, #f7c7de, #de9bc0); box-shadow: inset 0 3px 5px rgba(0,0,0,.3); }
+  #bigbar [data-act=hide] { background: linear-gradient(180deg, #b9bec4, #969ca3); color: #363b41; }
+  /* record: dusty-red like Beetleboy's EJECT; pulses while recording */
+  #bigbar [data-act=record], #recordBtn { background: linear-gradient(180deg, #d89090, #b96a6a); color: #4a2020; }
+  button.rec { animation: recPulse 1.2s ease-in-out infinite; box-shadow: inset 0 3px 5px rgba(0,0,0,.3), 0 0 8px rgba(255,60,60,.7); }
+  @keyframes recPulse { 50% { filter: brightness(1.2); } }
+  #bigbar.hidden { display: none; }
+  #bigbar.faded { opacity: 0; pointer-events: none; }
+  /* peek: an outline heart, fully invisible until the mouse finds it */
+  #peek {
+    position: fixed; z-index: 20;
+    bottom: calc(10px + var(--vvb, 0px) + env(safe-area-inset-bottom, 0px));
+    right: calc(10px + var(--vvr, 0px) + env(safe-area-inset-right, 0px));
+    width: 46px; height: 46px; border-radius: 50%;
+    font-size: 28px; padding: 0; line-height: 1;
+    background: transparent; border: none; box-shadow: none;
+    color: rgba(255,255,255,.92); text-shadow: 0 1px 4px rgba(0,0,0,.55);
+    opacity: 0; transition: opacity .3s;
+  }
+  #peek:hover { opacity: 1; }
+  #peek:active { box-shadow: none; }
+  #peek.hidden { display: none; }
+  /* milady picker dialog (console-styled replacement for prompt()) */
+  #miladyDlg {
+    position: fixed; inset: 0; z-index: 30;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(20, 10, 30, .45);
+  }
+  #miladyDlg.hidden { display: none; }
+  .dlgbox {
+    width: 280px; padding: 14px 16px 16px; text-align: center;
+    background: linear-gradient(180deg, var(--shell1), var(--shell2));
+    border: 2px solid var(--shell-edge); border-radius: 16px;
+    box-shadow: inset 0 2px 0 var(--shell-hi), inset 0 -3px 0 rgba(0,0,0,.18), 0 8px 24px rgba(0,0,0,.5);
+    color: var(--ink);
+  }
+  .dlgtitle { font-size: 11px; letter-spacing: 2px; margin-bottom: 8px; }
+  .dlglabel { font-size: 8px; margin-bottom: 8px; opacity: .8; }
+  #dlgId {
+    width: 120px; text-align: center; font-size: 14px; padding: 4px 6px;
+    background: linear-gradient(180deg, var(--lcd1), var(--lcd2));
+    color: var(--lcd-ink); border: 1px solid var(--shell-edge); border-radius: 6px;
+    box-shadow: inset 0 2px 3px rgba(0,0,0,.35);
+  }
+  .linksrow { margin-top: 4px; font-size: 8px; letter-spacing: 1px; }
+  .linksrow a { color: var(--ink); }
+  /* keyboard toggle: barely-there chrome, sits beside the milady # inputs */
+  .kbtoggle {
+    background: transparent; border: none; box-shadow: none;
+    padding: 2px 4px; font-size: 12px; line-height: 1;
+    color: var(--ink); opacity: .45;
+  }
+  .kbtoggle:hover { opacity: .8; filter: none; }
+  .kbtoggle:active { box-shadow: none; transform: none; }
+  .dlgrow { margin-top: 12px; display: flex; gap: 8px; justify-content: center; }
+  .dlgrow button { font-size: 10px; padding: 8px 10px; }
+  #dlgRandom { background: linear-gradient(180deg, #eab0cd, #d18cb0); color: #5e2846; }
+  #dlgCancel { background: linear-gradient(180deg, #b9bec4, #969ca3); color: #363b41; }
+
+  /* fx: CRT scanline overlay + rainbow hue-cycle on the avatar canvas */
+  #scan {
+    position: fixed; inset: 0; z-index: 5; display: none; pointer-events: none;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,.20) 0 2px, transparent 2px 4px);
+  }
+  canvas.rainbow { animation: hueSpin 6s linear infinite; }
+  @keyframes hueSpin { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(360deg); } }
+
+  /* small screens: tighter big buttons (they wrap into rows as needed) */
+  @media (max-width: 760px) {
+    #bigbar { gap: 5px; padding: 7px; bottom: calc(8px + var(--vvb, 0px) + env(safe-area-inset-bottom, 0px)); }
+    #bigbar button { min-width: 0; flex: 1 0 auto; font-size: 9px; padding: 9px 6px; }
+    #miladyDlg .dlgbox { max-width: calc(100vw - 32px); }
+  }
+  /* landscape phones: a bottom row would eat the avatar's height — dock the
+     buttons as a compact column on the left edge instead (scrolls if it must),
+     and shift the settings panel to the right so they don't overlap */
+  @media (orientation: landscape) and (max-height: 500px) {
+    #bigbar {
+      left: calc(8px + var(--vvl, 0px) + env(safe-area-inset-left, 0px));
+      top: 50%; bottom: auto; transform: translateY(-50%);
+      flex-direction: column; flex-wrap: nowrap; justify-content: flex-start;
+      width: auto; max-width: none;
+      max-height: calc(100vh - 16px); max-height: calc(100dvh - 16px);
+      overflow-y: auto; gap: 5px; padding: 7px;
+    }
+    #bigbar button { min-width: 0; flex: 0 0 auto; font-size: 9px; padding: 8px 7px; }
+    #ui { left: auto; right: calc(10px + var(--vvr, 0px)); }
+    #miladyDlg .dlgbox { max-width: calc(100vw - 32px); }
+  }

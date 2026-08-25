@@ -15,7 +15,7 @@ export function PockitViewer() {
                     title="Pockit Milady"
                 />
             </ToyFrame>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col items-center gap-3">
                 <div className="flex items-center gap-2 bg-yellow-300 rounded-2xl px-4 py-2 shadow-[0_4px_20px_0px_rgba(0,0,0,0.2),_inset_0px_-2px_6px_3px_rgba(255,255,255,0.6)]">
                     <button
                         onClick={() => setId((v) => Math.max(1, v - 1))}
@@ -42,7 +42,7 @@ export function PockitViewer() {
                     </button>
                 </div>
 
-                {/* Download buttons */}
+                {/* Model actions */}
                 <div className="flex gap-2">
                     <a
                         href={`https://prnth.com/Pockit/web/${id}.vrm`}
@@ -52,11 +52,10 @@ export function PockitViewer() {
                         ⬇ VRM
                     </a>
                     <a
-                        href={`https://prnth.com/Pockit/web/${id}.glb`}
-                        download
+                        href={`/milady/studio?milady=${id}`}
                         className="flex items-center gap-1 bg-yellow-300 rounded-2xl px-3 py-2 text-xs font-bold shadow-[0_4px_20px_0px_rgba(0,0,0,0.2),_inset_0px_-2px_6px_3px_rgba(255,255,255,0.6)] active:translate-y-[2px] active:shadow-[0_1px_4px_rgba(0,0,0,0.15)] transition-transform select-none whitespace-nowrap"
                     >
-                        ⬇ GLB
+                        Open in Studio
                     </a>
                 </div>
             </div>

@@ -57,6 +57,16 @@ export default function Home() {
 
                 <hr className="w-full border-t-2 border-gray-300 my-4" />
 
+                <div>
+                    <a href="https://miladyvrm.lawb.xyz/tracker/?utm_source=pockit.world&utm_medium=referral" target="_blank" rel="noopener noreferrer">
+                        <img src="/ui/milady-tracker.jpg" alt="Pockit Milady VRM Tracker" className="w-full rounded-lg mb-4" />
+                        Milady Tracker:
+                    </a>{" "}
+                    Browser-based webcam tracking for use with Pockit Milady VRM avatars, developed by <a href="https://x.com/wables411" target="_blank" rel="noopener noreferrer" className="underline">wables</a>.
+                </div>
+
+                <hr className="w-full border-t-2 border-gray-300 my-4" />
+
                 <a href="https://exo.cam/studio?utm_source=pockit.world&utm_medium=referral" target="_blank">
                     <img src="/ui/exocam-miladypockit.gif" alt="Pockit Milady" className="w-full rounded-lg mb-4" />
                     Exo Cam lets you view Pockit Milady in AR and make animated sequences!
@@ -76,5 +86,3 @@ export default function Home() {
         </>
     );
 }
-
-
