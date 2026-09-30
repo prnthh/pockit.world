@@ -5,7 +5,7 @@ API references: https://threejs.org/docs/pages/GLTFLoader.html
 https://threejs.org/docs/pages/GLTFExporter.html
 https://github.com/vrm-c/vrm-specification/tree/master/specification/VRMC_vrm-1.0
 https://threejs.org/docs/pages/OrbitControls.html
-The blend is the source of truth; this is a color-preview export, with no animation clips. -->
+The blend is the source of truth; the GLB is a character export; preview animations come from the original FBX files; GLB downloads include Idle and Walk. -->
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -32,6 +32,8 @@ The blend is the source of truth; this is a color-preview export, with no animat
 <div class="field"><label for="top">Top:</label><select id="top"><option value="none">None</option><option value="tshirt" selected>T-shirt</option></select></div>
 <div class="field"><label for="headAccessory">Head accessory:</label><select id="headAccessory"><option value="none">None</option><option value="oni" selected>Oni horn</option></select></div>
 
+<div class="field"><label for="animation">Animation:</label><select id="animation" disabled><option value="">T-pose</option></select></div>
+<div class="field"><span class="label">Blink preview:</span><div style="display:flex;gap:6px"><button class="bevel" id="blinkBoth" disabled>Blink</button><button class="bevel" id="blinkLeft" disabled>Left</button><button class="bevel" id="blinkRight" disabled>Right</button></div></div>
 <div class="actions"><button class="bevel" id="random" disabled>Random</button><button class="bevel" id="save" disabled>Save PNG</button><button class="bevel" id="saveGlb" disabled>Save GLB</button><button class="bevel" id="saveVrm" disabled>Save VRM</button><button class="bevel reset" id="reset" disabled>Reset colors & view</button></div>
 <div class="status" id="status" role="status">Loading character…</div>
 </aside></div><div class="foot"><span>PERSONAL CHARACTER CARD</span><span>MADE TO BE DIFFERENT</span></div>
@@ -39,6 +41,7 @@ The blend is the source of truth; this is a color-preview export, with no animat
 </main>
 <script type="module">
 import * as THREE from 'three';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
@@ -47,6 +50,54 @@ const defaults={skin:'#b84e4b',hair:'#a19b93'};
 const palettes={skin:['#b84e4b','#df9e88','#9d6859','#739f91','#9995c2','#ddbd88'],hair:['#a19b93','#e5d7bb','#30303b','#7395c9','#bc7796','#987553']};
 const skinMats=new Set(),hairMats=new Set(),eyeLayers=[];
 let model,renderer,controls,camera,scene,box;
+let mixer,clips=[],restPose=[],lastFrame=0,blinkStart=null,blinkSide='both',exportingPose=false;
+function capturePose(){const pose=[];model.traverse(o=>pose.push({o,p:o.position.clone(),q:o.quaternion.clone(),s:o.scale.clone(),weights:o.morphTargetInfluences?.slice()}));return pose}
+function applyPose(pose){for(const {o,p,q,s,weights} of pose){o.position.copy(p);o.quaternion.copy(q);o.scale.copy(s);if(weights)o.morphTargetInfluences.splice(0,weights.length,...weights)}model.updateMatrixWorld(true)}
+function setBlink(left,right){model?.traverse(o=>{const dict=o.morphTargetDictionary;if(!dict)return;for(const [key,value] of [['blink_left',left],['blink_right',right]])if(dict[key]!==undefined)o.morphTargetInfluences[dict[key]]=value})}
+function playAnimation(){if(!mixer)return;mixer.stopAllAction();applyPose(restPose);blinkStart=null;const clip=clips.find(c=>c.name===$('animation').value);if(clip)mixer.clipAction(clip).reset().play()}
+$('animation').onchange=playAnimation;
+for(const [id,side] of [['blinkBoth','both'],['blinkLeft','left'],['blinkRight','right']])$(id).onclick=()=>{blinkSide=side;blinkStart=performance.now()};
+// Match animation bones by name, then convert world-space motion between the
+// FBX and Blender-exported rest orientations and units.
+function animationFromFBX(source,name){
+ const normalize=n=>n.replace(/[^a-z0-9]/gi,'').toLowerCase();
+ const sourceBones=new Map();source.updateMatrixWorld(true);model.updateMatrixWorld(true);
+ source.traverse(o=>{if(o.isBone)sourceBones.set(normalize(o.name),o)});
+ const pairs=[];model.traverse(o=>{const src=sourceBones.get(normalize(o.name));if(o.isBone&&src)pairs.push({target:o,source:src,sourceRest:src.getWorldQuaternion(new THREE.Quaternion()).invert(),targetRest:o.getWorldQuaternion(new THREE.Quaternion()),positions:[],rotations:[]})});
+ if(!source.animations.length||!pairs.length)throw new Error('No matching animation skeleton in '+name);
+ const hips=pairs.find(p=>normalize(p.target.name)==='mixamorighips'),head=pairs.find(p=>normalize(p.target.name)==='mixamorighead');
+ if(!hips||!head)throw new Error('Animation needs matching hips and head bones.');
+ const point=o=>o.getWorldPosition(new THREE.Vector3());
+ const sourceHip=point(hips.source),targetHip=point(hips.target);
+ const scale=point(head.target).distanceTo(targetHip)/point(head.source).distanceTo(sourceHip);
+ const clip=source.animations[0],sampleMixer=new THREE.AnimationMixer(source);sampleMixer.clipAction(clip).play();
+ const steps=Math.max(1,Math.ceil(clip.duration*30)),times=[];const saved=capturePose();
+ try{for(let i=0;i<=steps;i++){
+  const time=Math.min(i/30,clip.duration);times.push(time);sampleMixer.setTime(time);source.updateMatrixWorld(true);
+  for(const p of pairs){
+   const world=p.source.getWorldQuaternion(new THREE.Quaternion()).multiply(p.sourceRest).multiply(p.targetRest);
+   const parent=p.target.parent.getWorldQuaternion(new THREE.Quaternion());p.target.quaternion.copy(parent.invert().multiply(world));
+   if(p===hips){const position=point(p.source).sub(sourceHip).multiplyScalar(scale).add(targetHip);p.target.position.copy(p.target.parent.worldToLocal(position));p.positions.push(...p.target.position.toArray())}
+   p.target.updateMatrixWorld(true);p.rotations.push(...p.target.quaternion.toArray());
+  }
+ }}finally{sampleMixer.stopAllAction();sampleMixer.uncacheRoot(source);applyPose(saved)}
+ const tracks=pairs.map(p=>new THREE.QuaternionKeyframeTrack(p.target.name+'.quaternion',times,p.rotations));
+ tracks.push(new THREE.VectorKeyframeTrack(hips.target.name+'.position',times,hips.positions));
+ return new THREE.AnimationClip(name,clip.duration,tracks);
+}
+async function setupPreview(){
+ mixer=new THREE.AnimationMixer(model);clips=[];restPose=capturePose();blinkStart=null;
+ const select=$('animation');select.replaceChildren(new Option('T-pose',''));select.disabled=true;
+ const available=new Set();model.traverse(o=>Object.keys(o.morphTargetDictionary||{}).forEach(k=>available.add(k)));
+ $('blinkLeft').disabled=!available.has('blink_left');$('blinkRight').disabled=!available.has('blink_right');$('blinkBoth').disabled=!available.has('blink_left')&&!available.has('blink_right');
+ const sources=[['idle','Idle','Idle.fbx'],['seatedIdle','Seated idle','Seated Idle.fbx'],['walk','Walk','Walk.fbx'],['crossJumpsRotation','Cross jumps rotation','Cross Jumps Rotation.fbx']];
+ const loaded=await Promise.allSettled(sources.map(async([name,label,file])=>({clip:animationFromFBX(await new FBXLoader().loadAsync('./animation/'+encodeURIComponent(file)),name),label})));
+ const failures=[];for(let i=0;i<loaded.length;i++){const result=loaded[i];if(result.status==='fulfilled'){clips.push(result.value.clip);select.add(new Option(result.value.label,result.value.clip.name))}else{console.error(result.reason);failures.push(sources[i][1])}}
+ select.disabled=!clips.length;return failures;
+}
+
+function updatePreview(now){const delta=lastFrame?Math.min((now-lastFrame)/1000,.1):0;lastFrame=now;if(exportingPose)return;mixer?.update(delta);if(blinkStart!==null){const t=(now-blinkStart)/650;const amount=t<.35?Math.sin(Math.max(0,t)/.35*Math.PI/2):t<.5?1:t<1?Math.cos((t-.5)/.5*Math.PI/2):0;setBlink(blinkSide==='right'?0:amount,blinkSide==='left'?0:amount);if(t>=1)blinkStart=null}}
+
 
 function status(text,error=false){$('status').textContent=text;$('status').classList.toggle('error',error)}
 function recolorEyes(hex){for(const layer of eyeLayers){const {ctx,canvas,image,texture}=layer;ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle=hex;ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(image,0,0);texture.needsUpdate=true}}
@@ -62,7 +113,7 @@ $('top').onchange=updateOutfit;
 $('headAccessory').onchange=updateOutfit;
 function frame(){if(!box)return;const size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3()),portrait=$('view').value==='portrait';const target=portrait?new THREE.Vector3(center.x,box.min.y+size.y*.82,center.z):center;const height=portrait?size.y*.43:size.y*1.16;const width=portrait?size.x*.40:size.x*1.15;const d=Math.max(height,width/camera.aspect)/(2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2)));controls.target.copy(target);camera.position.copy(target).add(new THREE.Vector3(0,0,d));controls.minDistance=size.y*.28;controls.maxDistance=size.y*5;controls.update()}
 function canvasTexture(original,paint){const image=original.image;const c=document.createElement('canvas');c.width=image.width;c.height=image.height;const ctx=c.getContext('2d',{willReadFrequently:true});paint(ctx,c,image);const t=new THREE.CanvasTexture(c);t.flipY=original.flipY;t.colorSpace=THREE.SRGBColorSpace;t.wrapS=original.wrapS;t.wrapT=original.wrapT;t.offset.copy(original.offset);t.repeat.copy(original.repeat);t.magFilter=THREE.LinearFilter;t.needsUpdate=true;return {canvas:c,ctx,image,texture:t}}
-async function load(url){$('loading').hidden=false;status('Loading character…');try{const gltf=await new GLTFLoader().loadAsync(url);if(model)scene.remove(model);model=gltf.scene;model.rotation.y=0;scene.add(model);skinMats.clear();hairMats.clear();eyeLayers.length=0;const processed=new Set();model.traverse(o=>{if(!o.isMesh)return;o.frustumCulled=false;for(const m of Array.isArray(o.material)?o.material:[o.material]){if(processed.has(m))continue;processed.add(m);if(m.name==='skin')skinMats.add(m);if(m.name==='hair')hairMats.add(m);if(m.name.includes('eye_')&&m.map){const layer=canvasTexture(m.map,()=>{});eyeLayers.push(layer);m.map=layer.texture;m.color.set('#ffffff');m.transparent=false;m.opacity=1;m.needsUpdate=true}if(m.name.includes('shirt_graphic')&&m.map){const layer=canvasTexture(m.map,(ctx,c,img)=>{ctx.drawImage(img,0,0);const p=ctx.getImageData(0,0,c.width,c.height);for(let i=0;i<p.data.length;i+=4){const srgb=[p.data[i],p.data[i+1],p.data[i+2]].map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4});const lum=srgb[0]*.2126+srgb[1]*.7152+srgb[2]*.0722;p.data[i+3]*=Math.max(0,Math.min(1,(.65-lum)/.6));p.data[i]=22;p.data[i+1]=18;p.data[i+2]=24}ctx.putImageData(p,0,0)});m.map=layer.texture;m.color.set('#ffffff');m.transparent=true;m.depthWrite=false;m.needsUpdate=true}}});model.updateMatrixWorld(true);box=new THREE.Box3().setFromObject(model);if(!skinMats.size||!hairMats.size)throw new Error('This GLB needs materials named skin and hair.');for(const kind of ['skin','hair'])color(kind,$(kind).value);updateOutfit();frame();$('loading').hidden=true;for(const id of ['random','save','saveGlb','saveVrm','reset'])$(id).disabled=false;status('Ready · colors update live');window.characterStudio={model,skinMats,hairMats,renderer,exportCharacter};}catch(e){console.error(e);$('loading').hidden=true;status('Could not load the character. Serve this folder over HTTP, or choose the exported GLB.',true);const b=document.createElement('button');b.className='load';b.textContent='Choose character GLB';b.onclick=()=>$('file').click();$('status').append(b)}}
+async function load(url){$('loading').hidden=false;status('Loading character…');try{const gltf=await new GLTFLoader().loadAsync(url);if(model){mixer?.stopAllAction();scene.remove(model);}model=gltf.scene;model.rotation.y=0;scene.add(model);skinMats.clear();hairMats.clear();eyeLayers.length=0;const processed=new Set();model.traverse(o=>{if(!o.isMesh)return;o.frustumCulled=false;for(const m of Array.isArray(o.material)?o.material:[o.material]){if(processed.has(m))continue;processed.add(m);if(m.name==='skin')skinMats.add(m);if(m.name==='hair')hairMats.add(m);if(m.name.includes('eye_')&&m.map){const layer=canvasTexture(m.map,()=>{});eyeLayers.push(layer);m.map=layer.texture;m.color.set('#ffffff');m.transparent=false;m.opacity=1;m.needsUpdate=true}if(m.name.includes('shirt_graphic')&&m.map){const layer=canvasTexture(m.map,(ctx,c,img)=>{ctx.drawImage(img,0,0);const p=ctx.getImageData(0,0,c.width,c.height);for(let i=0;i<p.data.length;i+=4){const srgb=[p.data[i],p.data[i+1],p.data[i+2]].map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4});const lum=srgb[0]*.2126+srgb[1]*.7152+srgb[2]*.0722;p.data[i+3]*=Math.max(0,Math.min(1,(.65-lum)/.6));p.data[i]=22;p.data[i+1]=18;p.data[i+2]=24}ctx.putImageData(p,0,0)});m.map=layer.texture;m.color.set('#ffffff');m.transparent=true;m.depthWrite=false;m.needsUpdate=true}}});model.updateMatrixWorld(true);box=new THREE.Box3().setFromObject(model);if(!skinMats.size||!hairMats.size)throw new Error('This GLB needs materials named skin and hair.');for(const kind of ['skin','hair'])color(kind,$(kind).value);updateOutfit();const animationFailures=await setupPreview();frame();$('loading').hidden=true;for(const id of ['random','save','saveGlb','saveVrm','reset'])$(id).disabled=false;status(animationFailures.length?'Animation unavailable: '+animationFailures.join(', '):'Ready · colors update live',!!animationFailures.length);window.characterStudio={model,skinMats,hairMats,renderer,exportCharacter};}catch(e){console.error(e);$('loading').hidden=true;status('Could not load the character. Serve this folder over HTTP, or choose the exported GLB.',true);const b=document.createElement('button');b.className='load';b.textContent='Choose character GLB';b.onclick=()=>$('file').click();$('status').append(b)}}
 $('file').onchange=async()=>{const f=$('file').files[0];if(f){const u=URL.createObjectURL(f);await load(u);URL.revokeObjectURL(u)}};
 $('save').onclick=()=>{renderer.render(scene,camera);const c=document.createElement('canvas');c.width=1200;c.height=1500;const ctx=c.getContext('2d');const bg=$('background').value;ctx.fillStyle=bg==='rose'?'#be819a':bg==='sage'?'#8d9d91':'#e2decc';ctx.fillRect(0,0,c.width,c.height);ctx.fillStyle='#ffffff25';for(let x=24;x<1200;x+=16)for(let y=24;y<1500;y+=16)ctx.fillRect(x,y,3,3);ctx.strokeStyle='#fff8';ctx.lineWidth=2;ctx.strokeRect(26,26,1148,1448);const src=renderer.domElement;const scale=Math.min(1120/src.width,1300/src.height);ctx.drawImage(src,(1200-src.width*scale)/2,(1440-src.height*scale)/2,src.width*scale,src.height*scale);ctx.fillStyle='#fffbed';ctx.font='italic 38px Arial';ctx.fillText($('caption').textContent,55,1420,1090);c.toBlob(blob=>{if(!blob)return;const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=($('name').value.trim().replace(/[^a-z0-9_-]+/gi,'-')||'pockit-remilios')+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)},'image/png')};
 
@@ -99,13 +150,13 @@ async function exportCharacter(format){
  if(!model)throw new Error('Wait for the character to load.');
  model.updateMatrixWorld(true);
  // Export only the avatar: no preview lights, camera or card background.
- const bytes=await new GLTFExporter().parseAsync(model,{binary:true,onlyVisible:true,trs:true,maxTextureSize:4096});
- return format==='vrm'?addVRM(bytes):bytes;
+ const pose=capturePose();exportingPose=true;
+ try{const animations=format==='glb'?['idle','walk'].map(name=>{const clip=clips.find(c=>c.name===name);if(!clip)throw new Error('Load the '+name+' FBX before exporting GLB.');return clip}):[];applyPose(restPose);const bytes=await new GLTFExporter().parseAsync(model,{binary:true,onlyVisible:true,trs:true,maxTextureSize:4096,animations});return format==='vrm'?addVRM(bytes):bytes;}finally{applyPose(pose);exportingPose=false}
 }
 let exporting=false;
 async function saveModel(format){if(exporting)return;exporting=true;for(const id of ['saveGlb','saveVrm'])$(id).disabled=true;status('Preparing '+format.toUpperCase()+'…');try{const bytes=await exportCharacter(format);downloadBinary(bytes,format);status(format.toUpperCase()+' saved · current colors included')}catch(e){console.error(e);status(e.message||'Could not export this character.',true)}finally{exporting=false;for(const id of ['saveGlb','saveVrm'])$(id).disabled=false}}
 $('saveGlb').onclick=()=>saveModel('glb');$('saveVrm').onclick=()=>saveModel('vrm');
 
-try{renderer=new THREE.WebGLRenderer({canvas:$('canvas'),alpha:true,antialias:true,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.2;scene=new THREE.Scene();camera=new THREE.PerspectiveCamera(32,1,.01,100);controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.enablePan=false;scene.add(new THREE.HemisphereLight(0xfff7ee,0x857884,2.4));const key=new THREE.DirectionalLight(0xfff5e7,2.7);key.position.set(-3,5,6);scene.add(key);const fill=new THREE.DirectionalLight(0xd9e9ff,1.1);fill.position.set(4,2,-3);scene.add(fill);new ResizeObserver(()=>{const r=$('canvas').getBoundingClientRect();renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;camera.updateProjectionMatrix();frame()}).observe($('card'));renderer.setAnimationLoop(()=>{controls.update();renderer.render(scene,camera)});load('./remilio.glb')}catch(e){console.error(e);$('loading').hidden=true;status('The 3D preview needs WebGL. Please try a browser with hardware acceleration enabled.',true)}
+try{renderer=new THREE.WebGLRenderer({canvas:$('canvas'),alpha:true,antialias:true,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.2;scene=new THREE.Scene();camera=new THREE.PerspectiveCamera(32,1,.01,100);controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.enablePan=false;scene.add(new THREE.HemisphereLight(0xfff7ee,0x857884,2.4));const key=new THREE.DirectionalLight(0xfff5e7,2.7);key.position.set(-3,5,6);scene.add(key);const fill=new THREE.DirectionalLight(0xd9e9ff,1.1);fill.position.set(4,2,-3);scene.add(fill);new ResizeObserver(()=>{const r=$('canvas').getBoundingClientRect();renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;camera.updateProjectionMatrix();frame()}).observe($('card'));renderer.setAnimationLoop(now=>{updatePreview(now);controls.update();renderer.render(scene,camera)});load('./remilio.glb')}catch(e){console.error(e);$('loading').hidden=true;status('The 3D preview needs WebGL. Please try a browser with hardware acceleration enabled.',true)}
 </script>
 </body></html>
