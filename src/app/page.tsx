@@ -32,7 +32,7 @@ export default function Home() {
       </NavButton3D>
     </Link>
     <Link href="https://prnth.com/react-three-game" target="_blank" className="group inline-block">
-      <NavButton3D className="retro-btn bg-gradient-to-b from-red-200/80 to-white group-hover:shadow-red-900/70 text-black font-sans font-semibold rounded-3xl shadow-[0_4px_4px_rgba(0,0,0,0.1)] px-4 py-4 transition-all ease-out relative overflow-hidden backdrop-blur-xl border-2 border-gray-500/50 hover:scale-[1.03] active:scale-95" style={{ width: "320px", height: "180px" }}>
+      <NavButton3D className="retro-btn bg-gradient-to-b from-slate-300/80 to-slate-100 group-hover:shadow-slate-900/70 text-black font-sans font-semibold rounded-3xl shadow-[0_4px_4px_rgba(0,0,0,0.1)] px-4 py-4 transition-all ease-out relative overflow-hidden backdrop-blur-xl border-2 border-gray-500/50 hover:scale-[1.03] active:scale-95" style={{ width: "320px", height: "180px" }}>
         <div className="relative flex flex-col justify-between h-full z-10 text-xl">
           <span className="relative z-10">react-three-game</span>
           <span className="relative z-10 text-sm block mt-1 opacity-80">3D prefab editor for React</span>
@@ -48,10 +48,10 @@ export default function Home() {
       </NavButton3D>
     </Link>
     <a href="/remilio/" className="group inline-block">
-      <NavButton3D className="retro-btn bg-gradient-to-b from-purple-200/80 to-white group-hover:shadow-purple-900/70 text-black font-sans font-semibold rounded-3xl shadow-[0_4px_4px_rgba(0,0,0,0.1)] px-4 py-4 transition-all ease-out relative overflow-hidden backdrop-blur-xl border-2 border-gray-500/50 hover:scale-[1.03] active:scale-95" style={{ width: "320px", height: "180px" }}>
+      <NavButton3D className="retro-btn bg-gradient-to-b from-red-200/80 to-white group-hover:shadow-red-900/70 text-black font-sans font-semibold rounded-3xl shadow-[0_4px_4px_rgba(0,0,0,0.1)] px-4 py-4 transition-all ease-out relative overflow-hidden backdrop-blur-xl border-2 border-gray-500/50 hover:scale-[1.03] active:scale-95" style={{ width: "320px", height: "180px" }}>
         <div className="relative flex flex-col justify-between h-full z-10 text-xl">
-          <span className="relative z-10">Pockit Remilios</span>
-          <span className="relative z-10 text-sm block mt-1 opacity-80">Customize your Remilio<br />Export as GLB or VRM</span>
+          <span className="relative z-10">Pockit Remilio</span>
+          <span className="relative z-10 text-sm block mt-1 opacity-80">Remilio Character Creator<br />Export as GLB or VRM</span>
         </div>
       </NavButton3D>
     </a>
