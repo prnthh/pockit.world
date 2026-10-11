@@ -58,7 +58,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased !bg-[#e4e7ed] !text-black`}
       >
-        <div className="flex flex-col items-center pt-40 h-screen overflow-y-scroll noscrollbar">
+        <div className="flex flex-col items-center h-screen overflow-y-auto">
           {children}
         </div>
 

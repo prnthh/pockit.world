@@ -24,7 +24,9 @@ export const metadata: Metadata = {
 
 export default function Home() {
     return (
-        <>
+        <div className="h-dvh w-full shrink-0 overflow-hidden bg-inherit">
+          <div className="h-full w-full overflow-y-auto">
+            <div className="flex min-h-full w-full flex-col items-center pt-40">
             <img src="/pockit.gif" alt="Pockit Milady" className="w-[300px]" />
 
             <Link href="/" className="group">
@@ -83,6 +85,8 @@ export default function Home() {
 
 
             </div>
-        </>
+            </div>
+          </div>
+        </div>
     );
 }
