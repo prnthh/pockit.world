@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 };
 
 export default function Home() {
-  return <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-40 mb-6 mx-auto max-w-2xl justify-items-center" style={{ perspective: '1000px' }}>
+  return <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-22 mb-6 mx-auto max-w-2xl justify-items-center" style={{ perspective: '1000px' }}>
     <Link href="/about" className="group inline-block">
       <NavButton3D className="retro-btn bg-gradient-to-b from-blue-200/80 to-white group-hover:shadow-blue-900/70 text-black font-sans font-semibold rounded-3xl shadow-[0_4px_4px_rgba(0,0,0,0.1)] px-4 py-4 transition-all ease-out relative overflow-hidden backdrop-blur-xl border-2 border-gray-500/50 hover:scale-[1.03] active:scale-95" style={{ width: "320px", height: "180px" }}>
         <div className="relative flex flex-col justify-between h-full z-10 text-xl">
@@ -51,7 +51,7 @@ export default function Home() {
       <NavButton3D className="retro-btn bg-gradient-to-b from-red-200/80 to-white group-hover:shadow-red-900/70 text-black font-sans font-semibold rounded-3xl shadow-[0_4px_4px_rgba(0,0,0,0.1)] px-4 py-4 transition-all ease-out relative overflow-hidden backdrop-blur-xl border-2 border-gray-500/50 hover:scale-[1.03] active:scale-95" style={{ width: "320px", height: "180px" }}>
         <div className="relative flex flex-col justify-between h-full z-10 text-xl">
           <span className="relative z-10">Pockit Remilio</span>
-          <span className="relative z-10 text-sm block mt-1 opacity-80">Remilio Character Creator<br />Export as GLB or VRM</span>
+          <span className="relative z-10 text-sm block mt-1 opacity-80">Remilio Maker<br />Generate a 3D Remilio</span>
         </div>
       </NavButton3D>
     </a>

@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { NavButton3D } from "../NavButton3D";
 import { PockitViewer } from "./PockitViewer";
 
 export const metadata: Metadata = {
@@ -24,9 +23,7 @@ export const metadata: Metadata = {
 
 export default function Home() {
     return (
-        <div className="h-dvh w-full shrink-0 overflow-hidden bg-inherit">
-          <div className="h-full w-full overflow-y-auto">
-            <div className="flex min-h-full w-full flex-col items-center pt-40">
+        <div className="flex w-full flex-col items-center pt-22">
             <img src="/pockit.gif" alt="Pockit Milady" className="w-[300px]" />
 
             <Link href="/" className="group">
@@ -34,7 +31,6 @@ export default function Home() {
                     Pockit Milady
                 </h1>
             </Link>
-            {/* <img src="/ui/pockitlogo.png" alt="Pockit Milady Logo" className="w-32" /> */}
 
             <div className="text-left w-[420px] px-2 mb-6 flex flex-col items-center">
 
@@ -82,11 +78,7 @@ export default function Home() {
                 </a>
 
                 <hr className="w-full border-t-2 border-gray-300 my-4" />
-
-
             </div>
-            </div>
-          </div>
         </div>
     );
 }

@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 };
 
 export default function Home() {
-    return <div className="text-left max-w-[320px] pt-40 px-2 mb-6">
+    return <div className="text-left max-w-[320px] pt-22 px-2 mb-6">
         <div className="italic text-center w-full">
             eternal pursuit of digital <a href="https://goldenlight.mirror.xyz/c4YPJ6Y0KMvhKlJDNmhmjNeMa-9BZc8VwelJeS0_51s" target="_blank">moe</a>
         </div>

@@ -46,8 +46,6 @@ export const viewport: Viewport = {
   userScalable: false,
 }
 
-const logo = <img src='/ui/pockitlogo2.png' className="absolute w-64 h-64 top-1/2 left-1/2 -translate-1/2 animate-pulse" />;
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -56,23 +54,25 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased !bg-[#e4e7ed] !text-black`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased !text-black`}
       >
-        <div className="flex flex-col items-center h-screen overflow-y-auto">
-          {children}
-        </div>
-
-        <div className="absolute top-0 bg-red-500 w-full flex flex-col items-center select-none">
-          <div className="w-full">
-            <ScrollerUI />
-          </div>
-          <div className="bg-blue-600 w-full text-black relative h-8 px-2 flex items-center gap-4 uppercase text-white font-mono font-medium">
-            <div className="fixed top-2 left-1/2 -translate-x-1/2 h-0">
-              <PockitLogo />
+        <div className="flex h-dvh flex-col overflow-hidden bg-[#e4e7ed]">
+          <header className="relative z-10 shrink-0 bg-red-500 w-full flex flex-col items-center select-none">
+            <div className="w-full">
+              <ScrollerUI />
             </div>
-            <Link href="/" className="hover:text-yellow-300 hover:font-black cursor-pointer">Home</Link>
-            <Link href="/about" className="hover:text-yellow-300 hover:font-black cursor-pointer">About</Link>
-            {/* <Link href="/games" className="hover:text-yellow-300 hover:font-black cursor-pointer">Games</Link> */}
+            <div className="bg-blue-600 w-full text-black relative h-8 px-2 flex items-center gap-4 uppercase text-white font-mono font-medium">
+              <div className="fixed top-2 left-1/2 -translate-x-1/2 h-0">
+                <PockitLogo />
+              </div>
+              <Link href="/" className="hover:text-yellow-300 hover:font-black cursor-pointer">Home</Link>
+              <Link href="/about" className="hover:text-yellow-300 hover:font-black cursor-pointer">About</Link>
+            </div>
+          </header>
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <div className="flex h-full flex-col items-center [&>*]:shrink-0">
+              {children}
+            </div>
           </div>
         </div>
       </body>
