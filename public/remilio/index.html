@@ -7,191 +7,1454 @@ https://github.com/vrm-c/vrm-specification/tree/master/specification/VRMC_vrm-1.
 https://threejs.org/docs/pages/OrbitControls.html
 The blend is the source of truth; the GLB is a character export; preview animations come from the original FBX files; GLB downloads include Idle and Walk. -->
 <html lang="en">
-<head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Remilio Maker</title>
-<style>
-:root{font-family:Arial,Helvetica,sans-serif;color:#32322e;background:#b3b19e;font-synthesis:none}*{box-sizing:border-box}body{margin:0;height:100dvh;overflow:hidden;background:inherit}.page-scroll{height:100%;overflow-y:auto;padding:24px;overscroll-behavior-y:contain}button,input,select{font:inherit;color:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #8b4e64;outline-offset:3px}.window{max-width:1160px;margin:auto;padding:12px;background:#e7e7e5;border:2px solid #565652;box-shadow:inset 2px 2px #fff,inset -2px -2px #a2a29d,3px 4px 0 #929180}.titlebar{display:flex;align-items:center;justify-content:space-between;padding:0 4px 11px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#67675f}.name{display:block;width:100%;height:51px;background:#fafafa;border:2px solid #73736d;box-shadow:inset 2px 2px 4px #a0a09a;padding:9px 14px;font-size:23px;font-style:italic}.workspace{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:20px;margin-top:14px}.preview-frame{padding:18px;background:#f8f8f4;border:1px solid #fff;min-width:0}.card{height:min(73vh,750px);min-height:480px;position:relative;overflow:hidden;border:9px solid #d3d1c4;box-shadow:0 0 0 2px #f2f0e5,0 0 0 4px #b4b2a7,inset 0 0 0 2px #fff8;background:#bb7b92}.card:before{content:"";position:absolute;inset:12px;border:1px solid #fff8;pointer-events:none;z-index:1}.card[data-bg="rose"]{background-color:#be819a;background-image:radial-gradient(#ffdded55 1.5px,transparent 1.5px),linear-gradient(145deg,#a57882,#d88ba9);background-size:12px 12px,100% 100%}.card[data-bg="sage"]{background-color:#8d9d91;background-image:radial-gradient(#e8f4df55 1.5px,transparent 1.5px),linear-gradient(145deg,#7b9088,#b3c3a6);background-size:12px 12px,100% 100%}.card[data-bg="paper"]{background:#e2decc}.card canvas{display:block;width:100%;height:100%;position:relative;z-index:2;touch-action:none}.caption{position:absolute;bottom:26px;left:26px;right:26px;z-index:3;display:flex;justify-content:space-between;align-items:end;color:#fffbed;pointer-events:none}.caption strong{font-size:21px;font-weight:normal;font-style:italic;max-width:75%;overflow-wrap:anywhere}.hint{margin:15px 0 0;text-align:center;color:#73736a;font-size:11px}.panel{border:2px solid #686863;box-shadow:inset 2px 2px 3px #aaa,inset -2px -2px 3px #fff;align-self:start;background:#e4e4e2}.panel h1{margin:0;padding:16px 14px;font-size:17px;font-weight:normal;color:#5a5a55;border-bottom:4px solid #777770}.field{padding:14px;border-bottom:1px solid #777770;box-shadow:0 1px #fff8}.field label,.field .label{display:block;font-size:14px;font-style:italic;margin-bottom:8px}.field select{width:100%;height:31px;background:#fafafa;border:1px solid #85857b;font-style:italic;padding:3px 6px}.color-row{display:flex;gap:8px}.color-row input[type=color]{width:48px;height:33px;padding:2px;background:#eee;border:1px solid #777}.hex{width:100%;min-width:0;height:33px;border:1px solid #888;padding:5px 8px;background:#f7f7f4;font:13px monospace;text-transform:uppercase}.swatches{display:flex;gap:7px;margin-top:11px}.swatches button{width:25px;height:25px;background:var(--color);border:1px solid #646459;box-shadow:inset 1px 1px #ffffff80}.swatches button[aria-pressed=true]{outline:2px solid #666653;outline-offset:2px}.actions{padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px}.bevel{background:#f4f4f1;border:2px solid #64645f;box-shadow:inset 2px 2px #fff,inset -2px -2px #c5c5bd;padding:8px 6px;font-size:13px;font-style:italic;font-weight:bold}.bevel:active{box-shadow:inset 2px 2px #aaa;transform:translateY(1px)}.bevel:disabled{opacity:.5;cursor:wait}.reset{grid-column:1/-1}.status{font-size:11px;line-height:1.5;padding:0 14px 13px;color:#6c6c61;min-height:34px}.file{display:none}.load{display:block;margin-top:8px;background:none;border:0;text-decoration:underline;font-size:11px;padding:0;cursor:pointer}.error{color:#862d34}.tip{font-size:11px;line-height:1.5;color:#747468;margin:0}.loading{position:absolute;inset:0;display:grid;place-content:center;color:#fff;font-size:13px;z-index:4;pointer-events:none}.loading[hidden]{display:none}@media(max-width:760px){.page-scroll{padding:10px}.workspace{grid-template-columns:1fr;gap:14px}.card{height:62vh;min-height:390px}.preview-frame{padding:12px}.panel{display:grid;grid-template-columns:1fr 1fr}.panel h1,.actions,.status{grid-column:1/-1}.field{min-width:0}.titlebar{font-size:9px}}
-.button-row{display:flex;flex-wrap:wrap;gap:6px}.button-row .bevel[aria-pressed=true]{background:#d8d5c7;box-shadow:inset 2px 2px #aaa,inset -2px -2px #fff;outline:1px solid #666653;outline-offset:1px}
-.mouth-option{flex:1 0 42%;display:grid;justify-items:center;gap:3px}.mouth-option img{width:75px;height:30px;object-fit:contain}
-*{scrollbar-color:#85857b transparent}::-webkit-scrollbar{width:10px;height:10px;background:transparent}::-webkit-scrollbar-track,::-webkit-scrollbar-track-piece,::-webkit-scrollbar-corner{background:transparent}::-webkit-scrollbar-thumb{background:#85857b;border-radius:999px}
-</style>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.184.0/examples/jsm/"}}</script>
-</head>
-<body>
-<div class="page-scroll">
-<main class="window">
-<div class="titlebar">Remilio Maker</div>
-<input class="name" id="name" aria-label="Character name" placeholder="Character name" maxlength="48">
-<div class="workspace">
-<section class="preview-frame" aria-label="Character preview">
-<div class="card" id="card" data-bg="rose"><canvas id="canvas" aria-label="Interactive 3D character. Drag to rotate and scroll to zoom."></canvas><div class="caption"><strong id="caption">Pockit Remilio</strong></div><div class="loading" id="loading">Loading…</div></div>
-<p class="hint">Drag to rotate · Scroll to zoom</p>
-</section>
-<aside class="panel"><h1>Appearance</h1>
-<div class="field"><label for="background">Background:</label><select id="background"><option value="rose">Rose</option><option value="sage">Sage</option><option value="paper">Paper</option></select></div>
-<div class="field"><label for="skin">Skin color:</label><div class="color-row"><input id="skin" type="color" value="#b84e4b"><input id="skinHex" class="hex" aria-label="Skin hex color" value="#B84E4B" maxlength="7" pattern="#[0-9a-fA-F]{6}"></div><div id="skinSwatches" class="swatches" aria-label="Skin presets"></div></div>
-<div class="field"><label for="hair">Hair color:</label><div class="color-row"><input id="hair" type="color" value="#a19b93"><input id="hairHex" class="hex" aria-label="Hair hex color" value="#A19B93" maxlength="7" pattern="#[0-9a-fA-F]{6}"></div><div id="hairSwatches" class="swatches" aria-label="Hair presets"></div></div>
-<div class="field"><label for="view">View:</label><select id="view"><option value="full">Full character</option><option value="portrait">Portrait</option></select></div>
-<div class="field"><label for="top">Top:</label><select id="top"><option value="none">None</option><option value="tshirt" selected>T-shirt</option></select></div>
-<div class="field"><label for="headAccessory">Head accessory:</label><select id="headAccessory"><option value="none">None</option><option value="oni" selected>Oni horn</option></select></div>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Remilio Maker</title>
+    <style>
+      :root {
+        font-family: Arial, Helvetica, sans-serif;
+        color: #32322e;
+        background: #b3b19e;
+        font-synthesis: none;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        height: 100dvh;
+        overflow: hidden;
+        background: inherit;
+      }
+      .page-scroll {
+        height: 100%;
+        overflow-y: auto;
+        padding: 24px;
+        overscroll-behavior-y: contain;
+      }
+      button,
+      input,
+      select {
+        font: inherit;
+        color: inherit;
+      }
+      button {
+        cursor: pointer;
+      }
+      button:focus-visible,
+      input:focus-visible,
+      select:focus-visible {
+        outline: 2px solid #8b4e64;
+        outline-offset: 3px;
+      }
+      .window {
+        max-width: 1160px;
+        margin: auto;
+        padding: 12px;
+        background: #e7e7e5;
+        border: 2px solid #565652;
+        box-shadow:
+          inset 2px 2px #fff,
+          inset -2px -2px #a2a29d,
+          3px 4px 0 #929180;
+      }
+      .titlebar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 4px 11px;
+        font-size: 11px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: #67675f;
+      }
+      .name {
+        display: block;
+        width: 100%;
+        height: 51px;
+        background: #fafafa;
+        border: 2px solid #73736d;
+        box-shadow: inset 2px 2px 4px #a0a09a;
+        padding: 9px 14px;
+        font-size: 23px;
+        font-style: italic;
+      }
+      .workspace {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 280px;
+        gap: 20px;
+        margin-top: 14px;
+      }
+      .preview-frame {
+        padding: 18px;
+        background: #f8f8f4;
+        border: 1px solid #fff;
+        min-width: 0;
+      }
+      .card {
+        height: min(73vh, 750px);
+        min-height: 480px;
+        position: relative;
+        overflow: hidden;
+        border: 9px solid #d3d1c4;
+        box-shadow:
+          0 0 0 2px #f2f0e5,
+          0 0 0 4px #b4b2a7,
+          inset 0 0 0 2px #fff8;
+        background: #bb7b92;
+      }
+      .card:before {
+        content: "";
+        position: absolute;
+        inset: 12px;
+        border: 1px solid #fff8;
+        pointer-events: none;
+        z-index: 1;
+      }
+      .card[data-bg="rose"] {
+        background-color: #be819a;
+        background-image:
+          radial-gradient(#ffdded55 1.5px, transparent 1.5px),
+          linear-gradient(145deg, #a57882, #d88ba9);
+        background-size:
+          12px 12px,
+          100% 100%;
+      }
+      .card[data-bg="sage"] {
+        background-color: #8d9d91;
+        background-image:
+          radial-gradient(#e8f4df55 1.5px, transparent 1.5px),
+          linear-gradient(145deg, #7b9088, #b3c3a6);
+        background-size:
+          12px 12px,
+          100% 100%;
+      }
+      .card[data-bg="paper"] {
+        background: #e2decc;
+      }
+      .card canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        position: relative;
+        z-index: 2;
+        touch-action: none;
+      }
+      .caption {
+        position: absolute;
+        bottom: 26px;
+        left: 26px;
+        right: 26px;
+        z-index: 3;
+        display: flex;
+        justify-content: space-between;
+        align-items: end;
+        color: #fffbed;
+        pointer-events: none;
+      }
+      .caption strong {
+        font-size: 21px;
+        font-weight: normal;
+        font-style: italic;
+        max-width: 75%;
+        overflow-wrap: anywhere;
+      }
+      .hint {
+        margin: 15px 0 0;
+        text-align: center;
+        color: #73736a;
+        font-size: 11px;
+      }
+      .panel {
+        border: 2px solid #686863;
+        box-shadow:
+          inset 2px 2px 3px #aaa,
+          inset -2px -2px 3px #fff;
+        align-self: start;
+        background: #e4e4e2;
+      }
+      .panel h1 {
+        margin: 0;
+        padding: 16px 14px;
+        font-size: 17px;
+        font-weight: normal;
+        color: #5a5a55;
+        border-bottom: 4px solid #777770;
+      }
+      .field {
+        padding: 14px;
+        border-bottom: 1px solid #777770;
+        box-shadow: 0 1px #fff8;
+      }
+      .field label,
+      .field .label {
+        display: block;
+        font-size: 14px;
+        font-style: italic;
+        margin-bottom: 8px;
+      }
+      .field select {
+        width: 100%;
+        height: 31px;
+        background: #fafafa;
+        border: 1px solid #85857b;
+        font-style: italic;
+        padding: 3px 6px;
+      }
+      .color-row {
+        display: flex;
+        gap: 8px;
+      }
+      .color-row input[type="color"] {
+        width: 48px;
+        height: 33px;
+        padding: 2px;
+        background: #eee;
+        border: 1px solid #777;
+      }
+      .hex {
+        width: 100%;
+        min-width: 0;
+        height: 33px;
+        border: 1px solid #888;
+        padding: 5px 8px;
+        background: #f7f7f4;
+        font: 13px monospace;
+        text-transform: uppercase;
+      }
+      .swatches {
+        display: flex;
+        gap: 7px;
+        margin-top: 11px;
+      }
+      .swatches button {
+        width: 25px;
+        height: 25px;
+        background: var(--color);
+        border: 1px solid #646459;
+        box-shadow: inset 1px 1px #ffffff80;
+      }
+      .swatches button[aria-pressed="true"] {
+        outline: 2px solid #666653;
+        outline-offset: 2px;
+      }
+      .actions {
+        padding: 14px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .bevel {
+        background: #f4f4f1;
+        border: 2px solid #64645f;
+        box-shadow:
+          inset 2px 2px #fff,
+          inset -2px -2px #c5c5bd;
+        padding: 8px 6px;
+        font-size: 13px;
+        font-style: italic;
+        font-weight: bold;
+      }
+      .bevel:active {
+        box-shadow: inset 2px 2px #aaa;
+        transform: translateY(1px);
+      }
+      .bevel:disabled {
+        opacity: 0.5;
+        cursor: wait;
+      }
+      .reset {
+        grid-column: 1/-1;
+      }
+      .status {
+        font-size: 11px;
+        line-height: 1.5;
+        padding: 0 14px 13px;
+        color: #6c6c61;
+        min-height: 34px;
+      }
+      .file {
+        display: none;
+      }
+      .load {
+        display: block;
+        margin-top: 8px;
+        background: none;
+        border: 0;
+        text-decoration: underline;
+        font-size: 11px;
+        padding: 0;
+        cursor: pointer;
+      }
+      .error {
+        color: #862d34;
+      }
+      .tip {
+        font-size: 11px;
+        line-height: 1.5;
+        color: #747468;
+        margin: 0;
+      }
+      .loading {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-content: center;
+        color: #fff;
+        font-size: 13px;
+        z-index: 4;
+        pointer-events: none;
+      }
+      .loading[hidden] {
+        display: none;
+      }
+      @media (max-width: 760px) {
+        .page-scroll {
+          padding: 10px;
+        }
+        .workspace {
+          grid-template-columns: 1fr;
+          gap: 14px;
+        }
+        .card {
+          height: 62vh;
+          min-height: 390px;
+        }
+        .preview-frame {
+          padding: 12px;
+        }
+        .panel {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+        }
+        .panel h1,
+        .actions,
+        .status {
+          grid-column: 1/-1;
+        }
+        .field {
+          min-width: 0;
+        }
+        .titlebar {
+          font-size: 9px;
+        }
+      }
+      .button-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .button-row .bevel[aria-pressed="true"] {
+        background: #d8d5c7;
+        box-shadow:
+          inset 2px 2px #aaa,
+          inset -2px -2px #fff;
+        outline: 1px solid #666653;
+        outline-offset: 1px;
+      }
+      .mouth-option {
+        flex: 1 0 42%;
+        display: grid;
+        justify-items: center;
+        gap: 3px;
+      }
+      .mouth-option img {
+        width: 75px;
+        height: 30px;
+        object-fit: contain;
+      }
+      * {
+        scrollbar-color: #85857b transparent;
+      }
+      ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+        background: transparent;
+      }
+      ::-webkit-scrollbar-track,
+      ::-webkit-scrollbar-track-piece,
+      ::-webkit-scrollbar-corner {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #85857b;
+        border-radius: 999px;
+      }
+    </style>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.184.0/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div class="page-scroll">
+      <main class="window">
+        <div class="titlebar">Remilio Maker</div>
+        <input
+          class="name"
+          id="name"
+          aria-label="Character name"
+          placeholder="Character name"
+          maxlength="48"
+        />
+        <div class="workspace">
+          <section class="preview-frame" aria-label="Character preview">
+            <div class="card" id="card" data-bg="rose">
+              <canvas
+                id="canvas"
+                aria-label="Interactive 3D character. Drag to rotate and scroll to zoom."
+              ></canvas>
+              <div class="caption">
+                <strong id="caption">Pockit Remilio</strong>
+              </div>
+              <div class="loading" id="loading">Loading…</div>
+            </div>
+            <p class="hint">Drag to rotate · Scroll to zoom</p>
+          </section>
+          <aside class="panel">
+            <h1>Appearance</h1>
+            <div class="field">
+              <label for="background">Background:</label
+              ><select id="background">
+                <option value="rose">Rose</option>
+                <option value="sage">Sage</option>
+                <option value="paper">Paper</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="skin">Skin color:</label>
+              <div class="color-row">
+                <input id="skin" type="color" value="#b84e4b" /><input
+                  id="skinHex"
+                  class="hex"
+                  aria-label="Skin hex color"
+                  value="#B84E4B"
+                  maxlength="7"
+                  pattern="#[0-9a-fA-F]{6}"
+                />
+              </div>
+              <div
+                id="skinSwatches"
+                class="swatches"
+                aria-label="Skin presets"
+              ></div>
+            </div>
+            <div class="field">
+              <label for="hair">Hair color:</label>
+              <div class="color-row">
+                <input id="hair" type="color" value="#a19b93" /><input
+                  id="hairHex"
+                  class="hex"
+                  aria-label="Hair hex color"
+                  value="#A19B93"
+                  maxlength="7"
+                  pattern="#[0-9a-fA-F]{6}"
+                />
+              </div>
+              <div
+                id="hairSwatches"
+                class="swatches"
+                aria-label="Hair presets"
+              ></div>
+            </div>
+            <div class="field">
+              <label for="view">View:</label
+              ><select id="view">
+                <option value="full">Full character</option>
+                <option value="portrait">Portrait</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="top">Top:</label
+              ><select id="top">
+                <option value="none">None</option>
+                <option value="tshirt" selected>T-shirt</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="headAccessory">Head accessory:</label
+              ><select id="headAccessory">
+                <option value="none">None</option>
+                <option value="oni" selected>Oni horn</option>
+              </select>
+            </div>
 
-<div class="field"><span class="label" id="mouthLabel">Mouth shape:</span><div id="mouthShapes" class="button-row" role="group" aria-labelledby="mouthLabel"></div></div>
-<div class="field"><span class="label" id="animationLabel">Animation:</span><div id="animation" class="button-row" role="group" aria-labelledby="animationLabel"><button type="button" class="bevel" data-animation="" aria-pressed="true" disabled>T-pose</button></div></div>
-<div class="field"><span class="label">Blink preview:</span><div class="button-row"><button class="bevel" id="blinkBoth" disabled>Blink</button><button class="bevel" id="blinkLeft" disabled>Left</button><button class="bevel" id="blinkRight" disabled>Right</button></div></div>
-<div class="actions"><button class="bevel" id="random" disabled>Random</button><button class="bevel" id="save" disabled>Save PNG</button><button class="bevel" id="saveGlb" disabled>Save GLB</button><button class="bevel" id="saveVrm" disabled>Save VRM</button><button class="bevel reset" id="reset" disabled>Reset colors & view</button></div>
-<div class="status" id="status" role="status">Loading character…</div>
-</aside></div>
-<input class="file" id="file" type="file" accept=".glb">
-</main>
-</div>
-<script type="module">
-import * as THREE from 'three';
-import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
-const $=id=>document.getElementById(id);
-const defaults={skin:'#b84e4b',hair:'#a19b93'};
-const palettes={skin:['#b84e4b','#df9e88','#9d6859','#739f91','#9995c2','#ddbd88'],hair:['#a19b93','#e5d7bb','#30303b','#7395c9','#bc7796','#987553']};
-const skinMats=new Set(),hairMats=new Set(),eyeLayers=[];
-let model,renderer,controls,camera,scene,box;
-let mixer,clips=[],restPose=[],lastFrame=0,blinkStart=null,blinkSide='both',exportingPose=false;
-function capturePose(){const pose=[];model.traverse(o=>pose.push({o,p:o.position.clone(),q:o.quaternion.clone(),s:o.scale.clone(),weights:o.morphTargetInfluences?.slice()}));return pose}
-function applyPose(pose){for(const {o,p,q,s,weights} of pose){o.position.copy(p);o.quaternion.copy(q);o.scale.copy(s);if(weights)o.morphTargetInfluences.splice(0,weights.length,...weights)}model.updateMatrixWorld(true)}
-function setBlink(left,right){model?.traverse(o=>{const dict=o.morphTargetDictionary;if(!dict)return;for(const [key,value] of [['blink_left',left],['blink_right',right]])if(dict[key]!==undefined)o.morphTargetInfluences[dict[key]]=value})}
-const mouthOptions=[{label:'Smile'},{label:'Grin'},{label:'Round'},{label:'Open'}];
-let mouthBindings=[],selectedMouth=0;
-for(const [index,option] of mouthOptions.entries()){
- const button=document.createElement('button');button.type='button';button.className='bevel mouth-option';button.disabled=true;button.dataset.mouth=index;button.setAttribute('aria-label','Mouth shape: '+option.label);button.setAttribute('aria-pressed',String(index===selectedMouth));
- const image=document.createElement('img');image.src='./textures/mouths/speech_'+index+'.png';image.alt='';button.append(image,document.createTextNode(option.label));button.onclick=()=>selectMouth(index);$('mouthShapes').append(button);
-}
-function selectMouth(index){
- if(!mouthBindings.length)return;selectedMouth=index;
- for(const binding of mouthBindings){if(Array.isArray(binding.mesh.material))binding.mesh.material[binding.slot]=binding.materials[index];else binding.mesh.material=binding.materials[index]}
- for(const button of $('mouthShapes').children)button.setAttribute('aria-pressed',String(Number(button.dataset.mouth)===index));
-}
-async function setupMouthPicker(){
- mouthBindings=[];selectedMouth=0;for(const button of $('mouthShapes').children){button.disabled=true;button.setAttribute('aria-pressed',String(Number(button.dataset.mouth)===0))}
- const originals=[];model.traverse(mesh=>{if(!mesh.isMesh)return;const materials=Array.isArray(mesh.material)?mesh.material:[mesh.material];materials.forEach((material,slot)=>{if(material.name.startsWith('mouth_speech_')&&material.map)originals.push({mesh,slot,material})})});
- if(!originals.length)return ['Mouth shapes unavailable for this model'];
- try{
-  const loader=new THREE.TextureLoader();const textures=await Promise.all([1,2,3].map(index=>loader.loadAsync('./textures/mouths/speech_'+index+'.png')));
-  for(const {mesh,slot,material} of originals){
-   const variants=mouthOptions.map((option,index)=>{
-    const variant=material.clone();variant.name='mouth_speech_'+index;
-    const texture=index===0?material.map: textures[index-1].clone();
-    if(index!==0){texture.flipY=material.map.flipY;texture.colorSpace=material.map.colorSpace;texture.wrapS=material.map.wrapS;texture.wrapT=material.map.wrapT;texture.magFilter=material.map.magFilter;texture.minFilter=material.map.minFilter;texture.repeat.copy(material.map.repeat);texture.needsUpdate=true}
-    variant.map=texture;variant.needsUpdate=true;return variant;
-   });mouthBindings.push({mesh,slot,materials:variants});
-  }
-  selectMouth(0);for(const button of $('mouthShapes').children)button.disabled=false;return [];
- }catch(error){console.error(error);return ['Mouth shapes could not load']}
-}
-let selectedAnimation='';
-function animationButton(name,label,disabled=false){const button=document.createElement('button');button.type='button';button.className='bevel';button.dataset.animation=name;button.textContent=label;button.disabled=disabled;button.setAttribute('aria-pressed',String(name===selectedAnimation));button.onclick=()=>{selectedAnimation=name;for(const b of $('animation').children)b.setAttribute('aria-pressed',String(b.dataset.animation===name));playAnimation()};return button}
-function playAnimation(){if(!mixer)return;mixer.stopAllAction();applyPose(restPose);blinkStart=null;const clip=clips.find(c=>c.name===selectedAnimation);if(clip)mixer.clipAction(clip).reset().play()}
-for(const [id,side] of [['blinkBoth','both'],['blinkLeft','left'],['blinkRight','right']])$(id).onclick=()=>{blinkSide=side;blinkStart=performance.now()};
-// Match animation bones by name, then convert world-space motion between the
-// FBX and Blender-exported rest orientations and units.
-function animationFromFBX(source,name){
- const normalize=n=>n.replace(/[^a-z0-9]/gi,'').toLowerCase();
- const sourceBones=new Map();source.updateMatrixWorld(true);model.updateMatrixWorld(true);
- source.traverse(o=>{if(o.isBone)sourceBones.set(normalize(o.name),o)});
- const pairs=[];model.traverse(o=>{const src=sourceBones.get(normalize(o.name));if(o.isBone&&src)pairs.push({target:o,source:src,sourceRest:src.getWorldQuaternion(new THREE.Quaternion()).invert(),targetRest:o.getWorldQuaternion(new THREE.Quaternion()),positions:[],rotations:[]})});
- if(!source.animations.length||!pairs.length)throw new Error('No matching animation skeleton in '+name);
- const hips=pairs.find(p=>normalize(p.target.name)==='mixamorighips'),head=pairs.find(p=>normalize(p.target.name)==='mixamorighead');
- if(!hips||!head)throw new Error('Animation needs matching hips and head bones.');
- const point=o=>o.getWorldPosition(new THREE.Vector3());
- const sourceHip=point(hips.source),targetHip=point(hips.target);
- const scale=point(head.target).distanceTo(targetHip)/point(head.source).distanceTo(sourceHip);
- const clip=source.animations[0],sampleMixer=new THREE.AnimationMixer(source);sampleMixer.clipAction(clip).play();
- const steps=Math.max(1,Math.ceil(clip.duration*30)),times=[];const saved=capturePose();
- try{for(let i=0;i<=steps;i++){
-  const time=Math.min(i/30,clip.duration);times.push(time);sampleMixer.setTime(time);source.updateMatrixWorld(true);
-  for(const p of pairs){
-   const world=p.source.getWorldQuaternion(new THREE.Quaternion()).multiply(p.sourceRest).multiply(p.targetRest);
-   const parent=p.target.parent.getWorldQuaternion(new THREE.Quaternion());p.target.quaternion.copy(parent.invert().multiply(world));
-   if(p===hips){const position=point(p.source).sub(sourceHip).multiplyScalar(scale).add(targetHip);p.target.position.copy(p.target.parent.worldToLocal(position));p.positions.push(...p.target.position.toArray())}
-   p.target.updateMatrixWorld(true);p.rotations.push(...p.target.quaternion.toArray());
-  }
- }}finally{sampleMixer.stopAllAction();sampleMixer.uncacheRoot(source);applyPose(saved)}
- const tracks=pairs.map(p=>new THREE.QuaternionKeyframeTrack(p.target.name+'.quaternion',times,p.rotations));
- tracks.push(new THREE.VectorKeyframeTrack(hips.target.name+'.position',times,hips.positions));
- return new THREE.AnimationClip(name,clip.duration,tracks);
-}
-async function setupPreview(){
- mixer=new THREE.AnimationMixer(model);clips=[];restPose=capturePose();blinkStart=null;
- selectedAnimation='';const picker=$('animation');picker.replaceChildren(animationButton('','T-pose',true));
- const available=new Set();model.traverse(o=>Object.keys(o.morphTargetDictionary||{}).forEach(k=>available.add(k)));
- $('blinkLeft').disabled=!available.has('blink_left');$('blinkRight').disabled=!available.has('blink_right');$('blinkBoth').disabled=!available.has('blink_left')&&!available.has('blink_right');
- const sources=[['idle','Idle','Idle.fbx'],['seatedIdle','Seated idle','Seated Idle.fbx'],['walk','Walk','Walk.fbx'],['crossJumpsRotation','Cross jumps rotation','Cross Jumps Rotation.fbx']];
- const loaded=await Promise.allSettled(sources.map(async([name,label,file])=>({clip:animationFromFBX(await new FBXLoader().loadAsync('./animation/'+encodeURIComponent(file)),name),label})));
- const failures=[];for(let i=0;i<loaded.length;i++){const result=loaded[i];if(result.status==='fulfilled'){clips.push(result.value.clip);picker.append(animationButton(result.value.clip.name,result.value.label))}else{console.error(result.reason);failures.push(sources[i][1])}}
- picker.firstElementChild.disabled=false;return failures;
-}
+            <div class="field">
+              <span class="label" id="mouthLabel">Mouth shape:</span>
+              <div
+                id="mouthShapes"
+                class="button-row"
+                role="group"
+                aria-labelledby="mouthLabel"
+              ></div>
+            </div>
+            <div class="field">
+              <span class="label" id="animationLabel">Animation:</span>
+              <div
+                id="animation"
+                class="button-row"
+                role="group"
+                aria-labelledby="animationLabel"
+              >
+                <button
+                  type="button"
+                  class="bevel"
+                  data-animation=""
+                  aria-pressed="true"
+                  disabled
+                >
+                  T-pose
+                </button>
+              </div>
+            </div>
+            <div class="field">
+              <span class="label">Blink preview:</span>
+              <div class="button-row">
+                <button class="bevel" id="blinkBoth" disabled>Blink</button
+                ><button class="bevel" id="blinkLeft" disabled>Left</button
+                ><button class="bevel" id="blinkRight" disabled>Right</button>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="bevel" id="random" disabled>Random</button
+              ><button class="bevel" id="save" disabled>Save PNG</button
+              ><button class="bevel" id="saveGlb" disabled>Save GLB</button
+              ><button class="bevel" id="saveVrm" disabled>Save VRM</button
+              ><button class="bevel reset" id="reset" disabled>
+                Reset colors & view
+              </button>
+            </div>
+            <div class="status" id="status" role="status">
+              Loading character…
+            </div>
+          </aside>
+        </div>
+        <input class="file" id="file" type="file" accept=".glb" />
+      </main>
+    </div>
+    <script type="module">
+      import * as THREE from "three";
+      import { FBXLoader } from "three/addons/loaders/FBXLoader.js";
+      import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+      import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+      import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
+      const $ = (id) => document.getElementById(id);
+      const defaults = { skin: "#b84e4b", hair: "#a19b93" };
+      const palettes = {
+        skin: [
+          "#b84e4b",
+          "#df9e88",
+          "#9d6859",
+          "#739f91",
+          "#9995c2",
+          "#ddbd88",
+        ],
+        hair: [
+          "#a19b93",
+          "#e5d7bb",
+          "#30303b",
+          "#7395c9",
+          "#bc7796",
+          "#987553",
+        ],
+      };
+      const skinMats = new Set(),
+        hairMats = new Set(),
+        eyeLayers = [];
+      let model, renderer, controls, camera, scene, box;
+      let mixer,
+        clips = [],
+        restPose = [],
+        lastFrame = 0,
+        blinkStart = null,
+        blinkSide = "both",
+        exportingPose = false;
+      function capturePose() {
+        const pose = [];
+        model.traverse((o) =>
+          pose.push({
+            o,
+            p: o.position.clone(),
+            q: o.quaternion.clone(),
+            s: o.scale.clone(),
+            weights: o.morphTargetInfluences?.slice(),
+          }),
+        );
+        return pose;
+      }
+      function applyPose(pose) {
+        for (const { o, p, q, s, weights } of pose) {
+          o.position.copy(p);
+          o.quaternion.copy(q);
+          o.scale.copy(s);
+          if (weights)
+            o.morphTargetInfluences.splice(0, weights.length, ...weights);
+        }
+        model.updateMatrixWorld(true);
+      }
+      function setBlink(left, right) {
+        model?.traverse((o) => {
+          const dict = o.morphTargetDictionary;
+          if (!dict) return;
+          for (const [key, value] of [
+            ["blink_left", left],
+            ["blink_right", right],
+          ])
+            if (dict[key] !== undefined)
+              o.morphTargetInfluences[dict[key]] = value;
+        });
+      }
+      const mouthOptions = [
+        { label: "Smile" },
+        { label: "Grin" },
+        { label: "Round" },
+        { label: "Open" },
+      ];
+      let mouthBindings = [],
+        selectedMouth = 0;
+      for (const [index, option] of mouthOptions.entries()) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "bevel mouth-option";
+        button.disabled = true;
+        button.dataset.mouth = index;
+        button.setAttribute("aria-label", "Mouth shape: " + option.label);
+        button.setAttribute("aria-pressed", String(index === selectedMouth));
+        const image = document.createElement("img");
+        image.src = "./textures/mouths/speech_" + index + ".png";
+        image.alt = "";
+        button.append(image, document.createTextNode(option.label));
+        button.onclick = () => selectMouth(index);
+        $("mouthShapes").append(button);
+      }
+      function selectMouth(index) {
+        if (!mouthBindings.length) return;
+        selectedMouth = index;
+        for (const binding of mouthBindings) {
+          if (Array.isArray(binding.mesh.material))
+            binding.mesh.material[binding.slot] = binding.materials[index];
+          else binding.mesh.material = binding.materials[index];
+        }
+        for (const button of $("mouthShapes").children)
+          button.setAttribute(
+            "aria-pressed",
+            String(Number(button.dataset.mouth) === index),
+          );
+      }
+      async function setupMouthPicker() {
+        mouthBindings = [];
+        selectedMouth = 0;
+        for (const button of $("mouthShapes").children) {
+          button.disabled = true;
+          button.setAttribute(
+            "aria-pressed",
+            String(Number(button.dataset.mouth) === 0),
+          );
+        }
+        const originals = [];
+        model.traverse((mesh) => {
+          if (!mesh.isMesh) return;
+          const materials = Array.isArray(mesh.material)
+            ? mesh.material
+            : [mesh.material];
+          materials.forEach((material, slot) => {
+            if (material.name.startsWith("mouth_speech_") && material.map)
+              originals.push({ mesh, slot, material });
+          });
+        });
+        if (!originals.length)
+          return ["Mouth shapes unavailable for this model"];
+        try {
+          const loader = new THREE.TextureLoader();
+          const textures = await Promise.all(
+            [1, 2, 3].map((index) =>
+              loader.loadAsync("./textures/mouths/speech_" + index + ".png"),
+            ),
+          );
+          for (const { mesh, slot, material } of originals) {
+            const variants = mouthOptions.map((option, index) => {
+              const variant = material.clone();
+              variant.name = "mouth_speech_" + index;
+              const texture =
+                index === 0 ? material.map : textures[index - 1].clone();
+              if (index !== 0) {
+                texture.flipY = material.map.flipY;
+                texture.colorSpace = material.map.colorSpace;
+                texture.wrapS = material.map.wrapS;
+                texture.wrapT = material.map.wrapT;
+                texture.magFilter = material.map.magFilter;
+                texture.minFilter = material.map.minFilter;
+                texture.repeat.copy(material.map.repeat);
+                texture.needsUpdate = true;
+              }
+              variant.map = texture;
+              variant.needsUpdate = true;
+              return variant;
+            });
+            mouthBindings.push({ mesh, slot, materials: variants });
+          }
+          selectMouth(0);
+          for (const button of $("mouthShapes").children)
+            button.disabled = false;
+          return [];
+        } catch (error) {
+          console.error(error);
+          return ["Mouth shapes could not load"];
+        }
+      }
+      let selectedAnimation = "";
+      function animationButton(name, label, disabled = false) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "bevel";
+        button.dataset.animation = name;
+        button.textContent = label;
+        button.disabled = disabled;
+        button.setAttribute("aria-pressed", String(name === selectedAnimation));
+        button.onclick = () => {
+          selectedAnimation = name;
+          for (const b of $("animation").children)
+            b.setAttribute(
+              "aria-pressed",
+              String(b.dataset.animation === name),
+            );
+          playAnimation();
+        };
+        return button;
+      }
+      function playAnimation() {
+        if (!mixer) return;
+        mixer.stopAllAction();
+        applyPose(restPose);
+        blinkStart = null;
+        const clip = clips.find((c) => c.name === selectedAnimation);
+        if (clip) mixer.clipAction(clip).reset().play();
+      }
+      for (const [id, side] of [
+        ["blinkBoth", "both"],
+        ["blinkLeft", "left"],
+        ["blinkRight", "right"],
+      ])
+        $(id).onclick = () => {
+          blinkSide = side;
+          blinkStart = performance.now();
+        };
+      // Match animation bones by name, then convert world-space motion between the
+      // FBX and Blender-exported rest orientations and units.
+      function animationFromFBX(source, name) {
+        const normalize = (n) => n.replace(/[^a-z0-9]/gi, "").toLowerCase();
+        const sourceBones = new Map();
+        source.updateMatrixWorld(true);
+        model.updateMatrixWorld(true);
+        source.traverse((o) => {
+          if (o.isBone) sourceBones.set(normalize(o.name), o);
+        });
+        const pairs = [];
+        model.traverse((o) => {
+          const src = sourceBones.get(normalize(o.name));
+          if (o.isBone && src)
+            pairs.push({
+              target: o,
+              source: src,
+              sourceRest: src
+                .getWorldQuaternion(new THREE.Quaternion())
+                .invert(),
+              targetRest: o.getWorldQuaternion(new THREE.Quaternion()),
+              positions: [],
+              rotations: [],
+            });
+        });
+        if (!source.animations.length || !pairs.length)
+          throw new Error("No matching animation skeleton in " + name);
+        const hips = pairs.find(
+            (p) => normalize(p.target.name) === "mixamorighips",
+          ),
+          head = pairs.find(
+            (p) => normalize(p.target.name) === "mixamorighead",
+          );
+        if (!hips || !head)
+          throw new Error("Animation needs matching hips and head bones.");
+        const point = (o) => o.getWorldPosition(new THREE.Vector3());
+        const sourceHip = point(hips.source),
+          targetHip = point(hips.target);
+        const scale =
+          point(head.target).distanceTo(targetHip) /
+          point(head.source).distanceTo(sourceHip);
+        const clip = source.animations[0],
+          sampleMixer = new THREE.AnimationMixer(source);
+        sampleMixer.clipAction(clip).play();
+        const steps = Math.max(1, Math.ceil(clip.duration * 30)),
+          times = [];
+        const saved = capturePose();
+        try {
+          for (let i = 0; i <= steps; i++) {
+            const time = Math.min(i / 30, clip.duration);
+            times.push(time);
+            sampleMixer.setTime(time);
+            source.updateMatrixWorld(true);
+            for (const p of pairs) {
+              const world = p.source
+                .getWorldQuaternion(new THREE.Quaternion())
+                .multiply(p.sourceRest)
+                .multiply(p.targetRest);
+              const parent = p.target.parent.getWorldQuaternion(
+                new THREE.Quaternion(),
+              );
+              p.target.quaternion.copy(parent.invert().multiply(world));
+              if (p === hips) {
+                const position = point(p.source)
+                  .sub(sourceHip)
+                  .multiplyScalar(scale)
+                  .add(targetHip);
+                p.target.position.copy(p.target.parent.worldToLocal(position));
+                p.positions.push(...p.target.position.toArray());
+              }
+              p.target.updateMatrixWorld(true);
+              p.rotations.push(...p.target.quaternion.toArray());
+            }
+          }
+        } finally {
+          sampleMixer.stopAllAction();
+          sampleMixer.uncacheRoot(source);
+          applyPose(saved);
+        }
+        const tracks = pairs.map(
+          (p) =>
+            new THREE.QuaternionKeyframeTrack(
+              p.target.name + ".quaternion",
+              times,
+              p.rotations,
+            ),
+        );
+        tracks.push(
+          new THREE.VectorKeyframeTrack(
+            hips.target.name + ".position",
+            times,
+            hips.positions,
+          ),
+        );
+        return new THREE.AnimationClip(name, clip.duration, tracks);
+      }
+      async function setupPreview() {
+        mixer = new THREE.AnimationMixer(model);
+        clips = [];
+        restPose = capturePose();
+        blinkStart = null;
+        selectedAnimation = "";
+        const picker = $("animation");
+        picker.replaceChildren(animationButton("", "T-pose", true));
+        const available = new Set();
+        model.traverse((o) =>
+          Object.keys(o.morphTargetDictionary || {}).forEach((k) =>
+            available.add(k),
+          ),
+        );
+        $("blinkLeft").disabled = !available.has("blink_left");
+        $("blinkRight").disabled = !available.has("blink_right");
+        $("blinkBoth").disabled =
+          !available.has("blink_left") && !available.has("blink_right");
+        const sources = [
+          ["idle", "Idle", "Idle.fbx"],
+          ["seatedIdle", "Seated idle", "Seated Idle.fbx"],
+          ["walk", "Walk", "Walk.fbx"],
+          [
+            "crossJumpsRotation",
+            "Cross jumps rotation",
+            "Cross Jumps Rotation.fbx",
+          ],
+        ];
+        const loaded = await Promise.allSettled(
+          sources.map(async ([name, label, file]) => ({
+            clip: animationFromFBX(
+              await new FBXLoader().loadAsync(
+                "./animation/" + encodeURIComponent(file),
+              ),
+              name,
+            ),
+            label,
+          })),
+        );
+        const failures = [];
+        for (let i = 0; i < loaded.length; i++) {
+          const result = loaded[i];
+          if (result.status === "fulfilled") {
+            clips.push(result.value.clip);
+            picker.append(
+              animationButton(result.value.clip.name, result.value.label),
+            );
+          } else {
+            console.error(result.reason);
+            failures.push(sources[i][1]);
+          }
+        }
+        picker.firstElementChild.disabled = false;
+        return failures;
+      }
 
-function updatePreview(now){const delta=lastFrame?Math.min((now-lastFrame)/1000,.1):0;lastFrame=now;if(exportingPose)return;mixer?.update(delta);if(blinkStart!==null){const t=(now-blinkStart)/650;const amount=t<.35?Math.sin(Math.max(0,t)/.35*Math.PI/2):t<.5?1:t<1?Math.cos((t-.5)/.5*Math.PI/2):0;setBlink(blinkSide==='right'?0:amount,blinkSide==='left'?0:amount);if(t>=1)blinkStart=null}}
+      function updatePreview(now) {
+        const delta = lastFrame ? Math.min((now - lastFrame) / 1000, 0.1) : 0;
+        lastFrame = now;
+        if (exportingPose) return;
+        mixer?.update(delta);
+        if (blinkStart !== null) {
+          const t = (now - blinkStart) / 650;
+          const amount =
+            t < 0.35
+              ? Math.sin(((Math.max(0, t) / 0.35) * Math.PI) / 2)
+              : t < 0.5
+                ? 1
+                : t < 1
+                  ? Math.cos((((t - 0.5) / 0.5) * Math.PI) / 2)
+                  : 0;
+          setBlink(
+            blinkSide === "right" ? 0 : amount,
+            blinkSide === "left" ? 0 : amount,
+          );
+          if (t >= 1) blinkStart = null;
+        }
+      }
 
+      function status(text, error = false) {
+        $("status").textContent = text;
+        $("status").classList.toggle("error", error);
+      }
+      function recolorEyes(hex) {
+        for (const layer of eyeLayers) {
+          const { ctx, canvas, image, texture } = layer;
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = hex;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(image, 0, 0);
+          texture.needsUpdate = true;
+        }
+      }
+      function color(kind, value) {
+        if (!/^#[0-9a-f]{6}$/i.test(value)) return;
+        $(kind).value = value;
+        $(kind + "Hex").value = value.toUpperCase();
+        const selected = kind === "skin" ? skinMats : hairMats;
+        for (const m of selected) m.color.set(value);
+        if (kind === "skin") recolorEyes(value);
+        for (const b of $(kind + "Swatches").children)
+          b.setAttribute(
+            "aria-pressed",
+            String(b.dataset.color === value.toLowerCase()),
+          );
+      }
+      for (const kind of ["skin", "hair"]) {
+        for (const hex of palettes[kind]) {
+          const b = document.createElement("button");
+          b.style.setProperty("--color", hex);
+          b.dataset.color = hex;
+          b.title = hex;
+          b.setAttribute("aria-label", kind + " " + hex);
+          b.setAttribute("aria-pressed", "false");
+          b.onclick = () => color(kind, hex);
+          $(kind + "Swatches").append(b);
+        }
+        $(kind).oninput = (e) => color(kind, e.target.value);
+        $(kind + "Hex").onchange = (e) => {
+          if (/^#[0-9a-f]{6}$/i.test(e.target.value))
+            color(kind, e.target.value);
+          else e.target.value = $(kind).value.toUpperCase();
+        };
+      }
+      $("name").oninput = () => {
+        $("caption").textContent = $("name").value.trim() || "Pockit Remilio";
+      };
+      $("background").onchange = () => {
+        $("card").dataset.bg = $("background").value;
+      };
+      $("random").onclick = () => {
+        for (const kind of ["skin", "hair"])
+          color(
+            kind,
+            palettes[kind][Math.floor(Math.random() * palettes[kind].length)],
+          );
+      };
+      $("reset").onclick = () => {
+        color("skin", defaults.skin);
+        color("hair", defaults.hair);
+        $("view").value = "full";
+        frame();
+      };
+      $("view").onchange = () => frame();
+      function updateOutfit() {
+        if (!model) return;
+        model.traverse((object) => {
+          const name = object.name
+            .replace(/^Preview_/, "")
+            .replace(/[^a-z]/gi, "")
+            .toLowerCase()
+            .replace(/glb$/, "");
+          if (name === "shirt" || name === "shirtgraphic")
+            object.visible = $("top").value === "tshirt";
+          if (name === "hornl" || name === "hornr")
+            object.visible = $("headAccessory").value === "oni";
+        });
+      }
+      $("top").onchange = updateOutfit;
+      $("headAccessory").onchange = updateOutfit;
+      function frame() {
+        if (!box) return;
+        const size = box.getSize(new THREE.Vector3()),
+          center = box.getCenter(new THREE.Vector3()),
+          portrait = $("view").value === "portrait";
+        const target = portrait
+          ? new THREE.Vector3(center.x, box.min.y + size.y * 0.82, center.z)
+          : center;
+        const height = portrait ? size.y * 0.43 : size.y * 1.16;
+        const width = portrait ? size.x * 0.4 : size.x * 1.15;
+        const d =
+          Math.max(height, width / camera.aspect) /
+          (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
+        controls.target.copy(target);
+        camera.position.copy(target).add(new THREE.Vector3(0, 0, d));
+        controls.minDistance = size.y * 0.28;
+        controls.maxDistance = size.y * 5;
+        controls.update();
+      }
+      function canvasTexture(original, paint) {
+        const image = original.image;
+        const c = document.createElement("canvas");
+        c.width = image.width;
+        c.height = image.height;
+        const ctx = c.getContext("2d", { willReadFrequently: true });
+        paint(ctx, c, image);
+        const t = new THREE.CanvasTexture(c);
+        t.flipY = original.flipY;
+        t.colorSpace = THREE.SRGBColorSpace;
+        t.wrapS = original.wrapS;
+        t.wrapT = original.wrapT;
+        t.offset.copy(original.offset);
+        t.repeat.copy(original.repeat);
+        t.magFilter = THREE.LinearFilter;
+        t.needsUpdate = true;
+        return { canvas: c, ctx, image, texture: t };
+      }
+      async function load(url) {
+        $("loading").hidden = false;
+        status("Loading character…");
+        try {
+          const gltf = await new GLTFLoader().loadAsync(url);
+          if (model) {
+            mixer?.stopAllAction();
+            scene.remove(model);
+          }
+          model = gltf.scene;
+          model.rotation.y = 0;
+          scene.add(model);
+          skinMats.clear();
+          hairMats.clear();
+          eyeLayers.length = 0;
+          const processed = new Set();
+          model.traverse((o) => {
+            if (!o.isMesh) return;
+            o.frustumCulled = false;
+            for (const m of Array.isArray(o.material)
+              ? o.material
+              : [o.material]) {
+              if (processed.has(m)) continue;
+              processed.add(m);
+              if (m.name === "skin") skinMats.add(m);
+              if (m.name === "hair") hairMats.add(m);
+              if (m.name.includes("eye_") && m.map) {
+                const layer = canvasTexture(m.map, () => {});
+                eyeLayers.push(layer);
+                m.map = layer.texture;
+                m.color.set("#ffffff");
+                m.transparent = false;
+                m.opacity = 1;
+                m.needsUpdate = true;
+              }
+              if (m.name.includes("shirt_graphic") && m.map) {
+                const layer = canvasTexture(m.map, (ctx, c, img) => {
+                  ctx.drawImage(img, 0, 0);
+                  const p = ctx.getImageData(0, 0, c.width, c.height);
+                  for (let i = 0; i < p.data.length; i += 4) {
+                    const srgb = [p.data[i], p.data[i + 1], p.data[i + 2]].map(
+                      (v) => {
+                        v /= 255;
+                        return v <= 0.04045
+                          ? v / 12.92
+                          : ((v + 0.055) / 1.055) ** 2.4;
+                      },
+                    );
+                    const lum =
+                      srgb[0] * 0.2126 + srgb[1] * 0.7152 + srgb[2] * 0.0722;
+                    p.data[i + 3] *= Math.max(
+                      0,
+                      Math.min(1, (0.65 - lum) / 0.6),
+                    );
+                    p.data[i] = 22;
+                    p.data[i + 1] = 18;
+                    p.data[i + 2] = 24;
+                  }
+                  ctx.putImageData(p, 0, 0);
+                });
+                m.map = layer.texture;
+                m.color.set("#ffffff");
+                m.transparent = true;
+                m.depthWrite = false;
+                m.needsUpdate = true;
+              }
+            }
+          });
+          model.updateMatrixWorld(true);
+          box = new THREE.Box3().setFromObject(model);
+          if (!skinMats.size || !hairMats.size)
+            throw new Error("This GLB needs materials named skin and hair.");
+          for (const kind of ["skin", "hair"]) color(kind, $(kind).value);
+          updateOutfit();
+          const [animationFailures, mouthFailures] = await Promise.all([
+            setupPreview(),
+            setupMouthPicker(),
+          ]);
+          frame();
+          $("loading").hidden = true;
+          for (const id of ["random", "save", "saveGlb", "saveVrm", "reset"])
+            $(id).disabled = false;
+          const failures = [
+            ...animationFailures.map(
+              (name) => "Animation unavailable: " + name,
+            ),
+            ...mouthFailures,
+          ];
+          status(
+            failures.length ? failures.join("; ") : "Ready",
+            !!failures.length,
+          );
+          window.characterStudio = {
+            model,
+            skinMats,
+            hairMats,
+            renderer,
+            exportCharacter,
+          };
+        } catch (e) {
+          console.error(e);
+          $("loading").hidden = true;
+          status(
+            "Could not load the character. Serve this folder over HTTP, or choose the exported GLB.",
+            true,
+          );
+          const b = document.createElement("button");
+          b.className = "load";
+          b.textContent = "Choose character GLB";
+          b.onclick = () => $("file").click();
+          $("status").append(b);
+        }
+      }
+      $("file").onchange = async () => {
+        const f = $("file").files[0];
+        if (f) {
+          const u = URL.createObjectURL(f);
+          await load(u);
+          URL.revokeObjectURL(u);
+        }
+      };
+      $("save").onclick = () => {
+        renderer.render(scene, camera);
+        const c = document.createElement("canvas");
+        c.width = 1200;
+        c.height = 1500;
+        const ctx = c.getContext("2d");
+        const bg = $("background").value;
+        ctx.fillStyle =
+          bg === "rose" ? "#be819a" : bg === "sage" ? "#8d9d91" : "#e2decc";
+        ctx.fillRect(0, 0, c.width, c.height);
+        ctx.fillStyle = "#ffffff25";
+        for (let x = 24; x < 1200; x += 16)
+          for (let y = 24; y < 1500; y += 16) ctx.fillRect(x, y, 3, 3);
+        ctx.strokeStyle = "#fff8";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(26, 26, 1148, 1448);
+        const src = renderer.domElement;
+        const scale = Math.min(1120 / src.width, 1300 / src.height);
+        ctx.drawImage(
+          src,
+          (1200 - src.width * scale) / 2,
+          (1440 - src.height * scale) / 2,
+          src.width * scale,
+          src.height * scale,
+        );
+        ctx.fillStyle = "#fffbed";
+        ctx.font = "italic 38px Arial";
+        ctx.fillText($("caption").textContent, 55, 1420, 1090);
+        c.toBlob((blob) => {
+          if (!blob) return;
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download =
+            ($("name")
+              .value.trim()
+              .replace(/[^a-z0-9_-]+/gi, "-") || "pockit-remilios") + ".png";
+          a.click();
+          setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        }, "image/png");
+      };
 
-function status(text,error=false){$('status').textContent=text;$('status').classList.toggle('error',error)}
-function recolorEyes(hex){for(const layer of eyeLayers){const {ctx,canvas,image,texture}=layer;ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle=hex;ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(image,0,0);texture.needsUpdate=true}}
-function color(kind,value){if(!/^#[0-9a-f]{6}$/i.test(value))return;$(kind).value=value;$(kind+'Hex').value=value.toUpperCase();const selected=kind==='skin'?skinMats:hairMats;for(const m of selected)m.color.set(value);if(kind==='skin')recolorEyes(value);for(const b of $(kind+'Swatches').children)b.setAttribute('aria-pressed',String(b.dataset.color===value.toLowerCase()))}
-for(const kind of ['skin','hair']){for(const hex of palettes[kind]){const b=document.createElement('button');b.style.setProperty('--color',hex);b.dataset.color=hex;b.title=hex;b.setAttribute('aria-label',kind+' '+hex);b.setAttribute('aria-pressed','false');b.onclick=()=>color(kind,hex);$(kind+'Swatches').append(b)}$(kind).oninput=e=>color(kind,e.target.value);$(kind+'Hex').onchange=e=>{if(/^#[0-9a-f]{6}$/i.test(e.target.value))color(kind,e.target.value);else e.target.value=$(kind).value.toUpperCase()}}
-$('name').oninput=()=>{$('caption').textContent=$('name').value.trim()||'Pockit Remilio'};
-$('background').onchange=()=>{$('card').dataset.bg=$('background').value};
-$('random').onclick=()=>{for(const kind of ['skin','hair'])color(kind,palettes[kind][Math.floor(Math.random()*palettes[kind].length)])};
-$('reset').onclick=()=>{color('skin',defaults.skin);color('hair',defaults.hair);$('view').value='full';frame()};
-$('view').onchange=()=>frame();
-function updateOutfit(){if(!model)return;model.traverse(o=>{const name=o.name.replace(/^Preview_/,'').replace(/[^a-z]/gi,'').toLowerCase();if(name==='shirt'||name==='shirtgraphic')o.visible=$('top').value==='tshirt';if(name==='hornl'||name==='hornr')o.visible=$('headAccessory').value==='oni'})}
-$('top').onchange=updateOutfit;
-$('headAccessory').onchange=updateOutfit;
-function frame(){if(!box)return;const size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3()),portrait=$('view').value==='portrait';const target=portrait?new THREE.Vector3(center.x,box.min.y+size.y*.82,center.z):center;const height=portrait?size.y*.43:size.y*1.16;const width=portrait?size.x*.40:size.x*1.15;const d=Math.max(height,width/camera.aspect)/(2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2)));controls.target.copy(target);camera.position.copy(target).add(new THREE.Vector3(0,0,d));controls.minDistance=size.y*.28;controls.maxDistance=size.y*5;controls.update()}
-function canvasTexture(original,paint){const image=original.image;const c=document.createElement('canvas');c.width=image.width;c.height=image.height;const ctx=c.getContext('2d',{willReadFrequently:true});paint(ctx,c,image);const t=new THREE.CanvasTexture(c);t.flipY=original.flipY;t.colorSpace=THREE.SRGBColorSpace;t.wrapS=original.wrapS;t.wrapT=original.wrapT;t.offset.copy(original.offset);t.repeat.copy(original.repeat);t.magFilter=THREE.LinearFilter;t.needsUpdate=true;return {canvas:c,ctx,image,texture:t}}
-async function load(url){$('loading').hidden=false;status('Loading character…');try{const gltf=await new GLTFLoader().loadAsync(url);if(model){mixer?.stopAllAction();scene.remove(model);}model=gltf.scene;model.rotation.y=0;scene.add(model);skinMats.clear();hairMats.clear();eyeLayers.length=0;const processed=new Set();model.traverse(o=>{if(!o.isMesh)return;o.frustumCulled=false;for(const m of Array.isArray(o.material)?o.material:[o.material]){if(processed.has(m))continue;processed.add(m);if(m.name==='skin')skinMats.add(m);if(m.name==='hair')hairMats.add(m);if(m.name.includes('eye_')&&m.map){const layer=canvasTexture(m.map,()=>{});eyeLayers.push(layer);m.map=layer.texture;m.color.set('#ffffff');m.transparent=false;m.opacity=1;m.needsUpdate=true}if(m.name.includes('shirt_graphic')&&m.map){const layer=canvasTexture(m.map,(ctx,c,img)=>{ctx.drawImage(img,0,0);const p=ctx.getImageData(0,0,c.width,c.height);for(let i=0;i<p.data.length;i+=4){const srgb=[p.data[i],p.data[i+1],p.data[i+2]].map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4});const lum=srgb[0]*.2126+srgb[1]*.7152+srgb[2]*.0722;p.data[i+3]*=Math.max(0,Math.min(1,(.65-lum)/.6));p.data[i]=22;p.data[i+1]=18;p.data[i+2]=24}ctx.putImageData(p,0,0)});m.map=layer.texture;m.color.set('#ffffff');m.transparent=true;m.depthWrite=false;m.needsUpdate=true}}});model.updateMatrixWorld(true);box=new THREE.Box3().setFromObject(model);if(!skinMats.size||!hairMats.size)throw new Error('This GLB needs materials named skin and hair.');for(const kind of ['skin','hair'])color(kind,$(kind).value);updateOutfit();const [animationFailures,mouthFailures]=await Promise.all([setupPreview(),setupMouthPicker()]);frame();$('loading').hidden=true;for(const id of ['random','save','saveGlb','saveVrm','reset'])$(id).disabled=false;const failures=[...animationFailures.map(name=>'Animation unavailable: '+name),...mouthFailures];status(failures.length?failures.join('; '):'Ready',!!failures.length);window.characterStudio={model,skinMats,hairMats,renderer,exportCharacter};}catch(e){console.error(e);$('loading').hidden=true;status('Could not load the character. Serve this folder over HTTP, or choose the exported GLB.',true);const b=document.createElement('button');b.className='load';b.textContent='Choose character GLB';b.onclick=()=>$('file').click();$('status').append(b)}}
-$('file').onchange=async()=>{const f=$('file').files[0];if(f){const u=URL.createObjectURL(f);await load(u);URL.revokeObjectURL(u)}};
-$('save').onclick=()=>{renderer.render(scene,camera);const c=document.createElement('canvas');c.width=1200;c.height=1500;const ctx=c.getContext('2d');const bg=$('background').value;ctx.fillStyle=bg==='rose'?'#be819a':bg==='sage'?'#8d9d91':'#e2decc';ctx.fillRect(0,0,c.width,c.height);ctx.fillStyle='#ffffff25';for(let x=24;x<1200;x+=16)for(let y=24;y<1500;y+=16)ctx.fillRect(x,y,3,3);ctx.strokeStyle='#fff8';ctx.lineWidth=2;ctx.strokeRect(26,26,1148,1448);const src=renderer.domElement;const scale=Math.min(1120/src.width,1300/src.height);ctx.drawImage(src,(1200-src.width*scale)/2,(1440-src.height*scale)/2,src.width*scale,src.height*scale);ctx.fillStyle='#fffbed';ctx.font='italic 38px Arial';ctx.fillText($('caption').textContent,55,1420,1090);c.toBlob(blob=>{if(!blob)return;const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=($('name').value.trim().replace(/[^a-z0-9_-]+/gi,'-')||'pockit-remilios')+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)},'image/png')};
+      function filename() {
+        return (
+          $("name")
+            .value.trim()
+            .replace(/[^a-z0-9_-]+/gi, "-") || "pockit-remilios"
+        );
+      }
+      function downloadBinary(bytes, ext) {
+        const url = URL.createObjectURL(
+          new Blob([bytes], { type: "model/gltf-binary" }),
+        );
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename() + "." + ext;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 30000);
+      }
+      function unpackGLB(buffer) {
+        const view = new DataView(buffer);
+        if (view.getUint32(0, true) !== 0x46546c67)
+          throw new Error("Exporter did not return a GLB.");
+        const size = view.getUint32(12, true);
+        return {
+          json: JSON.parse(
+            new TextDecoder().decode(new Uint8Array(buffer, 20, size)),
+          ),
+          tail: new Uint8Array(buffer, 20 + size),
+        };
+      }
+      function repackGLB(json, tail) {
+        const text = new TextEncoder().encode(JSON.stringify(json));
+        const length = (text.length + 3) & ~3;
+        const result = new ArrayBuffer(20 + length + tail.length);
+        const view = new DataView(result);
+        view.setUint32(0, 0x46546c67, true);
+        view.setUint32(4, 2, true);
+        view.setUint32(8, result.byteLength, true);
+        view.setUint32(12, length, true);
+        view.setUint32(16, 0x4e4f534a, true);
+        const bytes = new Uint8Array(result);
+        bytes.fill(32, 20, 20 + length);
+        bytes.set(text, 20);
+        bytes.set(tail, 20 + length);
+        return result;
+      }
+      function addVRM(buffer) {
+        const { json, tail } = unpackGLB(buffer);
+        const nodes = json.nodes || [];
+        const byName = new Map(
+          nodes.map((n, i) => [
+            (n.name || "").replace(/[^a-z0-9]/gi, "").toLowerCase(),
+            i,
+          ]),
+        );
+        const names = {
+          hips: "Hips",
+          spine: "Spine",
+          chest: "Spine1",
+          upperChest: "Spine2",
+          neck: "Neck",
+          head: "Head",
+        };
+        for (const side of ["left", "right"]) {
+          const s = side[0].toUpperCase() + side.slice(1);
+          Object.assign(names, {
+            [side + "Shoulder"]: s + "Shoulder",
+            [side + "UpperArm"]: s + "Arm",
+            [side + "LowerArm"]: s + "ForeArm",
+            [side + "Hand"]: s + "Hand",
+            [side + "UpperLeg"]: s + "UpLeg",
+            [side + "LowerLeg"]: s + "Leg",
+            [side + "Foot"]: s + "Foot",
+            [side + "Toes"]: s + "ToeBase",
+          });
+          for (const finger of ["Thumb", "Index", "Middle", "Ring", "Little"]) {
+            const mixamo = finger === "Little" ? "Pinky" : finger;
+            const segments =
+              finger === "Thumb"
+                ? ["Metacarpal", "Proximal", "Distal"]
+                : ["Proximal", "Intermediate", "Distal"];
+            segments.forEach(
+              (segment, i) =>
+                (names[side + finger + segment] =
+                  s + "Hand" + mixamo + (i + 1)),
+            );
+          }
+        }
+        const humanBones = {};
+        for (const [name, bone] of Object.entries(names)) {
+          const index = byName.get(("mixamorig" + bone).toLowerCase());
+          if (index !== undefined) humanBones[name] = { node: index };
+        }
+        const required = [
+          "hips",
+          "spine",
+          "head",
+          "leftUpperArm",
+          "leftLowerArm",
+          "leftHand",
+          "rightUpperArm",
+          "rightLowerArm",
+          "rightHand",
+          "leftUpperLeg",
+          "leftLowerLeg",
+          "leftFoot",
+          "rightUpperLeg",
+          "rightLowerLeg",
+          "rightFoot",
+        ];
+        const missing = required.filter((n) => !humanBones[n]);
+        if (missing.length)
+          throw new Error("Missing VRM bones: " + missing.join(", "));
+        const headBinds = { blink_left: [], blink_right: [] };
+        nodes.forEach((n, node) => {
+          if (n.mesh === undefined) return;
+          const mesh = json.meshes[n.mesh];
+          const targets = mesh.extras?.targetNames || [];
+          for (const key of Object.keys(headBinds)) {
+            const index = targets.indexOf(key);
+            if (index >= 0) headBinds[key].push({ node, index, weight: 1 });
+          }
+        });
+        const preset = {};
+        if (headBinds.blink_left.length)
+          preset.blinkLeft = { morphTargetBinds: headBinds.blink_left };
+        if (headBinds.blink_right.length)
+          preset.blinkRight = { morphTargetBinds: headBinds.blink_right };
+        if (Object.keys(preset).length)
+          preset.blink = {
+            morphTargetBinds: [
+              ...headBinds.blink_left,
+              ...headBinds.blink_right,
+            ],
+          };
+        json.extensionsUsed = [
+          ...new Set([...(json.extensionsUsed || []), "VRMC_vrm"]),
+        ];
+        json.extensions = {
+          ...json.extensions,
+          VRMC_vrm: {
+            specVersion: "1.0",
+            meta: {
+              name: $("name").value.trim() || "Pockit Remilio",
+              version: "1.0",
+              authors: ["prnth"],
+              licenseUrl: "https://vrm.dev/licenses/1.0/",
+              avatarPermission: "onlyAuthor",
+              commercialUsage: "personalNonProfit",
+              allowRedistribution: false,
+              modification: "prohibited",
+              creditNotation: "required",
+            },
+            humanoid: { humanBones },
+            ...(Object.keys(preset).length ? { expressions: { preset } } : {}),
+          },
+        };
+        delete json.animations;
+        return repackGLB(json, tail);
+      }
+      async function exportCharacter(format) {
+        if (!model) throw new Error("Wait for the character to load.");
+        model.updateMatrixWorld(true);
+        // Export only the avatar: no preview lights, camera or card background.
+        const pose = capturePose();
+        exportingPose = true;
+        try {
+          const animations =
+            format === "glb"
+              ? ["idle", "walk"].map((name) => {
+                  const clip = clips.find((c) => c.name === name);
+                  if (!clip)
+                    throw new Error(
+                      "Load the " + name + " FBX before exporting GLB.",
+                    );
+                  return clip;
+                })
+              : [];
+          applyPose(restPose);
+          const bytes = await new GLTFExporter().parseAsync(model, {
+            binary: true,
+            onlyVisible: true,
+            trs: true,
+            maxTextureSize: 4096,
+            animations,
+          });
+          return format === "vrm" ? addVRM(bytes) : bytes;
+        } finally {
+          applyPose(pose);
+          exportingPose = false;
+        }
+      }
+      let exporting = false;
+      async function saveModel(format) {
+        if (exporting) return;
+        exporting = true;
+        for (const id of ["saveGlb", "saveVrm"]) $(id).disabled = true;
+        status("Preparing " + format.toUpperCase() + "…");
+        try {
+          const bytes = await exportCharacter(format);
+          downloadBinary(bytes, format);
+          status(format.toUpperCase() + " saved");
+        } catch (e) {
+          console.error(e);
+          status(e.message || "Could not export this character.", true);
+        } finally {
+          exporting = false;
+          for (const id of ["saveGlb", "saveVrm"]) $(id).disabled = false;
+        }
+      }
+      $("saveGlb").onclick = () => saveModel("glb");
+      $("saveVrm").onclick = () => saveModel("vrm");
 
-function filename(){return $('name').value.trim().replace(/[^a-z0-9_-]+/gi,'-')||'pockit-remilios'}
-function downloadBinary(bytes,ext){const url=URL.createObjectURL(new Blob([bytes],{type:'model/gltf-binary'}));const a=document.createElement('a');a.href=url;a.download=filename()+'.'+ext;a.click();setTimeout(()=>URL.revokeObjectURL(url),30000)}
-function unpackGLB(buffer){const view=new DataView(buffer);if(view.getUint32(0,true)!==0x46546c67)throw new Error('Exporter did not return a GLB.');const size=view.getUint32(12,true);return {json:JSON.parse(new TextDecoder().decode(new Uint8Array(buffer,20,size))),tail:new Uint8Array(buffer,20+size)}}
-function repackGLB(json,tail){const text=new TextEncoder().encode(JSON.stringify(json));const length=(text.length+3)&~3;const result=new ArrayBuffer(20+length+tail.length);const view=new DataView(result);view.setUint32(0,0x46546c67,true);view.setUint32(4,2,true);view.setUint32(8,result.byteLength,true);view.setUint32(12,length,true);view.setUint32(16,0x4e4f534a,true);const bytes=new Uint8Array(result);bytes.fill(32,20,20+length);bytes.set(text,20);bytes.set(tail,20+length);return result}
-function addVRM(buffer){
- const {json,tail}=unpackGLB(buffer);
- const nodes=json.nodes||[];
- const byName=new Map(nodes.map((n,i)=>[(n.name||'').replace(/[^a-z0-9]/gi,'').toLowerCase(),i]));
- const names={hips:'Hips',spine:'Spine',chest:'Spine1',upperChest:'Spine2',neck:'Neck',head:'Head'};
- for(const side of ['left','right']){
-  const s=side[0].toUpperCase()+side.slice(1);
-  Object.assign(names,{[side+'Shoulder']:s+'Shoulder',[side+'UpperArm']:s+'Arm',[side+'LowerArm']:s+'ForeArm',[side+'Hand']:s+'Hand',[side+'UpperLeg']:s+'UpLeg',[side+'LowerLeg']:s+'Leg',[side+'Foot']:s+'Foot',[side+'Toes']:s+'ToeBase'});
-  for(const finger of ['Thumb','Index','Middle','Ring','Little']){
-   const mixamo=finger==='Little'?'Pinky':finger;
-   const segments=finger==='Thumb'?['Metacarpal','Proximal','Distal']:['Proximal','Intermediate','Distal'];
-   segments.forEach((segment,i)=>names[side+finger+segment]=s+'Hand'+mixamo+(i+1));
-  }
- }
- const humanBones={};for(const [name,bone] of Object.entries(names)){const index=byName.get(('mixamorig'+bone).toLowerCase());if(index!==undefined)humanBones[name]={node:index}}
- const required=['hips','spine','head','leftUpperArm','leftLowerArm','leftHand','rightUpperArm','rightLowerArm','rightHand','leftUpperLeg','leftLowerLeg','leftFoot','rightUpperLeg','rightLowerLeg','rightFoot'];
- const missing=required.filter(n=>!humanBones[n]);if(missing.length)throw new Error('Missing VRM bones: '+missing.join(', '));
- const headBinds={blink_left:[],blink_right:[]};
- nodes.forEach((n,node)=>{if(n.mesh===undefined)return;const mesh=json.meshes[n.mesh];const targets=mesh.extras?.targetNames||[];for(const key of Object.keys(headBinds)){const index=targets.indexOf(key);if(index>=0)headBinds[key].push({node,index,weight:1})}});
- const preset={};if(headBinds.blink_left.length)preset.blinkLeft={morphTargetBinds:headBinds.blink_left};if(headBinds.blink_right.length)preset.blinkRight={morphTargetBinds:headBinds.blink_right};if(Object.keys(preset).length)preset.blink={morphTargetBinds:[...headBinds.blink_left,...headBinds.blink_right]};
- json.extensionsUsed=[...new Set([...(json.extensionsUsed||[]),'VRMC_vrm'])];
- json.extensions={...json.extensions,VRMC_vrm:{specVersion:'1.0',meta:{name:$('name').value.trim()||'Pockit Remilio',version:'1.0',authors:['prnth'],licenseUrl:'https://vrm.dev/licenses/1.0/',avatarPermission:'onlyAuthor',commercialUsage:'personalNonProfit',allowRedistribution:false,modification:'prohibited',creditNotation:'required'},humanoid:{humanBones},...(Object.keys(preset).length?{expressions:{preset}}:{})}};
- delete json.animations;
- return repackGLB(json,tail);
-}
-async function exportCharacter(format){
- if(!model)throw new Error('Wait for the character to load.');
- model.updateMatrixWorld(true);
- // Export only the avatar: no preview lights, camera or card background.
- const pose=capturePose();exportingPose=true;
- try{const animations=format==='glb'?['idle','walk'].map(name=>{const clip=clips.find(c=>c.name===name);if(!clip)throw new Error('Load the '+name+' FBX before exporting GLB.');return clip}):[];applyPose(restPose);const bytes=await new GLTFExporter().parseAsync(model,{binary:true,onlyVisible:true,trs:true,maxTextureSize:4096,animations});return format==='vrm'?addVRM(bytes):bytes;}finally{applyPose(pose);exportingPose=false}
-}
-let exporting=false;
-async function saveModel(format){if(exporting)return;exporting=true;for(const id of ['saveGlb','saveVrm'])$(id).disabled=true;status('Preparing '+format.toUpperCase()+'…');try{const bytes=await exportCharacter(format);downloadBinary(bytes,format);status(format.toUpperCase()+' saved')}catch(e){console.error(e);status(e.message||'Could not export this character.',true)}finally{exporting=false;for(const id of ['saveGlb','saveVrm'])$(id).disabled=false}}
-$('saveGlb').onclick=()=>saveModel('glb');$('saveVrm').onclick=()=>saveModel('vrm');
-
-try{renderer=new THREE.WebGLRenderer({canvas:$('canvas'),alpha:true,antialias:true,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.2;scene=new THREE.Scene();camera=new THREE.PerspectiveCamera(32,1,.01,100);controls=new OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.enablePan=false;scene.add(new THREE.HemisphereLight(0xfff7ee,0x857884,2.4));const key=new THREE.DirectionalLight(0xfff5e7,2.7);key.position.set(-3,5,6);scene.add(key);const fill=new THREE.DirectionalLight(0xd9e9ff,1.1);fill.position.set(4,2,-3);scene.add(fill);new ResizeObserver(()=>{const r=$('canvas').getBoundingClientRect();renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;camera.updateProjectionMatrix();frame()}).observe($('card'));renderer.setAnimationLoop(now=>{updatePreview(now);controls.update();renderer.render(scene,camera)});load('./remilio.glb')}catch(e){console.error(e);$('loading').hidden=true;status('The 3D preview needs WebGL. Please try a browser with hardware acceleration enabled.',true)}
-</script>
-</body></html>
+      try {
+        renderer = new THREE.WebGLRenderer({
+          canvas: $("canvas"),
+          alpha: true,
+          antialias: true,
+          preserveDrawingBuffer: true,
+        });
+        renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(32, 1, 0.01, 100);
+        controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.enablePan = false;
+        scene.add(new THREE.HemisphereLight(0xfff7ee, 0x857884, 2.4));
+        const key = new THREE.DirectionalLight(0xfff5e7, 2.7);
+        key.position.set(-3, 5, 6);
+        scene.add(key);
+        const fill = new THREE.DirectionalLight(0xd9e9ff, 1.1);
+        fill.position.set(4, 2, -3);
+        scene.add(fill);
+        new ResizeObserver(() => {
+          const r = $("canvas").getBoundingClientRect();
+          renderer.setSize(r.width, r.height, false);
+          camera.aspect = r.width / r.height;
+          camera.updateProjectionMatrix();
+          frame();
+        }).observe($("card"));
+        renderer.setAnimationLoop((now) => {
+          updatePreview(now);
+          controls.update();
+          renderer.render(scene, camera);
+        });
+        load("./remilio.glb");
+      } catch (e) {
+        console.error(e);
+        $("loading").hidden = true;
+        status(
+          "The 3D preview needs WebGL. Please try a browser with hardware acceleration enabled.",
+          true,
+        );
+      }
+    </script>
+  </body>
+</html>

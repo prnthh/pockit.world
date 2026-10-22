@@ -41,11 +41,6 @@ export default function Home() {
 
                 Inspired by Tamagotchi, Gameboy and other retro portable consoles, Pockit is a console in your Ethereum wallet. <br /><br />
 
-                <div>
-                    You can buy a Pockit Milady on <a className="text-blue-600" href="https://opensea.io/collection/pockit-milady" target="_blank">OpenSea</a>.<br /><br />
-
-                </div>
-
                 <PockitViewer />
 
 
