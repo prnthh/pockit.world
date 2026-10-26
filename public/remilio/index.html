@@ -5,7 +5,7 @@ API references: https://threejs.org/docs/pages/GLTFLoader.html
 https://threejs.org/docs/pages/GLTFExporter.html
 https://github.com/vrm-c/vrm-specification/tree/master/specification/VRMC_vrm-1.0
 https://threejs.org/docs/pages/OrbitControls.html
-The blend is the source of truth; the GLB is a character export; preview animations come from the original FBX files; GLB downloads include Idle and Walk. -->
+The blend is the source of truth; the GLB is a character export; Idle and Walk are embedded clips; Seated Idle and Cross Jumps load from FBX. -->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -382,6 +382,33 @@ The blend is the source of truth; the GLB is a character export; preview animati
           <aside class="panel">
             <h1>Appearance</h1>
             <div class="field">
+              <span class="label" id="animationLabel">Animation:</span>
+              <div
+                id="animation"
+                class="button-row"
+                role="group"
+                aria-labelledby="animationLabel"
+              >
+                <button
+                  type="button"
+                  class="bevel"
+                  data-animation=""
+                  aria-pressed="true"
+                  disabled
+                >
+                  T-pose
+                </button>
+              </div>
+            </div>
+            <div class="field">
+              <span class="label">Blink preview:</span>
+              <div class="button-row">
+                <button class="bevel" id="blinkBoth" disabled>Blink</button
+                ><button class="bevel" id="blinkLeft" disabled>Left</button
+                ><button class="bevel" id="blinkRight" disabled>Right</button>
+              </div>
+            </div>
+            <div class="field">
               <label for="skin">Skin color:</label>
               <div class="color-row">
                 <input id="skin" type="color" value="#b84e4b" /><input
@@ -445,33 +472,6 @@ The blend is the source of truth; the GLB is a character export; preview animati
                 aria-labelledby="mouthLabel"
               ></div>
             </div>
-            <div class="field">
-              <span class="label" id="animationLabel">Animation:</span>
-              <div
-                id="animation"
-                class="button-row"
-                role="group"
-                aria-labelledby="animationLabel"
-              >
-                <button
-                  type="button"
-                  class="bevel"
-                  data-animation=""
-                  aria-pressed="true"
-                  disabled
-                >
-                  T-pose
-                </button>
-              </div>
-            </div>
-            <div class="field">
-              <span class="label">Blink preview:</span>
-              <div class="button-row">
-                <button class="bevel" id="blinkBoth" disabled>Blink</button
-                ><button class="bevel" id="blinkLeft" disabled>Left</button
-                ><button class="bevel" id="blinkRight" disabled>Right</button>
-              </div>
-            </div>
             <div class="actions">
               <button class="bevel" id="random" disabled>Random</button
               ><button class="bevel" id="save" disabled>Save PNG</button
@@ -519,6 +519,7 @@ The blend is the source of truth; the GLB is a character export; preview animati
         hairMats = new Set();
       let model, renderer, controls, camera, scene, box;
       let mixer,
+        activeAction,
         clips = [],
         restPose = [],
         lastFrame = 0,
@@ -680,11 +681,12 @@ The blend is the source of truth; the GLB is a character export; preview animati
       }
       function playAnimation() {
         if (!mixer) return;
-        mixer.stopAllAction();
-        applyPose(restPose);
-        blinkStart = null;
         const clip = clips.find((c) => c.name === selectedAnimation);
-        if (clip) mixer.clipAction(clip).reset().play();
+        const nextAction = clip ? mixer.clipAction(clip) : null;
+        if (nextAction === activeAction) return;
+        activeAction?.fadeOut(0.25);
+        nextAction?.reset().setEffectiveWeight(1).fadeIn(0.25).play();
+        activeAction = nextAction;
       }
       for (const [id, side] of [
         ["blinkBoth", "both"],
@@ -695,105 +697,16 @@ The blend is the source of truth; the GLB is a character export; preview animati
           blinkSide = side;
           blinkStart = performance.now();
         };
-      // Match animation bones by name, then convert world-space motion between the
-      // FBX and Blender-exported rest orientations and units.
       function animationFromFBX(source, name) {
-        const normalize = (n) => n.replace(/[^a-z0-9]/gi, "").toLowerCase();
-        const sourceBones = new Map();
-        source.updateMatrixWorld(true);
-        model.updateMatrixWorld(true);
-        source.traverse((o) => {
-          if (o.isBone) sourceBones.set(normalize(o.name), o);
-        });
-        const pairs = [];
-        model.traverse((o) => {
-          const src = sourceBones.get(normalize(o.name));
-          if (o.isBone && src)
-            pairs.push({
-              target: o,
-              source: src,
-              sourceRest: src
-                .getWorldQuaternion(new THREE.Quaternion())
-                .invert(),
-              targetRest: o.getWorldQuaternion(new THREE.Quaternion()),
-              positions: [],
-              rotations: [],
-            });
-        });
-        if (!source.animations.length || !pairs.length)
-          throw new Error("No matching animation skeleton in " + name);
-        const hips = pairs.find(
-            (p) => normalize(p.target.name) === "mixamorighips",
-          ),
-          head = pairs.find(
-            (p) => normalize(p.target.name) === "mixamorighead",
-          );
-        if (!hips || !head)
-          throw new Error("Animation needs matching hips and head bones.");
-        const point = (o) => o.getWorldPosition(new THREE.Vector3());
-        const sourceHip = point(hips.source),
-          targetHip = point(hips.target);
-        const scale =
-          point(head.target).distanceTo(targetHip) /
-          point(head.source).distanceTo(sourceHip);
-        const clip = source.animations[0],
-          sampleMixer = new THREE.AnimationMixer(source);
-        sampleMixer.clipAction(clip).play();
-        const steps = Math.max(1, Math.ceil(clip.duration * 30)),
-          times = [];
-        const saved = capturePose();
-        try {
-          for (let i = 0; i <= steps; i++) {
-            const time = Math.min(i / 30, clip.duration);
-            times.push(time);
-            sampleMixer.setTime(time);
-            source.updateMatrixWorld(true);
-            for (const p of pairs) {
-              const world = p.source
-                .getWorldQuaternion(new THREE.Quaternion())
-                .multiply(p.sourceRest)
-                .multiply(p.targetRest);
-              const parent = p.target.parent.getWorldQuaternion(
-                new THREE.Quaternion(),
-              );
-              p.target.quaternion.copy(parent.invert().multiply(world));
-              if (p === hips) {
-                const position = point(p.source)
-                  .sub(sourceHip)
-                  .multiplyScalar(scale)
-                  .add(targetHip);
-                p.target.position.copy(p.target.parent.worldToLocal(position));
-                p.positions.push(...p.target.position.toArray());
-              }
-              p.target.updateMatrixWorld(true);
-              p.rotations.push(...p.target.quaternion.toArray());
-            }
-          }
-        } finally {
-          sampleMixer.stopAllAction();
-          sampleMixer.uncacheRoot(source);
-          applyPose(saved);
-        }
-        const tracks = pairs.map(
-          (p) =>
-            new THREE.QuaternionKeyframeTrack(
-              p.target.name + ".quaternion",
-              times,
-              p.rotations,
-            ),
-        );
-        tracks.push(
-          new THREE.VectorKeyframeTrack(
-            hips.target.name + ".position",
-            times,
-            hips.positions,
-          ),
-        );
-        return new THREE.AnimationClip(name, clip.duration, tracks);
+        const clip = source.animations[0]?.clone();
+        if (!clip) throw new Error("No animation in " + name);
+        clip.name = name;
+        return clip;
       }
-      async function setupPreview() {
+      async function setupPreview(embeddedClips) {
         mixer = new THREE.AnimationMixer(model);
-        clips = [];
+        activeAction = null;
+        clips = [...embeddedClips];
         restPose = capturePose();
         blinkStart = null;
         selectedAnimation = "";
@@ -809,15 +722,11 @@ The blend is the source of truth; the GLB is a character export; preview animati
         $("blinkRight").disabled = !available.has("blink_right");
         $("blinkBoth").disabled =
           !available.has("blink_left") && !available.has("blink_right");
+        for (const clip of clips)
+          picker.append(animationButton(clip.name, clip.name === "idle" ? "Idle" : clip.name === "walk" ? "Walk" : clip.name));
         const sources = [
-          ["idle", "Idle", "Idle.fbx"],
           ["seatedIdle", "Seated idle", "Seated Idle.fbx"],
-          ["walk", "Walk", "Walk.fbx"],
-          [
-            "crossJumpsRotation",
-            "Cross jumps rotation",
-            "Cross Jumps Rotation.fbx",
-          ],
+          ["crossJumpsRotation", "Cross jumps rotation", "Cross Jumps Rotation.fbx"],
         ];
         const loaded = await Promise.allSettled(
           sources.map(async ([name, label, file]) => ({
@@ -970,7 +879,6 @@ The blend is the source of truth; the GLB is a character export; preview animati
             scene.remove(model);
           }
           model = gltf.scene;
-          model.rotation.y = 0;
           scene.add(model);
           skinMats.clear();
           hairMats.clear();
@@ -991,7 +899,7 @@ The blend is the source of truth; the GLB is a character export; preview animati
           for (const kind of ["skin", "hair"]) color(kind, $(kind).value);
           updateOutfit();
           const [animationFailures, mouthFailures] = await Promise.all([
-            setupPreview(),
+            setupPreview(gltf.animations),
             setupMouthPicker(),
           ]);
           updateExpression();
@@ -1232,17 +1140,7 @@ The blend is the source of truth; the GLB is a character export; preview animati
         const pose = capturePose();
         exportingPose = true;
         try {
-          const animations =
-            format === "glb"
-              ? ["idle", "walk"].map((name) => {
-                  const clip = clips.find((c) => c.name === name);
-                  if (!clip)
-                    throw new Error(
-                      "Load the " + name + " FBX before exporting GLB.",
-                    );
-                  return clip;
-                })
-              : [];
+          const animations = format === "glb" ? clips.filter((clip) => ["idle", "walk"].includes(clip.name)) : [];
           applyPose(restPose);
           updateExpression();
           const bytes = await new GLTFExporter().parseAsync(model, {
