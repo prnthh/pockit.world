@@ -20,12 +20,12 @@ The blend is the source of truth; the GLB is a character export; preview animati
       }
       * {
         box-sizing: border-box;
+        scrollbar-color: #85857b transparent;
       }
       body {
         margin: 0;
         height: 100dvh;
         overflow: hidden;
-        background: inherit;
       }
       .page-scroll {
         height: 100%;
@@ -60,9 +60,6 @@ The blend is the source of truth; the GLB is a character export; preview animati
           3px 4px 0 #929180;
       }
       .titlebar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
         padding: 0 4px 11px;
         font-size: 11px;
         letter-spacing: 2px;
@@ -88,8 +85,6 @@ The blend is the source of truth; the GLB is a character export; preview animati
       }
       .preview-frame {
         padding: 18px;
-        background: #f8f8f4;
-        border: 1px solid #fff;
         min-width: 0;
       }
       .card {
@@ -102,26 +97,6 @@ The blend is the source of truth; the GLB is a character export; preview animati
           0 0 0 2px #f2f0e5,
           0 0 0 4px #b4b2a7,
           inset 0 0 0 2px #fff8;
-        background: #bb7b92;
-      }
-      .card:before {
-        content: "";
-        position: absolute;
-        inset: 12px;
-        border: 1px solid #fff8;
-        pointer-events: none;
-        z-index: 1;
-      }
-      .card[data-bg="rose"] {
-        background-color: #be819a;
-        background-image:
-          radial-gradient(#ffdded55 1.5px, transparent 1.5px),
-          linear-gradient(145deg, #a57882, #d88ba9);
-        background-size:
-          12px 12px,
-          100% 100%;
-      }
-      .card[data-bg="sage"] {
         background-color: #8d9d91;
         background-image:
           radial-gradient(#e8f4df55 1.5px, transparent 1.5px),
@@ -130,8 +105,13 @@ The blend is the source of truth; the GLB is a character export; preview animati
           12px 12px,
           100% 100%;
       }
-      .card[data-bg="paper"] {
-        background: #e2decc;
+      .card:before {
+        content: "";
+        position: absolute;
+        inset: 12px;
+        border: 1px solid #fff8;
+        pointer-events: none;
+        z-index: 1;
       }
       .card canvas {
         display: block;
@@ -148,8 +128,6 @@ The blend is the source of truth; the GLB is a character export; preview animati
         right: 26px;
         z-index: 3;
         display: flex;
-        justify-content: space-between;
-        align-items: end;
         color: #fffbed;
         pointer-events: none;
       }
@@ -290,12 +268,6 @@ The blend is the source of truth; the GLB is a character export; preview animati
       .error {
         color: #862d34;
       }
-      .tip {
-        font-size: 11px;
-        line-height: 1.5;
-        color: #747468;
-        margin: 0;
-      }
       .loading {
         position: absolute;
         inset: 0;
@@ -364,18 +336,9 @@ The blend is the source of truth; the GLB is a character export; preview animati
         height: 30px;
         object-fit: contain;
       }
-      * {
-        scrollbar-color: #85857b transparent;
-      }
       ::-webkit-scrollbar {
         width: 10px;
         height: 10px;
-        background: transparent;
-      }
-      ::-webkit-scrollbar-track,
-      ::-webkit-scrollbar-track-piece,
-      ::-webkit-scrollbar-corner {
-        background: transparent;
       }
       ::-webkit-scrollbar-thumb {
         background: #85857b;
@@ -404,7 +367,7 @@ The blend is the source of truth; the GLB is a character export; preview animati
         />
         <div class="workspace">
           <section class="preview-frame" aria-label="Character preview">
-            <div class="card" id="card" data-bg="rose">
+            <div class="card" id="card">
               <canvas
                 id="canvas"
                 aria-label="Interactive 3D character. Drag to rotate and scroll to zoom."
@@ -418,14 +381,6 @@ The blend is the source of truth; the GLB is a character export; preview animati
           </section>
           <aside class="panel">
             <h1>Appearance</h1>
-            <div class="field">
-              <label for="background">Background:</label
-              ><select id="background">
-                <option value="rose">Rose</option>
-                <option value="sage">Sage</option>
-                <option value="paper">Paper</option>
-              </select>
-            </div>
             <div class="field">
               <label for="skin">Skin color:</label>
               <div class="color-row">
@@ -463,11 +418,8 @@ The blend is the source of truth; the GLB is a character export; preview animati
               ></div>
             </div>
             <div class="field">
-              <label for="view">View:</label
-              ><select id="view">
-                <option value="full">Full character</option>
-                <option value="portrait">Portrait</option>
-              </select>
+              <label for="angry">Angry: <output id="angryAmount">0%</output></label>
+              <input id="angry" type="range" min="0" max="100" value="0" aria-label="Angry expression" />
             </div>
             <div class="field">
               <label for="top">Top:</label
@@ -526,7 +478,7 @@ The blend is the source of truth; the GLB is a character export; preview animati
               ><button class="bevel" id="saveGlb" disabled>Save GLB</button
               ><button class="bevel" id="saveVrm" disabled>Save VRM</button
               ><button class="bevel reset" id="reset" disabled>
-                Reset colors & view
+                Reset appearance
               </button>
             </div>
             <div class="status" id="status" role="status">
@@ -564,8 +516,7 @@ The blend is the source of truth; the GLB is a character export; preview animati
         ],
       };
       const skinMats = new Set(),
-        hairMats = new Set(),
-        eyeLayers = [];
+        hairMats = new Set();
       let model, renderer, controls, camera, scene, box;
       let mixer,
         clips = [],
@@ -901,6 +852,7 @@ The blend is the source of truth; the GLB is a character export; preview animati
         lastFrame = now;
         if (exportingPose) return;
         mixer?.update(delta);
+        updateExpression();
         if (blinkStart !== null) {
           const t = (now - blinkStart) / 650;
           const amount =
@@ -923,23 +875,12 @@ The blend is the source of truth; the GLB is a character export; preview animati
         $("status").textContent = text;
         $("status").classList.toggle("error", error);
       }
-      function recolorEyes(hex) {
-        for (const layer of eyeLayers) {
-          const { ctx, canvas, image, texture } = layer;
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.fillStyle = hex;
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(image, 0, 0);
-          texture.needsUpdate = true;
-        }
-      }
       function color(kind, value) {
         if (!/^#[0-9a-f]{6}$/i.test(value)) return;
         $(kind).value = value;
         $(kind + "Hex").value = value.toUpperCase();
         const selected = kind === "skin" ? skinMats : hairMats;
         for (const m of selected) m.color.set(value);
-        if (kind === "skin") recolorEyes(value);
         for (const b of $(kind + "Swatches").children)
           b.setAttribute(
             "aria-pressed",
@@ -967,9 +908,6 @@ The blend is the source of truth; the GLB is a character export; preview animati
       $("name").oninput = () => {
         $("caption").textContent = $("name").value.trim() || "Pockit Remilio";
       };
-      $("background").onchange = () => {
-        $("card").dataset.bg = $("background").value;
-      };
       $("random").onclick = () => {
         for (const kind of ["skin", "hair"])
           color(
@@ -980,19 +918,26 @@ The blend is the source of truth; the GLB is a character export; preview animati
       $("reset").onclick = () => {
         color("skin", defaults.skin);
         color("hair", defaults.hair);
-        $("view").value = "full";
+        $("angry").value = "0";
+        updateExpression();
         frame();
       };
-      $("view").onchange = () => frame();
+      function updateExpression() {
+        const amount = Number($("angry").value) / 100;
+        $("angryAmount").value = Math.round(amount * 100) + "%";
+        model?.traverse((object) => {
+          const index = object.morphTargetDictionary?.angry;
+          if (index !== undefined) object.morphTargetInfluences[index] = amount;
+        });
+      }
+      $("angry").oninput = updateExpression;
       function updateOutfit() {
         if (!model) return;
         model.traverse((object) => {
           const name = object.name
-            .replace(/^Preview_/, "")
             .replace(/[^a-z]/gi, "")
-            .toLowerCase()
-            .replace(/glb$/, "");
-          if (name === "shirt" || name === "shirtgraphic")
+            .toLowerCase();
+          if (name === "shirt")
             object.visible = $("top").value === "tshirt";
           if (name === "hornl" || name === "hornr")
             object.visible = $("headAccessory").value === "oni";
@@ -1003,13 +948,9 @@ The blend is the source of truth; the GLB is a character export; preview animati
       function frame() {
         if (!box) return;
         const size = box.getSize(new THREE.Vector3()),
-          center = box.getCenter(new THREE.Vector3()),
-          portrait = $("view").value === "portrait";
-        const target = portrait
-          ? new THREE.Vector3(center.x, box.min.y + size.y * 0.82, center.z)
-          : center;
-        const height = portrait ? size.y * 0.43 : size.y * 1.16;
-        const width = portrait ? size.x * 0.4 : size.x * 1.15;
+          target = box.getCenter(new THREE.Vector3());
+        const height = size.y * 1.16;
+        const width = size.x * 1.15;
         const d =
           Math.max(height, width / camera.aspect) /
           (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
@@ -1018,24 +959,6 @@ The blend is the source of truth; the GLB is a character export; preview animati
         controls.minDistance = size.y * 0.28;
         controls.maxDistance = size.y * 5;
         controls.update();
-      }
-      function canvasTexture(original, paint) {
-        const image = original.image;
-        const c = document.createElement("canvas");
-        c.width = image.width;
-        c.height = image.height;
-        const ctx = c.getContext("2d", { willReadFrequently: true });
-        paint(ctx, c, image);
-        const t = new THREE.CanvasTexture(c);
-        t.flipY = original.flipY;
-        t.colorSpace = THREE.SRGBColorSpace;
-        t.wrapS = original.wrapS;
-        t.wrapT = original.wrapT;
-        t.offset.copy(original.offset);
-        t.repeat.copy(original.repeat);
-        t.magFilter = THREE.LinearFilter;
-        t.needsUpdate = true;
-        return { canvas: c, ctx, image, texture: t };
       }
       async function load(url) {
         $("loading").hidden = false;
@@ -1051,58 +974,14 @@ The blend is the source of truth; the GLB is a character export; preview animati
           scene.add(model);
           skinMats.clear();
           hairMats.clear();
-          eyeLayers.length = 0;
-          const processed = new Set();
           model.traverse((o) => {
             if (!o.isMesh) return;
             o.frustumCulled = false;
             for (const m of Array.isArray(o.material)
               ? o.material
               : [o.material]) {
-              if (processed.has(m)) continue;
-              processed.add(m);
               if (m.name === "skin") skinMats.add(m);
               if (m.name === "hair") hairMats.add(m);
-              if (m.name.includes("eye_") && m.map) {
-                const layer = canvasTexture(m.map, () => {});
-                eyeLayers.push(layer);
-                m.map = layer.texture;
-                m.color.set("#ffffff");
-                m.transparent = false;
-                m.opacity = 1;
-                m.needsUpdate = true;
-              }
-              if (m.name.includes("shirt_graphic") && m.map) {
-                const layer = canvasTexture(m.map, (ctx, c, img) => {
-                  ctx.drawImage(img, 0, 0);
-                  const p = ctx.getImageData(0, 0, c.width, c.height);
-                  for (let i = 0; i < p.data.length; i += 4) {
-                    const srgb = [p.data[i], p.data[i + 1], p.data[i + 2]].map(
-                      (v) => {
-                        v /= 255;
-                        return v <= 0.04045
-                          ? v / 12.92
-                          : ((v + 0.055) / 1.055) ** 2.4;
-                      },
-                    );
-                    const lum =
-                      srgb[0] * 0.2126 + srgb[1] * 0.7152 + srgb[2] * 0.0722;
-                    p.data[i + 3] *= Math.max(
-                      0,
-                      Math.min(1, (0.65 - lum) / 0.6),
-                    );
-                    p.data[i] = 22;
-                    p.data[i + 1] = 18;
-                    p.data[i + 2] = 24;
-                  }
-                  ctx.putImageData(p, 0, 0);
-                });
-                m.map = layer.texture;
-                m.color.set("#ffffff");
-                m.transparent = true;
-                m.depthWrite = false;
-                m.needsUpdate = true;
-              }
             }
           });
           model.updateMatrixWorld(true);
@@ -1115,6 +994,7 @@ The blend is the source of truth; the GLB is a character export; preview animati
             setupPreview(),
             setupMouthPicker(),
           ]);
+          updateExpression();
           frame();
           $("loading").hidden = true;
           for (const id of ["random", "save", "saveGlb", "saveVrm", "reset"])
@@ -1129,20 +1009,10 @@ The blend is the source of truth; the GLB is a character export; preview animati
             failures.length ? failures.join("; ") : "Ready",
             !!failures.length,
           );
-          window.characterStudio = {
-            model,
-            skinMats,
-            hairMats,
-            renderer,
-            exportCharacter,
-          };
         } catch (e) {
           console.error(e);
           $("loading").hidden = true;
-          status(
-            "Could not load the character. Serve this folder over HTTP, or choose the exported GLB.",
-            true,
-          );
+          status("Could not load the character.", true);
           const b = document.createElement("button");
           b.className = "load";
           b.textContent = "Choose character GLB";
@@ -1164,9 +1034,7 @@ The blend is the source of truth; the GLB is a character export; preview animati
         c.width = 1200;
         c.height = 1500;
         const ctx = c.getContext("2d");
-        const bg = $("background").value;
-        ctx.fillStyle =
-          bg === "rose" ? "#be819a" : bg === "sage" ? "#8d9d91" : "#e2decc";
+        ctx.fillStyle = "#8d9d91";
         ctx.fillRect(0, 0, c.width, c.height);
         ctx.fillStyle = "#ffffff25";
         for (let x = 24; x < 1200; x += 16)
@@ -1190,10 +1058,7 @@ The blend is the source of truth; the GLB is a character export; preview animati
           if (!blob) return;
           const a = document.createElement("a");
           a.href = URL.createObjectURL(blob);
-          a.download =
-            ($("name")
-              .value.trim()
-              .replace(/[^a-z0-9_-]+/gi, "-") || "pockit-remilios") + ".png";
+          a.download = filename() + ".png";
           a.click();
           setTimeout(() => URL.revokeObjectURL(a.href), 1000);
         }, "image/png");
@@ -1311,7 +1176,7 @@ The blend is the source of truth; the GLB is a character export; preview animati
         const missing = required.filter((n) => !humanBones[n]);
         if (missing.length)
           throw new Error("Missing VRM bones: " + missing.join(", "));
-        const headBinds = { blink_left: [], blink_right: [] };
+        const headBinds = { blink_left: [], blink_right: [], angry: [] };
         nodes.forEach((n, node) => {
           if (n.mesh === undefined) return;
           const mesh = json.meshes[n.mesh];
@@ -1326,7 +1191,9 @@ The blend is the source of truth; the GLB is a character export; preview animati
           preset.blinkLeft = { morphTargetBinds: headBinds.blink_left };
         if (headBinds.blink_right.length)
           preset.blinkRight = { morphTargetBinds: headBinds.blink_right };
-        if (Object.keys(preset).length)
+        if (headBinds.angry.length)
+          preset.angry = { morphTargetBinds: headBinds.angry };
+        if (headBinds.blink_left.length || headBinds.blink_right.length)
           preset.blink = {
             morphTargetBinds: [
               ...headBinds.blink_left,
@@ -1377,6 +1244,7 @@ The blend is the source of truth; the GLB is a character export; preview animati
                 })
               : [];
           applyPose(restPose);
+          updateExpression();
           const bytes = await new GLTFExporter().parseAsync(model, {
             binary: true,
             onlyVisible: true,
