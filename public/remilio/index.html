@@ -5,7 +5,7 @@ API references: https://threejs.org/docs/pages/GLTFLoader.html
 https://threejs.org/docs/pages/GLTFExporter.html
 https://github.com/vrm-c/vrm-specification/tree/master/specification/VRMC_vrm-1.0
 https://threejs.org/docs/pages/OrbitControls.html
-The blend is the source of truth; the GLB is a character export; Idle and Walk are embedded clips; Seated Idle and Cross Jumps load from FBX. -->
+The blend is the source of truth; the GLB is a character export; Idle, Walk, and Run are embedded clips; additional previews load from FBX. -->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -723,10 +723,13 @@ The blend is the source of truth; the GLB is a character export; Idle and Walk a
         $("blinkBoth").disabled =
           !available.has("blink_left") && !available.has("blink_right");
         for (const clip of clips)
-          picker.append(animationButton(clip.name, clip.name === "idle" ? "Idle" : clip.name === "walk" ? "Walk" : clip.name));
+          picker.append(animationButton(clip.name, clip.name === "idle" ? "Idle" : clip.name === "walk" ? "Walk" : clip.name === "run" ? "Run" : clip.name));
         const sources = [
           ["seatedIdle", "Seated idle", "Seated Idle.fbx"],
           ["crossJumpsRotation", "Cross jumps rotation", "Cross Jumps Rotation.fbx"],
+          ["idleCrouching", "Idle crouching", "Idle Crouching.fbx"],
+          ["crouchScoped", "Crouch scoped", "Crouch Scoped.fbx"],
+          ["throw", "Throw", "Throw.fbx"],
         ];
         const loaded = await Promise.allSettled(
           sources.map(async ([name, label, file]) => ({
@@ -1146,7 +1149,7 @@ The blend is the source of truth; the GLB is a character export; Idle and Walk a
         const pose = capturePose();
         exportingPose = true;
         try {
-          const animations = format === "glb" ? clips.filter((clip) => ["idle", "walk"].includes(clip.name)) : [];
+          const animations = format === "glb" ? clips.filter((clip) => ["idle", "walk", "run"].includes(clip.name)) : [];
           applyPose(restPose);
           updateExpression();
           const bytes = await new GLTFExporter().parseAsync(model, {
