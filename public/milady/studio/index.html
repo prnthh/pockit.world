@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Pockit Milady Studio</title>
+  <meta name="description" content="Animate a Pockit Milady VRM with face and pose tracking.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Pockit Milady Studio">
+  <meta property="og:description" content="Animate a Pockit Milady VRM with face and pose tracking.">
+  <meta property="og:url" content="https://pockit.world/milady/studio/">
+  <meta property="og:image" content="https://pockit.world/ui/pockitlogo.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:creator" content="@pockitmilady">
+  <link rel="icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/site.js" defer></script>
+</head>
+<body class="studio-page">
+
+  <main id="studio-root" class="pockit-milady-studio" aria-label="Pockit Milady Studio">
+      <section id="ui" class="hidden" aria-label="Studio settings">
+        <button id="uiClose" title="Back to the buttons">✕</button>
+        <div id="status">loading…</div>
+        <label>
+          milady #
+          <input id="milady" type="text" inputmode="numeric" placeholder="1–1111" class="studio-token-input" />
+          <button id="loadMilady">load</button>
+          <button id="randMilady" title="Random milady">🎲</button>
+          <button id="kbMilady" class="kbtoggle" title="Toggle keyboard">⌨</button>
+        </label>
+        <label><input type="checkbox" id="mirror" checked /> mirror</label>
+        <label><input type="checkbox" id="arms" checked /> arm tracking</label>
+        <label><input type="checkbox" id="camMouth" checked /> camera mouth</label>
+        <label><input type="checkbox" id="micMouth" /> mic mouth</label>
+        <label title="Changes your voice in recordings">
+          voice fx:
+          <select id="voice" >
+            <option value="off" selected>off</option>
+            <option value="deep">deep</option>
+            <option value="robot">robot</option>
+            <option value="cute">cute</option>
+          </select>
+        </label>
+        <label><input type="checkbox" id="flipPitch" /> flip pitch</label>
+        <label><input type="checkbox" id="flipYaw" /> flip yaw</label>
+        <label><input type="checkbox" id="flipRoll" /> flip roll</label>
+        <div class="fxrow">
+          fx:
+          <label><input type="checkbox" id="fxSparkle" /> ✨</label>
+          <label><input type="checkbox" id="fxHeart" /> 💕</label>
+          <label><input type="checkbox" id="fxRainbow" /> 🌈</label>
+          <label><input type="checkbox" id="fxScan" /> 📺</label>
+          <label><input type="checkbox" id="fxFish" /> 🐟</label>
+        </div>
+        <label>
+          background:
+          <select id="bg" >
+            <option value="transparent" selected>transparent</option>
+            <option value="green">green</option>
+            <option value="magenta">magenta</option>
+            <option value="white">white</option>
+            <option value="black">black</option>
+            <option value="smiley">cult</option>
+            <option value="image">image</option>
+          </select>
+        </label>
+        <input type="file" id="bgFile" accept="image/*" hidden />
+        <button id="bgPick">pick bg image</button>
+        <button id="rezero">re-zero head</button>
+        <button id="recordBtn">● record</button>
+        <div class="studio-help">✕ or H closes this panel<br />drop a picture anywhere = bg image</div>
+        <div class="linksrow">
+          <a href="https://github.com/wables411/milady-tracker" target="_blank" rel="noopener noreferrer">github</a> ·
+          <a href="https://pockit.world/milady" target="_blank" rel="noopener noreferrer">pockit milady</a> ·
+          <a href="https://remilia.net" target="_blank" rel="noopener noreferrer">remilia.net</a>
+        </div>
+      </section>
+
+      <nav id="bigbar" class="hidden" aria-label="Studio controls">
+        <button data-act="milady">🤍 Milady #</button>
+        <button data-act="mirror">🔄 Mirror</button>
+        <button data-act="rezero">🎯 Fix Head</button>
+        <button data-act="bg" title="Click to cycle background; right-click, long-press, or drop a picture to set an image">🖼 BG</button>
+        <button data-act="record">⏺ Record</button>
+        <button data-act="fx">✨ FX</button>
+        <button data-act="settings" title="Advanced settings">⚙</button>
+        <button data-act="hide">☁️ Hide</button>
+      </nav>
+
+      <button id="peek" class="hidden" title="Show buttons">♡</button>
+      <div id="scan"></div>
+
+      <div id="miladyDlg" class="hidden" role="dialog" aria-modal="true" aria-labelledby="milady-dialog-title">
+        <div class="dlgbox">
+          <div id="milady-dialog-title" class="dlgtitle">POCKIT MILADY</div>
+          <div class="dlglabel">token # (blank = Pockit Milady #1)</div>
+          <input id="dlgId" type="text" inputmode="numeric" placeholder="1–1111" />
+          <button id="dlgKb" class="kbtoggle" title="Toggle keyboard">⌨</button>
+          <div class="dlgrow">
+            <button id="dlgLoad">Load</button>
+            <button id="dlgRandom">🎲 Random</button>
+            <button id="dlgCancel">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <video id="cam" playsinline hidden></video>
+      <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/","@pixiv/three-vrm":"https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@2.1.2/lib/three-vrm.module.min.js"}}</script>
+      <script src="/milady-studio/tracker.js" type="module"></script>
+    </main>
+</body>
+</html>

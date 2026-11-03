@@ -1,38 +1,41 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pockit World
 
-## Getting Started
+Plain HTML pages, one shared stylesheet, and vanilla JavaScript. No framework, dependencies, or build step.
 
-The goal is to build an [ECS driven game engine](https://bevy.org/).
+## Preview locally
 
-First, run the development server:
+Serve the `public/` folder with Python:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```sh
+python3 -m http.server 8000 --directory public
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Or use a basic Node folder server:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```sh
+npx http-server public -p 8000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Open http://localhost:8000. Any static HTTP server works; there is no project setup or custom server. Serve over HTTP rather than opening HTML files directly, so modules and 3D assets load correctly.
 
-## Learn More
+## Edit
 
-To learn more about Next.js, take a look at the following resources:
+- `public/index.html` — home
+- `public/about/index.html` — about
+- `public/milady/index.html` — Milady collection and model picker
+- `public/milady/studio/index.html` — camera and pose tracking studio
+- `public/remilio/index.html` — Remilio maker
+- `public/os.html` — desktop experiment
+- `public/styles.css` — all first-party page styles, with scoped tool styles
+- `public/site.js` — card effects, logo audio, and model selection
+- `public/milady-studio/tracker.js` — studio tracking and recording
+- `public/milady-studio/smiley.jpg` — studio backdrop
+- `public/remilio/maker.js` — Remilio customization and exports
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Pages contain their own navigation and metadata, so their content works without a client-side rendering step. When changing the shared header, update the home, about, and Milady HTML files together.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The 3D tools load pinned libraries from CDNs; the Milady viewer and downloads use prnth.com. These features require an internet connection. Camera and microphone tracking require HTTPS or localhost and browser permission. The desktop experiment retains its existing CDN libraries and vendor styles.
 
-## Deploy on Vercel
+## Deploy
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+GitHub Pages publishes `public/` directly on pushes to `main`, using `.github/workflows/pages.yml`. The folder includes `CNAME` for pockit.world and `.nojekyll`. Any static host can serve the same folder; no build command is required. Only publish `public/`, since the repository root can contain local data.
