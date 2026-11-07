@@ -26,6 +26,82 @@ const palettes = {
 const skinMats = new Set(),
   hairMats = new Set();
 let model, renderer, controls, camera, scene, box;
+let hairOptions = new Map();
+const urlFields = ["name", "skin", "hair", "hairStyle", "top", "headAccessory", "angry"];
+const initialSettings = Object.fromEntries(urlFields.map((id) => [id, $(id).value]));
+let settingsReady = false, restoringSettings = false;
+function syncSettingsURL() {
+  if (!settingsReady || restoringSettings) return;
+  const url = new URL(location.href);
+  for (const id of urlFields) url.searchParams.set(id, $(id).value);
+  url.searchParams.set("mouth", String(selectedMouth));
+  url.searchParams.set("animation", selectedAnimation || "tpose");
+  if (url.href !== location.href) history.replaceState(history.state, "", url);
+}
+function restoreSettingsURL() {
+  if (!settingsReady) return;
+  restoringSettings = true;
+  try {
+    const params = new URLSearchParams(location.search);
+    for (const kind of ["skin", "hair"]) {
+      const raw = params.get(kind) || "";
+      const hex = raw.startsWith("#") ? raw : "#" + raw;
+      color(kind, /^#[0-9a-f]{6}$/i.test(hex) ? hex : initialSettings[kind]);
+    }
+    $("name").value = (params.get("name") ?? initialSettings.name).slice(0, $("name").maxLength > 0 ? $("name").maxLength : 120);
+    $("caption").textContent = $("name").value.trim() || "Pockit Remilio";
+    selectHairStyle(hairOptions.has(params.get("hairStyle")) ? params.get("hairStyle") : hairOptions.has("original") ? "original" : "none");
+    for (const id of ["top", "headAccessory"]) {
+      const value = params.get(id);
+      $(id).value = [...$(id).options].some((o) => o.value === value) ? value : initialSettings[id];
+    }
+    const angry = Number(params.get("angry") ?? initialSettings.angry);
+    $("angry").value = String(Number.isFinite(angry) ? Math.round(Math.max(0, Math.min(100, angry))) : 0);
+    const mouth = Number(params.get("mouth") ?? 0);
+    selectMouth(Number.isInteger(mouth) && mouth >= 0 && mouth < mouthOptions.length ? mouth : 0);
+    const animation = params.get("animation");
+    selectAnimation(clips.some((clip) => clip.name === animation) ? animation : "");
+    updateOutfit();
+    updateExpression();
+  } finally {
+    restoringSettings = false;
+  }
+}
+window.addEventListener("popstate", restoreSettingsURL);
+function selectHairStyle(id) {
+  if (!hairOptions.has(id)) return;
+  $("hairStyle").value = id;
+  for (const [styleId, option] of hairOptions)
+    for (const object of option.objects) object.visible = styleId === id;
+  syncSettingsURL();
+}
+function setupHairPicker() {
+  hairOptions = new Map([
+    ["none", { label: "None", index: -1, objects: [] }],
+  ]);
+  model.traverse((object) => {
+    const id = object.userData.hair_style_id ||
+      (object.name === "Hair" && object.isMesh ? "original" : null);
+    if (!id) return;
+    if (!hairOptions.has(id))
+      hairOptions.set(id, {
+        label: object.userData.hair_style_label || "Original long",
+        index: object.userData.hair_style_index || 0,
+        objects: [],
+      });
+    hairOptions.get(id).objects.push(object);
+  });
+  $("hairStyle").replaceChildren();
+  for (const [id, option] of [...hairOptions].sort((a, b) => a[1].index - b[1].index)) {
+    const item = document.createElement("option");
+    item.value = id;
+    item.textContent = option.label;
+    $("hairStyle").append(item);
+  }
+  $("hairStyle").disabled = hairOptions.size < 2;
+  selectHairStyle(hairOptions.has("original") ? "original" : hairOptions.keys().next().value);
+}
+$("hairStyle").onchange = () => selectHairStyle($("hairStyle").value);
 let mixer,
   activeAction,
   clips = [],
@@ -105,6 +181,7 @@ function selectMouth(index) {
       "aria-pressed",
       String(Number(button.dataset.mouth) === index),
     );
+  syncSettingsURL();
 }
 async function setupMouthPicker() {
   mouthBindings = [];
@@ -176,16 +253,15 @@ function animationButton(name, label, disabled = false) {
   button.textContent = label;
   button.disabled = disabled;
   button.setAttribute("aria-pressed", String(name === selectedAnimation));
-  button.onclick = () => {
-    selectedAnimation = name;
-    for (const b of $("animation").children)
-      b.setAttribute(
-        "aria-pressed",
-        String(b.dataset.animation === name),
-      );
-    playAnimation();
-  };
+  button.onclick = () => selectAnimation(name);
   return button;
+}
+function selectAnimation(name) {
+  selectedAnimation = name;
+  for (const button of $("animation").children)
+    button.setAttribute("aria-pressed", String(button.dataset.animation === name));
+  playAnimation();
+  syncSettingsURL();
 }
 function playAnimation() {
   if (!mixer) return;
@@ -306,6 +382,7 @@ function color(kind, value) {
       "aria-pressed",
       String(b.dataset.color === value.toLowerCase()),
     );
+  syncSettingsURL();
 }
 for (const kind of ["skin", "hair"]) {
   for (const hex of palettes[kind]) {
@@ -327,8 +404,11 @@ for (const kind of ["skin", "hair"]) {
 }
 $("name").oninput = () => {
   $("caption").textContent = $("name").value.trim() || "Pockit Remilio";
+  syncSettingsURL();
 };
 $("random").onclick = () => {
+  const styles = [...hairOptions.keys()];
+  selectHairStyle(styles[Math.floor(Math.random() * styles.length)]);
   for (const kind of ["skin", "hair"])
     color(
       kind,
@@ -336,11 +416,13 @@ $("random").onclick = () => {
     );
 };
 $("reset").onclick = () => {
+  selectHairStyle(hairOptions.has("original") ? "original" : hairOptions.keys().next().value);
   color("skin", defaults.skin);
   color("hair", defaults.hair);
   $("angry").value = "0";
   updateExpression();
   frame();
+  syncSettingsURL();
 };
 function updateExpression() {
   const amount = Number($("angry").value) / 100;
@@ -350,7 +432,7 @@ function updateExpression() {
     if (index !== undefined) object.morphTargetInfluences[index] = amount;
   });
 }
-$("angry").oninput = updateExpression;
+$("angry").oninput = () => { updateExpression(); syncSettingsURL(); };
 function updateOutfit() {
   if (!model) return;
   model.traverse((object) => {
@@ -362,6 +444,7 @@ function updateOutfit() {
     if (name === "hornl" || name === "hornr")
       object.visible = $("headAccessory").value === "oni";
   });
+  syncSettingsURL();
 }
 $("top").onchange = updateOutfit;
 $("headAccessory").onchange = updateOutfit;
@@ -381,6 +464,7 @@ function frame() {
   controls.update();
 }
 async function load(url) {
+  settingsReady = false;
   $("loading").hidden = false;
   status("Loading character…");
   try {
@@ -400,7 +484,7 @@ async function load(url) {
         ? o.material
         : [o.material]) {
         if (m.name === "skin") skinMats.add(m);
-        if (m.name === "hair") hairMats.add(m);
+        if (m.name === "hair" || m.name.startsWith("hair.")) hairMats.add(m);
       }
     });
     model.updateMatrixWorld(true);
@@ -408,11 +492,14 @@ async function load(url) {
     if (!skinMats.size || !hairMats.size)
       throw new Error("This GLB needs materials named skin and hair.");
     for (const kind of ["skin", "hair"]) color(kind, $(kind).value);
+    setupHairPicker();
     updateOutfit();
     const [animationFailures, mouthFailures] = await Promise.all([
       setupPreview(gltf.animations),
       setupMouthPicker(),
     ]);
+    settingsReady = true;
+    restoreSettingsURL();
     updateExpression();
     frame();
     $("loading").hidden = true;
