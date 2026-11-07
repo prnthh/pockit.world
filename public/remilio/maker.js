@@ -433,14 +433,35 @@ function updateExpression() {
   });
 }
 $("angry").oninput = () => { updateExpression(); syncSettingsURL(); };
+let topOptions = new Map();
+function setupTopPicker() {
+  topOptions = new Map([["none", { label: "None", objects: [] }]]);
+  model.traverse((object) => {
+    const id = object.userData.outfitSlot === "top"
+      ? object.userData.outfitOption
+      : object.name === "Shirt" ? "tshirt" : null;
+    if (!id) return;
+    if (!topOptions.has(id)) topOptions.set(id, {
+      label: object.userData.outfitLabel || "T-shirt", objects: [],
+    });
+    topOptions.get(id).objects.push(object);
+  });
+  $("top").replaceChildren(...[...topOptions].map(([id, option]) => {
+    const item = document.createElement("option");
+    item.value = id;
+    item.textContent = option.label;
+    return item;
+  }));
+  $("top").value = topOptions.has("tshirt") ? "tshirt" : "none";
+}
 function updateOutfit() {
   if (!model) return;
+  for (const [id, option] of topOptions)
+    for (const object of option.objects) object.visible = $("top").value === id;
   model.traverse((object) => {
     const name = object.name
       .replace(/[^a-z]/gi, "")
       .toLowerCase();
-    if (name === "shirt")
-      object.visible = $("top").value === "tshirt";
     if (name === "hornl" || name === "hornr")
       object.visible = $("headAccessory").value === "oni";
   });
@@ -493,6 +514,7 @@ async function load(url) {
       throw new Error("This GLB needs materials named skin and hair.");
     for (const kind of ["skin", "hair"]) color(kind, $(kind).value);
     setupHairPicker();
+    setupTopPicker();
     updateOutfit();
     const [animationFailures, mouthFailures] = await Promise.all([
       setupPreview(gltf.animations),
