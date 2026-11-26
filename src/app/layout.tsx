@@ -27,14 +27,14 @@ export const metadata: Metadata = {
     title: 'Pockit Game Corp',
     description: 'Independent game studio building perpetual games using blockchain technology.',
     url: 'https://pockit.world',
-    images: 'https://pockit.world/ui/pockitlogo.png',
+    images: 'https://pockit.world/ui/logos/pockitlogo.png',
   },
   twitter: {
     card: 'player',
     title: 'Pockit Game Corp',
     description: 'Independent game studio on Ethereum.',
     creator: '@pockitmilady',
-    images: ["https://pockit.world/ui/pockitlogo.png"],
+    images: ["https://pockit.world/ui/logos/pockitlogo.png"],
   }
 };
 

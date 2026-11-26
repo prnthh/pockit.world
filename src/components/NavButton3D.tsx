@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import { playSound } from "@/app/util";
 
 export const NavButton3D = ({ children, className, style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) => {
     const cardRef = useRef<HTMLDivElement>(null);
@@ -35,15 +36,10 @@ export const NavButton3D = ({ children, className, style }: { children: React.Re
         shineRef.current.style.opacity = '0';
     };
 
-    const playSound = (url: string) => {
-        const audio = new Audio(url);
-        audio.play().catch(() => { });
-    };
-
     return (
         <div
             ref={cardRef}
-            className={className}
+            className={`${className} text-black font-sans font-semibold rounded-3xl shadow-[0_4px_4px_rgba(0,0,0,0.1)] px-4 py-4 transition-all ease-out relative overflow-hidden backdrop-blur-xl border-2 border-gray-500/50 hover:scale-[1.03] active:scale-95`}
             style={{
                 ...style,
                 transformStyle: 'preserve-3d',

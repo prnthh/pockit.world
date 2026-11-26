@@ -10,14 +10,14 @@ export const metadata: Metadata = {
         title: 'Pockit Milady | 3D Interactive NFTs',
         description: 'Pockit Milady is a collection of 1111 3D Interactive NFTs inspired by Milady Maker. Console in your Ethereum wallet.',
         url: 'https://pockit.world/milady',
-        images: 'https://pockit.world/ui/pockitlogo.png',
+        images: 'https://pockit.world/ui/logos/pockitlogo.png',
     },
     twitter: {
         card: 'summary',
         title: 'Pockit Milady | 3D Interactive NFTs',
         description: 'Pockit Milady is a collection of 1111 3D Interactive NFTs inspired by Milady Maker. Console in your Ethereum wallet.',
         creator: '@pockitmilady',
-        images: ["https://pockit.world/ui/pockitlogo.png"],
+        images: ["https://pockit.world/ui/logos/pockitlogo.png"],
     }
 };
 

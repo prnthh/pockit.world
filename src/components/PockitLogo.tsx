@@ -50,7 +50,7 @@ export default function PockitLogo() {
     return (
         <Link href="/" onPointerEnter={playSound} onPointerLeave={stopSound}>
             <img
-                src='/ui/pockitlogo3.png'
+                src='/ui/logos/pockitlogo3.png'
                 alt='Pockit Game Corp Logo'
                 className="inline-block h-24 hover:cursor-pointer hover:brightness-110 hover:scale-115 transition-all ease-in hover:duration-600 active:duration-600 active:brightness-90 active:scale-95"
             />

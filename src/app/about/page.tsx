@@ -9,14 +9,14 @@ export const metadata: Metadata = {
         title: 'About | Pockit Game Corp',
         description: 'Learn more about Pockit Game Corp, an independent game studio founded by veterans from Zynga and Rockstar Games.',
         url: 'https://pockit.world/about',
-        images: 'https://pockit.world/ui/pockitlogo.png',
+        images: 'https://pockit.world/ui/logos/pockitlogo.png',
     },
     twitter: {
         card: 'summary',
         title: 'About | Pockit Game Corp',
         description: 'Learn more about Pockit Game Corp, an independent game studio founded by veterans from Zynga and Rockstar Games.',
         creator: '@pockitmilady',
-        images: ["https://pockit.world/ui/pockitlogo.png"],
+        images: ["https://pockit.world/ui/logos/pockitlogo.png"],
     }
 };
 
