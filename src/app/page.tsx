@@ -25,7 +25,7 @@ export const metadata: Metadata = {
 export default function Home() {
   return <>
     <HeroCharacter />
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 mx-auto max-w-2xl justify-items-center" style={{ perspective: '1000px' }}>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-6 mx-auto max-w-2xl justify-items-center" style={{ perspective: '1000px' }}>
       <Link href="/about" className="group inline-block">
         <NavButton3D className="bg-gradient-to-b from-blue-200/80 to-white group-hover:shadow-blue-900/70" style={{ width: "320px", height: "180px" }}>
           <div className="relative flex flex-col justify-between h-full z-10 text-xl">

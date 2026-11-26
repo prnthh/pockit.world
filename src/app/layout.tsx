@@ -58,12 +58,12 @@ export default function RootLayout({
       >
         <div className="flex h-dvh flex-col overflow-hidden bg-[#e4e7ed]">
           <header className="relative z-10 shrink-0 bg-red-500 w-full flex flex-col items-center select-none">
+            <div className="w-full">
+              <ScrollerUI />
+            </div>
             <div className="bg-blue-600 w-full text-black relative h-8 px-2 flex items-center gap-4 uppercase text-white font-mono font-medium">
               <Link href="/" className="hover:text-yellow-300 hover:font-black cursor-pointer">Home</Link>
               <Link href="/about" className="hover:text-yellow-300 hover:font-black cursor-pointer">About</Link>
-            </div>
-            <div className="w-full">
-              <ScrollerUI />
             </div>
             <div className="fixed top-2 left-1/2 -translate-x-1/2 h-0 z-10">
               <PockitLogo />
