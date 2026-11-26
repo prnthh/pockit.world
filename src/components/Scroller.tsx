@@ -14,7 +14,7 @@ const ScrollerUI = () => {
                 ];
                 return [0, 1].map(repeat =>
                     messages.map((text, i) => (
-                        <span key={`scroll${repeat + 1}-${i}`} className="scroll-item font-mono text-green-400 text-lg tracking-widest drop-shadow-lg flex-shrink-0">{text}</span>
+                        <span key={`scroll${repeat + 1}-${i}`} className="scroll-item">{text}</span>
                     ))
                 );
             })()}

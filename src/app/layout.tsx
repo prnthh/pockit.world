@@ -1,8 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import PockitLogo from "./ui/PockitLogo";
-import ScrollerUI from "./ui/Scroller";
+import PockitLogo from "../components/PockitLogo";
+import ScrollerUI from "../components/Scroller";
 import Link from "next/link";
 
 const geistSans = Geist({

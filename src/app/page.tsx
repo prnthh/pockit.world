@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { NavButton3D } from "./NavButton3D";
+import { NavButton3D } from "../components/NavButton3D";
 
 export const metadata: Metadata = {
   title: "Pockit Game Corp",
